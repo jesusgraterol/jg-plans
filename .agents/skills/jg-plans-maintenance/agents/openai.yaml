@@ -1,0 +1,4 @@
+interface:
+  display_name: 'JG Plans maintenance'
+  short_description: 'Maintain the jg-plans protocol, package, and site'
+  default_prompt: 'Use $jg-plans-maintenance to maintain the shared protocol, reference implementation, and website consistently.'

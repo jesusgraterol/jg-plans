@@ -145,5 +145,12 @@ vite.config.ts.timestamp-*
 # Astro generated types
 .astro/
 
+# Local plans and release/verification output
+/jg-plans/
+/coding-agent-planning/
+/.release/
+/test-results/
+/playwright-report/
+
 # Turbo Repo
 .turbo

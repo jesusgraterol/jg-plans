@@ -1,0 +1,46 @@
+{
+  "name": "jg-plans",
+  "version": "0.1.0",
+  "description": "A compact planning protocol for people and coding agents.",
+  "type": "module",
+  "license": "MIT",
+  "author": "Jesus Graterol",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jesusgraterol/jg-plans.git"
+  },
+  "homepage": "https://jg-plans.jesusgraterol.dev",
+  "bugs": {
+    "url": "https://github.com/jesusgraterol/jg-plans/issues"
+  },
+  "engines": {
+    "node": ">=24.15.0"
+  },
+  "packageManager": "pnpm@12.14.0",
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist",
+    "protocol",
+    "api",
+    "cli",
+    "examples",
+    "CHANGELOG.md",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "prettier": "3.8.3"
+  },
+  "prettier": {
+    "singleQuote": true,
+    "trailingComma": "all",
+    "printWidth": 100,
+    "proseWrap": "preserve"
+  }
+}
