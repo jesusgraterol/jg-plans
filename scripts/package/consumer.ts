@@ -22,8 +22,10 @@ export const verifyPackedConsumer = async (
   archive: string,
   signal?: AbortSignal,
 ): Promise<string[]> => {
-  const directory = await mkdtemp(join(tmpdir(), 'jg-plans-consumer-'));
+  let directory = await mkdtemp(join(tmpdir(), 'jg-plans-consumer-'));
   try {
+    // macOS /var and other OS temp roots can be aliases of their real paths.
+    directory = await realpath(directory);
     const cancellation = signal ? { signal } : {};
     const env = Object.fromEntries(
       Object.entries(process.env).filter(

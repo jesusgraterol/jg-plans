@@ -1,5 +1,5 @@
 import { gzipSync } from 'node:zlib';
-import { Header } from 'tar';
+import { Header, Pax } from 'tar';
 import { describe, expect, it } from 'vitest';
 
 import { ARCHIVE_LIMITS, inspectPackageArchive } from './archive.ts';
@@ -52,6 +52,17 @@ describe('bounded package payload verification', () => {
     );
     await expect(
       inspectPackageArchive(gzipSync(block('package/a').subarray(0, 513))),
+    ).rejects.toThrow();
+  });
+
+  it('validates effective PAX paths before platform normalization', async () => {
+    const valid = new Pax({ path: 'package/café/metadata.md' }).encode()!;
+    expect([
+      ...(await inspectPackageArchive(archive(valid, block('package/placeholder')))).keys(),
+    ]).toEqual(['café/metadata.md']);
+    const invalid = new Pax({ path: 'package/dir\\file' }).encode()!;
+    await expect(
+      inspectPackageArchive(archive(invalid, block('package/placeholder'))),
     ).rejects.toThrow();
   });
 

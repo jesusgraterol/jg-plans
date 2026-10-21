@@ -44,6 +44,8 @@ export const inspectPackageArchive = async (
       }
       try {
         assert.equal(entry.type, 'File', 'Package entries must be regular files');
+        // ReadEntry normalizes backslashes on Windows; validate before that information is lost.
+        assert.equal(entry.header.path, entry.path, 'Package entry path was normalized');
         assert.ok(entry.path.startsWith('package/'), 'Package entry is outside package/');
         const name: string = entry.path.slice('package/'.length);
         assert.ok(
