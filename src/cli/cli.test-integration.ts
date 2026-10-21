@@ -13,12 +13,14 @@ const fixture = async (): Promise<string> => {
   roots.push(directory);
   return directory;
 };
-const run = (args: string[]) =>
+const run = (args: string[], input?: string, cwd?: string) =>
   runProcess({
     command: process.execPath,
     args: [executable, ...args],
     timeoutSeconds: 10,
     maxOutputBytes: 1024 * 1024,
+    ...(input === undefined ? {} : { input }),
+    ...(cwd === undefined ? {} : { cwd }),
   });
 afterEach(async () => {
   for (const root of roots.splice(0)) await rm(root, { recursive: true, force: true });
@@ -116,5 +118,131 @@ describe('compiled CLI read contract', () => {
     expect(
       (await run(['inspect', '--directory', root, '--max-bytes', '6', '--json'])).exitCode,
     ).toBe(0);
+  });
+});
+
+describe('compiled CLI mutation contract', () => {
+  it('creates, inspects, updates, and checks with explicit JSON inputs', async () => {
+    const root = await fixture();
+    const created = await run(
+      ['create', '--slug', 'cli-task', '--root', root, '--input', '-', '--json'],
+      JSON.stringify({
+        body: '# PRIVATE_BODY',
+        metadata: { project: { label: 'invented' } },
+        milestones: '## Milestone 1: Work\n**Status:** pending',
+      }),
+    );
+    expect(created.exitCode).toBe(0);
+    expect(created.stderr).toBe('');
+    expect(created.stdout).not.toContain('PRIVATE_BODY');
+    const directory: string = JSON.parse(created.stdout).data.directory;
+    expect((await run(['inspect', '--directory', directory, '--json'])).exitCode).toBe(0);
+    const updated = await run(
+      ['update', '--directory', directory, '--input', '-', '--json'],
+      JSON.stringify({
+        document: 'milestones',
+        changes: [{ select: { ordinal: 1 }, set: { status: 'done' } }],
+      }),
+    );
+    expect(updated.exitCode).toBe(0);
+    expect(JSON.parse(updated.stdout)).toMatchObject({
+      schemaVersion: 1,
+      command: 'update',
+      data: { changed: true, document: 'milestones' },
+      error: null,
+    });
+    expect((await run(['check', '--directory', directory, '--json'])).exitCode).toBe(0);
+  });
+
+  it('uses the invocation directory for the default planning root and accepts input files', async () => {
+    const root = await fixture();
+    const input = join(root, 'input.json');
+    await writeFile(input, JSON.stringify({ body: '# Local default' }));
+    const result = await run(
+      ['create', '--slug', 'default-root', '--input', input, '--json'],
+      undefined,
+      root,
+    );
+    expect(result.exitCode).toBe(0);
+    expect(JSON.parse(result.stdout).data.directory).toContain(join(root, 'jg-plans'));
+  });
+
+  it('returns safe JSON errors for bad input, invalid encodings, unsupported patches, and missing targets', async () => {
+    const root = await fixture();
+    for (const [input, code] of [
+      ['{ PRIVATE_SECRET_BODY', 'JG_PLANS_INVALID_INPUT'],
+      [JSON.stringify({ body: '\uD800' }), 'JG_PLANS_UNSUPPORTED_ENCODING'],
+      [JSON.stringify({ body: '# Work', root: 'injected' }), 'JG_PLANS_INVALID_INPUT'],
+    ]) {
+      const result = await run(
+        ['create', '--slug', 'bad', '--root', root, '--input', '-', '--json'],
+        input,
+      );
+      expect(result.exitCode).toBe(2);
+      expect(result.stderr).toBe('');
+      expect(result.stdout).not.toContain('PRIVATE_SECRET_BODY');
+      expect(JSON.parse(result.stdout)).toMatchObject({ data: null, error: { code } });
+    }
+    const update = await run(
+      ['update', '--directory', root, '--input', '-', '--json'],
+      JSON.stringify({ document: 'plan', set: { status: 'done' } }),
+    );
+    expect(update.exitCode).toBe(2);
+    expect(JSON.parse(update.stdout).error.code).toBe('JG_PLANS_READ_FAILED');
+    const unsupported = await run(
+      ['update', '--directory', root, '--input', '-', '--json'],
+      JSON.stringify({ document: 'plan', set: { body: '# Forbidden rewrite' } }),
+    );
+    expect(JSON.parse(unsupported.stdout).error.code).toBe('JG_PLANS_INVALID_INPUT');
+    const file = join(root, 'bad.json');
+    await writeFile(file, Buffer.from([0xff, 0xfe, 0]));
+    const encoding = await run([
+      'create',
+      '--slug',
+      'encoding',
+      '--root',
+      root,
+      '--input',
+      file,
+      '--json',
+    ]);
+    expect(JSON.parse(encoding.stdout).error.code).toBe('JG_PLANS_UNSUPPORTED_ENCODING');
+  });
+
+  it('applies byte bounds to stdin and target documents, with an explicit larger override', async () => {
+    const root = await fixture();
+    const input = JSON.stringify({ body: 'x'.repeat(1024 * 1024 + 1) });
+    const limited = await run(
+      ['create', '--slug', 'large', '--root', root, '--input', '-', '--json'],
+      input,
+    );
+    expect(limited.exitCode).toBe(2);
+    expect(JSON.parse(limited.stdout).error.code).toBe('JG_PLANS_READ_FAILED');
+    const created = await run(
+      [
+        'create',
+        '--slug',
+        'large',
+        '--root',
+        root,
+        '--input',
+        '-',
+        '--max-bytes',
+        '2097152',
+        '--json',
+      ],
+      input,
+    );
+    expect(created.exitCode).toBe(0);
+    const directory: string = JSON.parse(created.stdout).data.directory;
+    const patch = JSON.stringify({ document: 'plan', set: { status: 'done' } });
+    expect(
+      (await run(['update', '--directory', directory, '--input', '-', '--json'], patch)).exitCode,
+    ).toBe(2);
+    const updated = await run(
+      ['update', '--directory', directory, '--input', '-', '--max-bytes', '2097152', '--json'],
+      patch,
+    );
+    expect(updated.exitCode).toBe(0);
   });
 });

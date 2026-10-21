@@ -56,6 +56,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint src scripts vitest.config.ts eslint.config.js",
     "check:package": "pnpm test && pnpm typecheck && pnpm lint && pnpm format:check",
+    "check": "pnpm check:package && pnpm --dir website check",
     "release:pack": "pnpm build && node scripts/package/pack.ts"
   },
   "devDependencies": {

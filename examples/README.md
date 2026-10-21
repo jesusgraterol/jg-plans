@@ -1,6 +1,6 @@
 # Examples
 
-These examples use invented prose, identifiers, names, and paths. They are public protocol examples and synthetic conformance inputs, not copied project plans. Expected observations below are specified independently of the future reference parser.
+These examples use invented prose, identifiers, names, and paths. They are public protocol examples and synthetic conformance inputs, not copied project plans. Expected observations below are specified independently of the reference parser.
 
 | Example                 | Source                                                                             | Expected observations                                                                                                    |
 | ----------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
@@ -12,4 +12,8 @@ These examples use invented prose, identifiers, names, and paths. They are publi
 
 Readers do not require every example to conform. The incomplete and orphan cases demonstrate useful inspection after ordinary user edits/deletion. The overview is optional and never the source of authority over marker status.
 
-The [protocol](../protocol/0.1/README.md) owns the format. Package APIs, CLI examples, and computed website interpretations are added alongside their tested implementations. Until then, these files can be read, copied, and edited directly.
+The [protocol](../protocol/0.1/README.md) owns the format. These files can be read, copied, and edited directly. The [API](../api/README.md) and [CLI](../cli/README.md) explain reference operations.
+
+## Runnable library example
+
+[library.mjs](library.mjs) creates a plan with optional milestones, awaits a targeted update, inspects it, and performs an optional check. It prints a small JSON summary and removes only its own temporary root in finally. Run it with Node.js from a built checkout, or from its physical location inside an installed jg-plans package. The packed-consumer test executes this exact shipped file.

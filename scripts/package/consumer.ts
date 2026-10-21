@@ -18,9 +18,13 @@ const PolicySchema = z.object({
 });
 
 /** Install one exact archive and exercise its actual root export, declarations, and bin shim. */
-export const verifyPackedConsumer = async (archive: string): Promise<string[]> => {
+export const verifyPackedConsumer = async (
+  archive: string,
+  signal?: AbortSignal,
+): Promise<string[]> => {
   const directory = await mkdtemp(join(tmpdir(), 'jg-plans-consumer-'));
   try {
+    const cancellation = signal ? { signal } : {};
     const env = Object.fromEntries(
       Object.entries(process.env).filter(
         ([key]) => !['npm_config_userconfig', 'npm_config_cache'].includes(key.toLowerCase()),
@@ -45,6 +49,7 @@ export const verifyPackedConsumer = async (archive: string): Promise<string[]> =
       JSON.stringify({ name: 'jg-plans-public-consumer', private: true, type: 'module' }),
     );
     const dryRun = await runProcess({
+      ...cancellation,
       ...resolvePackageManagerCommand(['pack', '--dry-run', '--ignore-scripts', '--json'], {
         packageManager: 'npm',
         cwd: packageRoot,
@@ -82,6 +87,8 @@ export const verifyPackedConsumer = async (archive: string): Promise<string[]> =
       'errors/README.md',
       'docs/getting-started.md',
       'docs/integrations.md',
+      'examples/library.mjs',
+      'CHANGELOG.md',
       'NOTICE',
     ])
       assert.ok(files.includes(required), `Missing shipped path: ${required}`);
@@ -106,6 +113,7 @@ export const verifyPackedConsumer = async (archive: string): Promise<string[]> =
       }
     }
     const install = await runProcess({
+      ...cancellation,
       ...resolvePackageManagerCommand(['add', '--ignore-scripts', '--save-exact', archive], {
         packageManager: 'pnpm',
         cwd: directory,
@@ -126,6 +134,7 @@ export const verifyPackedConsumer = async (archive: string): Promise<string[]> =
       );
 
     const smoke = await runProcess({
+      ...cancellation,
       command: process.execPath,
       args: [
         '--input-type=module',
@@ -135,7 +144,7 @@ export const verifyPackedConsumer = async (archive: string): Promise<string[]> =
       import { createRequire } from 'node:module';
       import * as plans from 'jg-plans';
       assert.equal(plans.PROTOCOL_VERSION, '0.1');
-      assert.deepEqual(Object.keys(plans).sort(), ['DiagnosticSchema','ERRORS','PROTOCOL_VERSION','PlanDocumentsSchema','PlanMetadataSchema','ReadOptionsSchema','SourceLocationSchema','checkPlan','inspectPlan','parseMilestones','parsePlan'].sort());
+      assert.deepEqual(Object.keys(plans).sort(), ['CreatePlanOptionsSchema','DiagnosticSchema','ERRORS','MilestoneSelectorSchema','MilestoneSetSchema','PROTOCOL_VERSION','PlanDocumentsSchema','PlanMetadataSchema','PlanSetSchema','PlanUpdateSchema','ReadOptionsSchema','SourceLocationSchema','checkPlan','createPlan','inspectPlan','parseMilestones','parsePlan','updatePlan'].sort());
       assert.equal(plans.parsePlan('# Legacy document').body, '# Legacy document');
       assert.equal(plans.parseMilestones('## Milestone 1: Work\\n**Status:** custom').milestones[0].status, 'custom');
       assert.equal(plans.checkPlan({}).conforms, false);
@@ -145,6 +154,8 @@ export const verifyPackedConsumer = async (archive: string): Promise<string[]> =
       const require = createRequire(import.meta.url);
       assert.equal(require('jg-plans').PROTOCOL_VERSION, '0.1');
       assert.throws(() => require('jg-plans/dist/documents/plan.js'), {code: 'ERR_PACKAGE_PATH_NOT_EXPORTED'});
+      const created = await plans.createPlan({root: 'library-sample', slug: 'typed', body: '# Work'});
+      assert.equal((await plans.updatePlan(created.directory, {document: 'plan', set: {revision: 2}})).changed, true);
     `,
       ],
       cwd: directory,
@@ -158,14 +169,18 @@ export const verifyPackedConsumer = async (archive: string): Promise<string[]> =
 
     await writeFile(
       join(directory, 'types.mts'),
-      `import { parsePlan, inspectPlan, type IParsedPlan, type IPlanInspection, type IDiagnostic } from 'jg-plans';
+      `import { parsePlan, inspectPlan, createPlan, updatePlan, type IPlanUpdate, type IPlanCreation, type IParsedPlan, type IPlanInspection, type IDiagnostic } from 'jg-plans';
 const plan: IParsedPlan = parsePlan('# Work');
 const inspection: IPlanInspection = await inspectPlan('.');
 const diagnostics: IDiagnostic[] = plan.diagnostics;
-void [inspection, diagnostics];\n`,
+const created: IPlanCreation = await createPlan({slug: 'typed-example', body: '# Work'});
+const patch: IPlanUpdate = {document: 'plan', set: {revision: 2}};
+const changed: boolean = (await updatePlan(created.directory, patch)).changed;
+void [inspection, diagnostics, changed];\n`,
     );
     const require = createRequire(import.meta.url);
     const typecheck = await runProcess({
+      ...cancellation,
       command: process.execPath,
       args: [
         require.resolve('typescript/bin/tsc'),
@@ -189,6 +204,7 @@ void [inspection, diagnostics];\n`,
     assert.equal(typecheck.exitCode, 0, typecheck.stdout || typecheck.stderr);
 
     const cli = await runProcess({
+      ...cancellation,
       ...resolvePackageManagerCommand(
         ['exec', 'jg-plans', 'inspect', '--directory', join(directory, 'absent'), '--json'],
         { packageManager: 'pnpm', cwd: directory },
@@ -212,6 +228,93 @@ void [inspection, diagnostics];\n`,
       })
       .parse(JSON.parse(cli.stdout));
     assert.equal(envelope.data.plan.state, 'missing');
+
+    const runCli = async (args: string[]): Promise<unknown> => {
+      const result = await runProcess({
+        ...cancellation,
+        ...resolvePackageManagerCommand(['exec', 'jg-plans', ...args, '--json'], {
+          packageManager: 'pnpm',
+          cwd: directory,
+        }),
+        cwd: directory,
+        env,
+        timeoutSeconds: 30,
+        maxOutputBytes: 1024 * 1024,
+      });
+      assert.equal(result.exitCode, 0, result.stderr || result.stdout);
+      assert.equal(result.stderr, '');
+      return JSON.parse(result.stdout) as unknown;
+    };
+    const markerId = '6cc499ed-c9ab-4986-a16b-7e910c6b9521';
+    const milestoneSource = `## Milestone 1: Consumer\n**Status:** pending\n**Milestone ID:** ${markerId}\n\nKeep this prose.\n`;
+    const createInput = join(directory, 'create.json');
+    await writeFile(
+      createInput,
+      JSON.stringify({ body: '# Installed executable', milestones: milestoneSource }),
+    );
+    const created = z
+      .object({
+        command: z.literal('create'),
+        error: z.null(),
+        data: z.object({ directory: z.string() }),
+      })
+      .parse(await runCli(['create', '--slug', 'consumer', '--input', createInput]));
+    assert.ok(isPathWithin(join(directory, 'jg-plans'), created.data.directory));
+    const observed = z
+      .object({
+        command: z.literal('inspect'),
+        error: z.null(),
+        data: z.object({ plan: z.object({ state: z.literal('readable') }) }),
+      })
+      .parse(await runCli(['inspect', '--directory', created.data.directory]));
+    assert.equal(observed.data.plan.state, 'readable');
+    const updateInput = join(directory, 'update.json');
+    await writeFile(
+      updateInput,
+      JSON.stringify({
+        document: 'milestones',
+        changes: [{ select: { id: markerId }, set: { status: 'done' } }],
+      }),
+    );
+    const updated = z
+      .object({
+        command: z.literal('update'),
+        error: z.null(),
+        data: z.object({ changed: z.literal(true) }),
+      })
+      .parse(
+        await runCli(['update', '--directory', created.data.directory, '--input', updateInput]),
+      );
+    assert.equal(updated.data.changed, true);
+    assert.equal(
+      (await readBoundedFile(join(created.data.directory, 'milestones.md'), 1024 * 1024)).toString(
+        'utf8',
+      ),
+      milestoneSource.replace('pending', 'done'),
+    );
+    const checked = z
+      .object({
+        command: z.literal('check'),
+        error: z.null(),
+        data: z.object({ conforms: z.literal(true) }),
+      })
+      .parse(await runCli(['check', '--directory', created.data.directory]));
+    assert.equal(checked.data.conforms, true);
+    const example = await runProcess({
+      ...cancellation,
+      command: process.execPath,
+      args: [join(installedRoot, 'examples/library.mjs')],
+      cwd: directory,
+      env,
+      timeoutSeconds: 30,
+      maxOutputBytes: 1024 * 1024,
+    });
+    assert.equal(example.exitCode, 0, example.stderr);
+    assert.equal(example.stderr, '');
+    assert.equal(
+      z.object({ conforms: z.literal(true) }).parse(JSON.parse(example.stdout)).conforms,
+      true,
+    );
     return files;
   } finally {
     await rm(directory, { recursive: true, force: true });

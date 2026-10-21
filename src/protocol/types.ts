@@ -46,3 +46,60 @@ export const ReadOptionsSchema = z.strictObject({
 });
 
 export type IReadOptions = z.infer<typeof ReadOptionsSchema>;
+
+/** Creation accepts JSON metadata, including project extensions and nonconforming known values. */
+export const CreatePlanOptionsSchema = z.strictObject({
+  slug: z
+    .string()
+    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
+    .max(64),
+  root: z
+    .string()
+    .min(1)
+    .refine((value) => !value.includes('\0'))
+    .optional(),
+  body: z.string(),
+  metadata: z.record(z.string(), z.json()).optional(),
+  milestones: z.string().optional(),
+});
+
+export type ICreatePlanOptions = z.infer<typeof CreatePlanOptionsSchema>;
+
+/** Only explicitly supplied core fields are changed; no implicit revision or timestamp bump. */
+export const PlanSetSchema = z
+  .strictObject({
+    id: PlanMetadataSchema.shape.id.exactOptional(),
+    created_at: PlanMetadataSchema.shape.created_at.exactOptional(),
+    updated_at: PlanMetadataSchema.shape.updated_at.exactOptional(),
+    revision: PlanMetadataSchema.shape.revision.exactOptional(),
+    status: PlanMetadataSchema.shape.status.exactOptional(),
+  })
+  .refine((value) => Object.keys(value).length > 0);
+
+/** A selector identifies one milestone; IDs and ordinals cannot be combined. */
+export const MilestoneSelectorSchema = z.xor([
+  z.strictObject({ id: z.uuid() }),
+  z.strictObject({ ordinal: z.number().int().positive().max(Number.MAX_SAFE_INTEGER) }),
+]);
+
+export const MilestoneSetSchema = z
+  .strictObject({
+    status: NonblankStringSchema.refine(
+      (value) => value === value.trim() && !/[\r\n]/.test(value),
+    ).exactOptional(),
+    id: z.uuid().exactOptional(),
+  })
+  .refine((value) => Object.keys(value).length > 0);
+
+/** A call edits one document with one closed patch, never arbitrary prose. */
+export const PlanUpdateSchema = z.discriminatedUnion('document', [
+  z.strictObject({ document: z.literal('plan'), set: PlanSetSchema }),
+  z.strictObject({
+    document: z.literal('milestones'),
+    changes: z
+      .array(z.strictObject({ select: MilestoneSelectorSchema, set: MilestoneSetSchema }))
+      .min(1),
+  }),
+]);
+
+export type IPlanUpdate = z.infer<typeof PlanUpdateSchema>;

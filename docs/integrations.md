@@ -1,6 +1,6 @@
 # Consumer integration
 
-Use [protocol 0.1](../protocol/0.1/README.md) as the compact shared format. A project can read Markdown itself or use the reference library/CLI once available. The protocol is usable without installing a tool or calling a website.
+Use [protocol 0.1](../protocol/0.1/README.md) as the compact shared format. A project can read Markdown itself or use the implemented reference library/CLI; public npm availability is not yet verified. The protocol is usable without installing a tool or calling a website.
 
 ## Keep policy with the consumer
 
@@ -18,7 +18,9 @@ Missing, edited, or deleted documents remain ordinary user choices. Return obser
 
 Serialize the complete read/edit/write operation for each document, in one process and across processes. The standalone CLI does not coordinate concurrent writers. Atomic replacement and prior-content checks prevent partial output and detect observed conflicts, but retain a comparison-to-rename race.
 
-The reference implementation edits only explicitly requested core metadata or milestone markers, preserves unrelated bytes, and reports unsupported operations. A writer that rewrites prose chooses its own best-effort snapshot location/retention; readers never depend on those snapshots.
+The reference implementation edits only explicitly requested core metadata or milestone markers, preserves unrelated bytes, and reports unsupported operations. It does not update overview tables or rewrite revision summaries. Missing selected documents are never recreated; inspection/checking does not gate a safe independent edit. Revision and timestamps change only when requested. Use the [API contracts](../api/README.md) and their closed schemas at a programmatic boundary; do not invent a second parser in a CLI wrapper.
+
+The selected directory and ancestors are trusted caller choices. The library rejects links below that root and preserves file permissions on replacement. Unsafe affected YAML/encoding/selector ambiguity leaves the source untouched. The caller must decide how to serialize the complete operation, including same-process calls. A writer that rewrites prose chooses its own best-effort snapshot location/retention; readers never depend on those snapshots.
 
 ## Adoption boundary
 

@@ -4,6 +4,7 @@ import { readBoundedFile } from 'jg-fs';
 import { z } from 'zod';
 
 import { parseMilestones, parsePlan } from '../documents/index.ts';
+import { decodeSource } from '../edits/index.ts';
 import { planErrors } from '../errors/index.ts';
 import {
   DEFAULT_MAX_BYTES,
@@ -13,10 +14,6 @@ import {
 } from '../protocol/index.ts';
 
 import type { IDocumentRead, IPlanInspection } from './types.ts';
-
-/** Preserve an existing BOM character; never replace invalid bytes during decoding. */
-export const decodeSource = (bytes: Uint8Array): string =>
-  new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(bytes);
 
 const observeFile = async <TDocument>(
   directory: string,

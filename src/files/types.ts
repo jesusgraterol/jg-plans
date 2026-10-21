@@ -13,3 +13,19 @@ export type IPlanInspection = {
   milestones: IDocumentRead<IParsedMilestones>;
   diagnostics: IDiagnostic[];
 };
+
+/** Creation returns original generated/supplied sources and their useful observations. */
+export type IPlanCreation = {
+  directory: string;
+  plan: IParsedPlan;
+  milestones: IParsedMilestones | null;
+  diagnostics: IDiagnostic[];
+};
+
+/** An update reports only its selected document; it does not inspect unrelated files. */
+export type IPlanUpdateResult = {
+  directory: string;
+  document: 'plan' | 'milestones';
+  changed: boolean;
+  diagnostics: IDiagnostic[];
+};

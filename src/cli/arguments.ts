@@ -17,6 +17,9 @@ export const parseArguments = (args: string[]): IArguments => {
   try {
     flags = parseStrictArgs(isCommand ? tail : args, {
       directory: { type: 'string' },
+      input: { type: 'string' },
+      slug: { type: 'string' },
+      root: { type: 'string' },
       'max-bytes': { type: 'string' },
       'include-body': { type: 'boolean' },
       json: { type: 'boolean' },
@@ -31,19 +34,30 @@ export const parseArguments = (args: string[]): IArguments => {
   if (flags.help || args.length === 0)
     return { command: 'help', json: flags.json, includeBody: false };
   if (flags.version) return { command: 'version', json: flags.json, includeBody: false };
-  if (
-    (first !== 'inspect' && first !== 'check') ||
-    !flags.directory ||
-    (first === 'check' && flags['include-body'])
-  )
+  if (first !== 'inspect' && first !== 'check' && first !== 'create' && first !== 'update')
     throw planErrors.create('invalidInput');
+  if (first === 'create') {
+    if (!flags.slug || !flags.input || flags.directory || flags['include-body'])
+      throw planErrors.create('invalidInput');
+  } else {
+    if (!flags.directory || flags.root || flags.slug) throw planErrors.create('invalidInput');
+    if (
+      first === 'update'
+        ? !flags.input || flags['include-body']
+        : Boolean(flags.input) || (first === 'check' && flags['include-body'])
+    )
+      throw planErrors.create('invalidInput');
+  }
   const maximum = flags['max-bytes'];
   if (maximum !== undefined && !/^[1-9]\d*$/.test(maximum)) throw planErrors.create('invalidInput');
   const maxBytes = maximum === undefined ? undefined : Number(maximum);
   if (!ReadOptionsSchema.safeParse({ maxBytes }).success) throw planErrors.create('invalidInput');
   return {
     command: first,
-    directory: flags.directory,
+    ...(flags.directory ? { directory: flags.directory } : {}),
+    ...(flags.input ? { input: flags.input } : {}),
+    ...(flags.slug ? { slug: flags.slug } : {}),
+    ...(flags.root ? { root: flags.root } : {}),
     includeBody: flags['include-body'],
     json: flags.json,
     ...(maxBytes === undefined ? {} : { maxBytes }),
