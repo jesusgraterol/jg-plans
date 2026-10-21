@@ -1,0 +1,134 @@
+---
+import Button from 'jg-personal-astro-ui/button';
+import CodeBlock from 'jg-personal-astro-ui/code-block';
+
+import PlanScene from '../components/plan-scene/plan-scene.astro';
+import ProtocolMap from '../components/protocol-map/protocol-map.astro';
+import { loadSource } from '../content/index.ts';
+import BaseLayout from '../layouts/base-layout.astro';
+import { PAGES } from '../site.config.ts';
+
+const milestoneSource = await loadSource('milestones');
+---
+
+<BaseLayout page={PAGES[0]}>
+  <section
+    class="hero-section jg-container grid items-center gap-14 py-16 sm:py-24 lg:grid-cols-[0.9fr_1.1fr] lg:gap-16"
+    aria-labelledby="hero-title"
+  >
+    <div>
+      <p class="eyebrow mb-6">For people. For agents. For the work ahead.</p>
+      <h1 id="hero-title" class="hero-title">
+        Good plans.
+        <br />
+        <span class="text-accent">Plain Markdown.</span>
+      </h1>
+      <p class="mt-7 max-w-lg text-xl leading-relaxed text-muted">
+        A small, open protocol for plans and optional milestones. Enough structure to build on.
+        Enough freedom to make it yours.
+      </p>
+      <div class="mt-8 flex flex-wrap gap-3">
+        <Button href="/protocol/0.1/">
+          Read the protocol <span aria-hidden="true">↗</span>
+        </Button>
+        <Button href="#milestones" variant="outline">
+          See the shape <span aria-hidden="true">↓</span>
+        </Button>
+      </div>
+      <p class="mt-7 font-mono text-xs text-muted">
+        Open source · Protocol 0.1 · Provisional draft
+      </p>
+    </div>
+    <PlanScene />
+  </section>
+  <div class="jg-container grid gap-6 border-t border-border py-8 sm:grid-cols-3">
+    {[
+      ['Readable by people', 'Your plan remains a useful document on its own.'],
+      ['Useful to tools', 'Stable identity, recorded revisions, and recognizable progress.'],
+      ['Owned by you', 'Edit it. Move it. Delete it. Absence stays absence.'],
+    ].map(([title, text]) => (
+      <div>
+        <p class="font-semibold">{title}</p>
+        <p class="mt-2 text-sm leading-relaxed text-muted">{text}</p>
+      </div>
+    ))}
+  </div>
+  <ProtocolMap />
+  <section
+    id="milestones"
+    class="jg-container grid gap-12 py-16 sm:py-24 lg:grid-cols-2 lg:gap-20"
+    aria-labelledby="milestones-title"
+  >
+    <div>
+      <p class="eyebrow mb-4">Only when the work needs it</p>
+      <h2 id="milestones-title" class="section-title">
+        One plan.
+        <br />
+        Milestones, optional.
+      </h2>
+      <p class="mt-6 max-w-lg text-lg leading-relaxed text-muted">
+        A small task can stay small. Larger work can have separate units, each with its own evidence
+        and review checkpoint.
+      </p>
+      <ol class="milestone-track mt-8 grid gap-5" aria-label="Illustrative milestone sequence">
+        <li>
+          <span class="milestone-dot" aria-hidden="true">
+            1
+          </span>
+          <span>
+            <strong>Understand the work</strong>
+            <span class="block text-sm text-muted">
+              Context, decisions, and the intended outcome.
+            </span>
+          </span>
+        </li>
+        <li>
+          <span class="milestone-dot" aria-hidden="true">
+            2
+          </span>
+          <span>
+            <strong>Make progress visible</strong>
+            <span class="block text-sm text-muted">
+              Explicit observations, with status written in the file.
+            </span>
+          </span>
+        </li>
+        <li>
+          <span class="milestone-dot" aria-hidden="true">
+            3
+          </span>
+          <span>
+            <strong>Review what changed</strong>
+            <span class="block text-sm text-muted">
+              Your project's own acceptance and approval process.
+            </span>
+          </span>
+        </li>
+      </ol>
+    </div>
+    <div class="min-w-0 self-center">
+      <CodeBlock code={milestoneSource} lang="markdown" title="milestones.md · optional" />
+      <p class="mt-4 text-sm text-muted">
+        The actual milestone example. The status marker is first; an optional stable ID follows
+        immediately.
+      </p>
+    </div>
+  </section>
+  <section class="border-t border-border bg-secondary/40" aria-labelledby="freedom-title">
+    <div class="jg-container grid gap-8 py-16 sm:py-20 md:grid-cols-[1fr_auto] md:items-center">
+      <div>
+        <p class="eyebrow mb-4">Structure without ceremony</p>
+        <h2 id="freedom-title" class="section-title">
+          The document serves the work.
+        </h2>
+        <p class="mt-5 max-w-2xl text-lg text-muted">
+          Readers keep useful observations when a document is incomplete. Checks are optional.
+          Deleted files stay deleted. Your workflow stays yours.
+        </p>
+      </div>
+      <Button href="/protocol/" variant="outline">
+        Explore the principles <span aria-hidden="true">→</span>
+      </Button>
+    </div>
+  </section>
+</BaseLayout>

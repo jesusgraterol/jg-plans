@@ -35,12 +35,19 @@
     "format:check": "prettier --check ."
   },
   "devDependencies": {
-    "prettier": "3.8.3"
+    "prettier": "3.8.3",
+    "prettier-plugin-astro": "1.1.1",
+    "prettier-plugin-tailwindcss": "0.8.1"
   },
   "prettier": {
     "singleQuote": true,
     "trailingComma": "all",
     "printWidth": 100,
-    "proseWrap": "preserve"
+    "proseWrap": "preserve",
+    "plugins": [
+      "prettier-plugin-astro",
+      "prettier-plugin-tailwindcss"
+    ],
+    "tailwindStylesheet": "./website/src/styles/global.css"
   }
 }

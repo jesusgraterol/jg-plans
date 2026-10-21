@@ -7,6 +7,10 @@ jg-plans/
 coding-agent-planning/
 pnpm-lock.yaml
 .release/
+**/dist/**
+**/.astro/**
+**/test-results/**
+**/playwright-report/**
 **/fixtures/**
 examples/**/plan.md
 examples/**/milestones.md

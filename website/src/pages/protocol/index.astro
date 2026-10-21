@@ -1,0 +1,31 @@
+---
+import Prose from 'jg-personal-astro-ui/prose';
+
+import { Content } from '../../../../protocol/README.md';
+import { loadSource } from '../../content/index.ts';
+import BaseLayout from '../../layouts/base-layout.astro';
+import { PAGES } from '../../site.config.ts';
+
+await loadSource('protocol');
+---
+
+<BaseLayout page={PAGES[1]}>
+  <div class="document-layout jg-container grid gap-10 py-12 sm:py-16 lg:grid-cols-[13rem_minmax(0,1fr)] lg:gap-16">
+    <aside aria-label="Protocol navigation">
+      <p class="eyebrow mb-4">The specification</p>
+      <nav class="grid gap-3 text-sm">
+        <a href="/protocol/" aria-current="page">
+          Overview
+        </a>
+        <a href="/protocol/0.1/">
+          Protocol 0.1 <span class="text-muted">· draft</span>
+        </a>
+      </nav>
+    </aside>
+    <article class="min-w-0 max-w-3xl">
+      <Prose>
+        <Content />
+      </Prose>
+    </article>
+  </div>
+</BaseLayout>

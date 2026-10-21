@@ -7,11 +7,14 @@ Use Node.js 24.15.0 or newer and the package manager pinned in package.json. The
 ```sh
 pnpm install --frozen-lockfile
 pnpm format:check
+pnpm --dir website dev
+pnpm --dir website exec playwright install chromium
+pnpm --dir website check
 ```
 
 Use pnpm format to format editable source/docs. Protected instruction files, planning records, generated lockfiles, and byte-sensitive example/fixture documents are excluded from the formatter.
 
-Runtime build/test/type/lint commands arrive with the library/CLI; website build/browser commands arrive with actual pages.
+The [website guide](../website/README.md) describes the production pages, canonical content, browser checks, and retained screenshots. Website checks build once and test that artifact. Runtime build/test/type/lint commands arrive with the library/CLI.
 
 ## Ownership
 

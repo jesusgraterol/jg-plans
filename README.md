@@ -2,12 +2,13 @@
 
 A compact planning protocol for people and coding agents. Keep the plan in Markdown, add milestones when they help, and let projects choose their workflows.
 
-**Development preview:** the provisional protocol and public examples are available in this repository. The reference TypeScript library, CLI, and visual documentation website are being implemented. npm installation and a live release are not yet advertised.
+**Development preview:** the provisional protocol, public examples, and first website pages are available in this repository. The reference TypeScript library and CLI are being implemented. npm installation and a live release are not yet advertised.
 
 - [Protocol 0.1](protocol/0.1/README.md)
 - [Examples](examples/README.md)
 - [Consumer integration](docs/integrations.md)
 - [Development](docs/development.md)
+- [Website development and visual checks](website/README.md)
 
 ## Project blueprint
 

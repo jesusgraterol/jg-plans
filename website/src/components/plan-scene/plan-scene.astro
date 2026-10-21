@@ -1,0 +1,25 @@
+---
+import CodeBlock from 'jg-personal-astro-ui/code-block';
+
+import { loadSource } from '../../content/index.ts';
+
+const source = await loadSource('smallPlan');
+---
+
+<div class="plan-scene">
+  <div class="flex items-center justify-between gap-3 pb-4 font-mono text-xs text-muted">
+    <span>01 / THE DOCUMENT</span>
+    <span>Yours to change.</span>
+  </div>
+  <CodeBlock code={source} lang="markdown" title="plan.md" />
+  <div class="scene-notes grid gap-4 pt-5 sm:grid-cols-2">
+    <div class="border-l-2 border-accent pl-3">
+      <p class="font-semibold">A little structure</p>
+      <p class="mt-1 text-sm text-muted">Identity and revision, recorded in the document.</p>
+    </div>
+    <div class="border-l-2 border-border-strong pl-3">
+      <p class="font-semibold">Room to think</p>
+      <p class="mt-1 text-sm text-muted">Ordinary Markdown. As much detail as the work needs.</p>
+    </div>
+  </div>
+</div>

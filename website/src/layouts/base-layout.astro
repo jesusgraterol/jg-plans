@@ -1,0 +1,102 @@
+---
+import BrandLogo from 'jg-personal-astro-ui/brand-logo';
+import DocumentHead from 'jg-personal-astro-ui/document-head';
+import JGMark from 'jg-personal-astro-ui/jg-mark';
+import favicon from 'jg-personal-astro-ui/jg-favicon.svg?url';
+import SiteFooter from 'jg-personal-astro-ui/site-footer';
+import SiteHeader from 'jg-personal-astro-ui/site-header';
+import SkipLink from 'jg-personal-astro-ui/skip-link';
+import ThemeControl from 'jg-personal-astro-ui/theme-control';
+import ThemeInitScript from 'jg-personal-astro-ui/theme-init-script';
+import { buildStructuredData } from 'jg-site';
+
+import { SITE, type IPage } from '../site.config.ts';
+import '../styles/global.css';
+
+interface Props {
+  page: IPage;
+}
+const { page } = Astro.props;
+const navigation = [
+  { href: '/protocol/', label: 'Protocol', match: 'prefix' as const },
+  { href: SITE.repository, label: 'GitHub', external: true },
+];
+const canonicalUrl = new URL(page.path, SITE.url).href;
+const structuredData = buildStructuredData({
+  canonicalUrl,
+  title: page.title,
+  description: page.description,
+  type: page.path === '/' ? 'website' : 'webpage',
+  site: {
+    name: SITE.name,
+    url: SITE.url,
+    language: 'en',
+    author: { name: 'Jesus Graterol', url: 'https://jesusgraterol.dev' },
+  },
+});
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <DocumentHead
+      title={page.title}
+      description={page.description}
+      siteName={SITE.name}
+      canonicalUrl={canonicalUrl}
+      icons={[{ href: favicon, rel: 'icon', type: 'image/svg+xml' }]}
+      structuredData={structuredData}
+    />
+    <ThemeInitScript storageKey={SITE.themeKey} />
+  </head>
+  <body>
+    <SkipLink />
+    <SiteHeader currentPath={page.path} homeLabel="jg-plans home" items={navigation}>
+      <BrandLogo slot="brand" name="jg-plans">
+        <JGMark slot="mark" class="size-8 shrink-0" />
+      </BrandLogo>
+      <ThemeControl slot="actions" storageKey={SITE.themeKey} />
+      <ThemeControl slot="mobile-actions" storageKey={SITE.themeKey} />
+    </SiteHeader>
+    <div class="border-b border-border bg-secondary/60">
+      <div class="jg-container flex flex-wrap items-center gap-x-3 gap-y-1 py-2.5 text-xs">
+        <span class="preview-label font-mono font-semibold">Development preview</span>
+        <span class="text-muted">
+          Protocol 0.1 is provisional. The npm release is being prepared.
+        </span>
+      </div>
+    </div>
+    <main id="main-content" tabindex="-1">
+      <slot />
+    </main>
+    <SiteFooter
+      columns={[
+        {
+          title: 'Read the protocol',
+          links: [
+            { href: '/protocol/', label: 'Overview' },
+            { href: '/protocol/0.1/', label: 'Specification 0.1' },
+          ],
+        },
+        {
+          title: 'Build with us',
+          links: [
+            { href: SITE.repository, label: 'Source on GitHub', external: true },
+            { href: `${SITE.repository}/issues`, label: 'Feedback & ideas', external: true },
+            {
+              href: `${SITE.repository}/blob/development/LICENSE`,
+              label: 'MIT license',
+              external: true,
+            },
+          ],
+        },
+      ]}
+      notes={['Made by Jesus Graterol. Small by design. Open by default.']}
+    >
+      <BrandLogo slot="brand" name="jg-plans">
+        <JGMark slot="mark" class="size-8 shrink-0" />
+      </BrandLogo>
+      <p slot="about">A shared language for work worth thinking through.</p>
+    </SiteFooter>
+  </body>
+</html>

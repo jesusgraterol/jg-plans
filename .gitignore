@@ -151,6 +151,8 @@ vite.config.ts.timestamp-*
 /.release/
 /test-results/
 /playwright-report/
+/website/test-results/
+/website/playwright-report/
 
 # Turbo Repo
 .turbo
