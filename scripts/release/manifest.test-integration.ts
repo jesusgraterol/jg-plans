@@ -35,10 +35,10 @@ it(
         GITHUB_REPOSITORY: 'jesusgraterol/jg-plans',
         NPM_TRUSTED_PUBLISHING_READY: '',
       };
-      const run = (extra: Record<string, string>) =>
+      const run = (extra: Record<string, string>, command = 'publish') =>
         runProcess({
           command: process.execPath,
-          args: [join(packageRoot, 'scripts/release/release.ts'), 'publish', '--from', directory],
+          args: [join(packageRoot, 'scripts/release/release.ts'), command, '--from', directory],
           cwd: packageRoot,
           env: { ...env, ...extra },
           timeoutSeconds: 30,
@@ -54,6 +54,10 @@ it(
       const branch = await run({ GITHUB_REF: 'refs/heads/development' });
       expect(branch.exitCode).toBe(1);
       expect(branch.stderr).toContain('RELEASE_SOURCE_MISMATCH');
+      const missingManager = await run({ PATH: '', Path: '', npm_execpath: '' }, 'consumer');
+      expect(missingManager.exitCode).toBe(1);
+      expect(missingManager.stdout).toBe('');
+      expect(missingManager.stderr).toContain('PACKAGE_MANAGER_NOT_FOUND');
     } finally {
       await rm(directory, { recursive: true, force: true });
     }

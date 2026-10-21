@@ -1,5 +1,5 @@
 import { resolve } from 'node:path';
-import { extractMessage } from 'jg-exception';
+import { extractMessage, getErrorCode } from 'jg-exception';
 import {
   createShutdownSignal,
   parseStrictArgs,
@@ -96,7 +96,7 @@ try {
     console.error(
       releaseErrors.is(cause)
         ? `${cause.code}: ${extractMessage(cause)}`
-        : 'Release verification failed; inspect the selected artifact and command.',
+        : `Release verification failed (${getErrorCode(cause) ?? 'UNKNOWN'}); inspect the selected artifact and command.`,
     );
     process.exitCode = 1;
   }
