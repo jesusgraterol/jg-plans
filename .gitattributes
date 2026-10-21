@@ -1,0 +1,2 @@
+# Keep source/check output reproducible across the supported CI hosts.
+* text=auto eol=lf

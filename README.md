@@ -23,6 +23,7 @@ A compact planning protocol for people and coding agents. Keep the plan in Markd
 | src/                                 | Protocol schemas, tolerant parsers, selected-directory reads, targeted metadata/marker edits, and CLI.   |
 | api/, cli/, errors/                  | Canonical public API, automation, and error references.                                                  |
 | scripts/package/                     | Build, local archive creation, and isolated installed-consumer verification.                             |
+| scripts/release/, .github/workflows/ | Source/checksum receipts, registry/provenance verification, and qualified delivery.                      |
 | website/                             | Private Astro/Tailwind workspace, introduced with real production pages and canonical content rendering. |
 | .agents/skills/jg-plans-maintenance/ | Shared project maintenance skill; Claude discovers the same source through its repository symlink.       |
 

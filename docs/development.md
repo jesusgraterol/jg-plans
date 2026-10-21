@@ -57,4 +57,4 @@ GitHub Pages is configured through Actions for jg-plans.jesusgraterol.dev. Reche
 
 The owner uses an isolated temporary npm login for the qualified first-publication handoff, preserving any account configured for other work. Verify the intended owner account and 2FA readiness then; account setup does not block independent website delivery.
 
-The release workflow and exact tested artifacts must exist on main before that owner step. The later runbook will include the retained bootstrap archive, trusted-publisher settings, immediate owner-started main workflow, and the evidence needed to distinguish a real publication from a skip. Website delivery remains independent of npm availability.
+The release workflow and exact tested artifacts must exist on main before that owner step. The [release runbook](releasing.md) covers retained bootstrap/automated archives, isolated account setup, trusted-publisher settings, immediate owner-started main dispatch, and evidence distinguishing actual publication from a skip. Website delivery remains independent of npm availability.

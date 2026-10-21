@@ -191,6 +191,12 @@ importers:
       eslint:
         specifier: 10.12.0
         version: 10.12.0(jiti@2.7.0)
+      jg-crypto:
+        specifier: 0.3.0
+        version: 0.3.0
+      jg-fetch:
+        specifier: 0.5.0
+        version: 0.5.0
       prettier:
         specifier: 3.8.3
         version: 3.8.3
@@ -1690,12 +1696,24 @@ packages:
   isexe@2.0.0:
     resolution: {integrity: sha512-RHxMLp9lnKHGHRng9QFhRCMbYAcVpn69smSGcq3f36xjgVVWThj4qqLbTLlq7Ssj8B+fIQ1EuCEGI2lKsyQeIw==}
 
+  jg-api-response@1.2.0:
+    resolution: {integrity: sha512-S3WE//moHLY7i65YF3Eng9vrGR0mucmg2UMDQS/qLc+IgJR1itrJwn+BAribKhVp18JyekOt+fI2Is6td3tjVQ==}
+    engines: {node: '>=22.17.0'}
+
   jg-clipboard@0.3.0:
     resolution: {integrity: sha512-KB4KDxoSU7c/oGRLVDis5H139JN7iwYCc8pw4i9Jfoeasg4mi2mXu4BDfyOWfHhqyh0D+dQR+B6QqRDiZF+cLQ==}
     engines: {node: '>=22.17.0'}
 
+  jg-crypto@0.3.0:
+    resolution: {integrity: sha512-S7Bq9kmAK43xZeNQ41iubJ2LYxxyW3yMEoh2ciFkmm0/LAD3i2OgKOV4YPUL4j8NVGdjFuyJ5L8Ew6ti3wwVIQ==}
+    engines: {node: '>=22.17.0'}
+
   jg-exception@1.7.0:
     resolution: {integrity: sha512-EmhkDdWxunZdYt+xjqe1G9tPbaSkVqF6xu/TxxChz7yVI+vXiWk8K5D+0J+masNL4MJwJv1sTDPC2x3QYMbJxA==}
+    engines: {node: '>=22.17.0'}
+
+  jg-fetch@0.5.0:
+    resolution: {integrity: sha512-F2f0WmwhrMTZj7QutWWchTQSmb9P3zwAGFVniHoV+8Xj6xB6pahW+IR0EuqwSuTtkqG9K6e7JKHUVUQd5d2usQ==}
     engines: {node: '>=22.17.0'}
 
   jg-fs@1.6.0:
@@ -4140,11 +4158,25 @@ snapshots:
 
   isexe@2.0.0: {}
 
+  jg-api-response@1.2.0:
+    dependencies:
+      jg-exception: 1.7.0
+
   jg-clipboard@0.3.0:
     dependencies:
       jg-exception: 1.7.0
 
+  jg-crypto@0.3.0:
+    dependencies:
+      jg-exception: 1.7.0
+
   jg-exception@1.7.0: {}
+
+  jg-fetch@0.5.0:
+    dependencies:
+      jg-api-response: 1.2.0
+      jg-exception: 1.7.0
+      jg-utilities: 1.7.0
 
   jg-fs@1.6.0:
     dependencies:
