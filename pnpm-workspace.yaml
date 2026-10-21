@@ -11,5 +11,7 @@ minimumReleaseAgeExclude:
   - '@astrojs/prism@4.1.1'
   # Required by the pinned Astro baseline.
   - '@astrojs/telemetry@3.4.1'
+  # Approved pinned CLI primitive, published 2026-10-21.
+  - jg-process@1.6.1
 strictDepBuilds: true
 allowBuilds: {}

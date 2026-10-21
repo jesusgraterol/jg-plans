@@ -1,0 +1,9 @@
+The fenced-code and optional overview recognition in src/documents/ derives
+from the public jg-agent-hq/src/plans/utilities.ts implementation:
+https://github.com/jesusgraterol/jg-agent-hq
+
+Copyright (c) 2026 Jesus Graterol. MIT License.
+The full license is included in LICENSE.
+
+Only reusable document mechanics are adapted. Consumer approvals, digests,
+authorization, coordination, and project-specific metadata are not included.

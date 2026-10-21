@@ -2,13 +2,15 @@
 
 A compact planning protocol for people and coding agents. Keep the plan in Markdown, add milestones when they help, and let projects choose their workflows.
 
-**Development preview:** the provisional protocol, public examples, and first website pages are available in this repository. The reference TypeScript library and CLI are being implemented. npm installation and a live release are not yet advertised.
+**Development preview:** the provisional protocol, public examples, first website pages, and read-only library/CLI are implemented in this repository. npm installation and a live release are not yet advertised.
 
 - [Protocol 0.1](protocol/0.1/README.md)
 - [Examples](examples/README.md)
+- [Getting started](docs/getting-started.md)
+- [Library API](api/README.md) and [CLI](cli/README.md)
 - [Consumer integration](docs/integrations.md)
-- [Development](docs/development.md)
-- [Website development and visual checks](website/README.md)
+- [Development](https://github.com/jesusgraterol/jg-plans/blob/development/docs/development.md)
+- [Website development and visual checks](https://github.com/jesusgraterol/jg-plans/blob/development/website/README.md)
 
 ## Project blueprint
 
@@ -18,6 +20,9 @@ A compact planning protocol for people and coding agents. Keep the plan in Markd
 | examples/                            | Invented public documents and independently described expected observations.                             |
 | docs/                                | Concise durable concepts and operating guides; API and HTTP/error references stay outside docs/.         |
 | Root package                         | Reference library and thin CLI, introduced with their tested implementation.                             |
+| src/                                 | Protocol schemas, tolerant document parsers, selected-directory reads, diagnostics, and CLI.             |
+| api/, cli/, errors/                  | Canonical public API, automation, and error references.                                                  |
+| scripts/package/                     | Build, local archive creation, and isolated installed-consumer verification.                             |
 | website/                             | Private Astro/Tailwind workspace, introduced with real production pages and canonical content rendering. |
 | .agents/skills/jg-plans-maintenance/ | Shared project maintenance skill; Claude discovers the same source through its repository symlink.       |
 
@@ -32,9 +37,10 @@ Use Node.js 24.15.0 or newer and pnpm 12.14.0.
 ```sh
 pnpm install --frozen-lockfile
 pnpm format:check
+pnpm check:package
 ```
 
-The [development guide](docs/development.md) lists the current commands and package/site boundaries. Runtime APIs and commands are documented with their implementation, not as untested placeholders.
+The [development guide](https://github.com/jesusgraterol/jg-plans/blob/development/docs/development.md) owns checks and package/site boundaries. Root tests build first, exercise public compiled exports, and install the actual tarball in an isolated consumer. Website tests verify production output in both themes and narrow layouts.
 
 ## License
 
