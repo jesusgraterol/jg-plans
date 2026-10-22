@@ -25,9 +25,9 @@ export const PAGES = [
   {
     path: '/',
     label: 'Home',
-    title: 'jg-plans — Markdown plans, structured JSON',
+    title: 'jg-plans — Plain Markdown, precise tooling',
     description:
-      'An open Markdown planning protocol with a TypeScript library and CLI. Turn plans and optional milestones into JSON for your own tools.',
+      'Create, inspect and edit Markdown plans with a TypeScript library and local CLI. Keep optional milestones, explicit revisions and your own workflow.',
   },
   {
     path: '/protocol/',
@@ -85,7 +85,7 @@ export const PAGES = [
     label: 'Examples',
     title: 'Examples · jg-plans',
     description:
-      'Explore real Markdown sources beside library observations: small plans, optional milestones, extensions, and partly deleted documents.',
+      'Follow a real plan through creation, inspection, guarded updates and revision. Explore optional milestones, preserved progress, metadata and partial deletion.',
     source: 'examples/README.md',
   },
 ] as const satisfies readonly IPage[];

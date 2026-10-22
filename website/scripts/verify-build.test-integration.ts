@@ -19,8 +19,10 @@ it('ships the real canonical protocol and original example in the production art
       1024 * 1024,
     )
   ).toString('utf8');
-  expect(homepage).toContain('1792612800_search-feedback');
-  expect(homepage).toContain('Explain an empty search result');
+  expect(homepage).toContain('1792612860_example-gallery');
+  expect(homepage).toContain('Make public examples easy to explore.');
+  expect(homepage).toContain('Skills binding · stale after revision');
+  expect(homepage).toContain('Group the examples by workflow.');
   expect(homepage).toContain('5a148c73-7d38-4a2f-9c0f-903d93b9b764');
   expect(specification).toContain(
     'Library and CLI filesystem mutations share short local document locks',

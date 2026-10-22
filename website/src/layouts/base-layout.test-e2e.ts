@@ -138,8 +138,8 @@ test('keyboard navigation, theme persistence, copy, and mobile menu', async ({ p
     'data-resolved-theme',
     initial === 'dark' ? 'light' : 'dark',
   );
-  await page.getByRole('link', { name: 'Read the protocol' }).click();
-  await expect(page).toHaveURL('/protocol/0.1/');
+  await page.getByRole('link', { name: 'See a plan evolve' }).click();
+  await expect(page).toHaveURL('/examples/#lifecycle');
   // Let the native page transition finish before another programmatic navigation can cancel it.
   await waitForPageAssets(page);
   await page.evaluate(async () => {
@@ -161,8 +161,8 @@ test('keyboard navigation, theme persistence, copy, and mobile menu', async ({ p
     'success',
   );
   const copied = await page.evaluate(() => navigator.clipboard.readText());
-  expect(copied).toContain('1792612800_search-feedback');
-  expect(copied).toContain('# Search feedback');
+  expect(copied).toContain('1792612860_example-gallery');
+  expect(copied).toContain('# Example gallery');
   await page.setViewportSize({ width: 320, height: 800 });
   const menu = page.locator('[data-site-menu] summary');
   await menu.click();
