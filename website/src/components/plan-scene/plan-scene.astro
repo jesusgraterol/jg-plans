@@ -1,43 +1,44 @@
 ---
-import CodeBlock from 'jg-personal-astro-ui/code-block';
-
+import Tabs from 'jg-personal-astro-ui/tabs';
 import { loadExample } from '../../content/examples.ts';
+import DocumentFlow from '../document-flow/document-flow.astro';
 
 const example = await loadExample('small');
-const source = example.documents.plan!;
+const withMilestones = await loadExample('milestones');
 ---
 
-<div class="plan-scene">
-  <div class="flex items-center justify-between gap-3 pb-4 font-mono text-xs text-muted">
-    <span>01 / THE DOCUMENT</span>
-    <span>Yours to change.</span>
-  </div>
-  <CodeBlock code={source} lang="markdown" title="plan.md" />
-  <dl
-    class="mt-5 grid grid-cols-3 gap-4 border-b border-border pb-5 text-xs"
-    aria-label="Library observations of this plan"
+<div class="plan-scene" data-static-tabs>
+  <Tabs
+    id="home-documents"
+    label="Markdown to JSON"
+    tabs={[
+      { id: 'plan', label: 'plan.md' },
+      { id: 'milestones', label: 'milestones.md · optional' },
+    ]}
   >
-    <div>
-      <dt class="text-muted">Status</dt>
-      <dd class="mt-2 font-mono font-semibold">{example.plan?.metadata.status}</dd>
+    <div slot="plan" class="pt-6">
+      <DocumentFlow
+        source={example.documents.plan!}
+        filename="plan.md"
+        call="parsePlan(source)"
+        result={{ metadata: example.plan!.metadata, body: example.plan!.body }}
+      />
     </div>
-    <div>
-      <dt class="text-muted">Revision</dt>
-      <dd class="mt-2 font-mono font-semibold">{example.plan?.metadata.revision}</dd>
+    <div slot="milestones" class="pt-6">
+      <DocumentFlow
+        source={withMilestones.documents.milestones!}
+        filename="milestones.md"
+        call="parseMilestones(source)"
+        result={{
+          milestones: withMilestones.milestones!.milestones.map(
+            ({ ordinal, title, status, id }) => ({ ordinal, title, status, id }),
+          ),
+        }}
+      />
     </div>
-    <div>
-      <dt class="text-muted">Milestones</dt>
-      <dd class="mt-2 font-mono font-semibold">Optional</dd>
-    </div>
-  </dl>
-  <div class="scene-notes grid gap-4 pt-5 sm:grid-cols-2">
-    <div class="border-l-2 border-accent pl-3">
-      <p class="font-semibold">A little structure</p>
-      <p class="mt-1 text-sm text-muted">Identity and revision, recorded in the document.</p>
-    </div>
-    <div class="border-l-2 border-border-strong pl-3">
-      <p class="font-semibold">Room to think</p>
-      <p class="mt-1 text-sm text-muted">Ordinary Markdown. As much detail as the work needs.</p>
-    </div>
-  </div>
+  </Tabs>
+  <p class="mt-4 text-sm text-muted">
+    Actual output from the reference library. The full result also includes source locations and
+    diagnostics.
+  </p>
 </div>

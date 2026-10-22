@@ -1,69 +1,140 @@
 ---
 import Button from 'jg-personal-astro-ui/button';
+import Card from 'jg-personal-astro-ui/card';
 import CodeBlock from 'jg-personal-astro-ui/code-block';
 import InstallCommand from 'jg-personal-astro-ui/install-command';
-
 import { readAvailability } from '../availability.ts';
 import PlanScene from '../components/plan-scene/plan-scene.astro';
 import ProtocolMap from '../components/protocol-map/protocol-map.astro';
-import { loadSource } from '../content/index.ts';
 import BaseLayout from '../layouts/base-layout.astro';
 import { PAGES } from '../site.config.ts';
+import { loadExample } from '../content/examples.ts';
 
-const milestoneSource = await loadSource('milestones');
+const dashboard = await loadExample('milestones');
 const availability = readAvailability(import.meta.env.JG_PLANS_AVAILABILITY);
+const integration = `import { parsePlan, parseMilestones } from 'jg-plans';
+
+const plan = parsePlan(planMarkdown);
+const progress = parseMilestones(milestonesMarkdown);
+
+// Use the observations in your own application.
+const card = {
+  id: plan.metadata.id,
+  status: plan.metadata.status,
+  milestones: progress.milestones,
+};`;
 ---
 
 <BaseLayout page={PAGES[0]}>
-  <section
-    class="hero-section jg-container grid items-center gap-14 py-16 sm:py-24 lg:grid-cols-[0.9fr_1.1fr] lg:gap-16"
-    aria-labelledby="hero-title"
-  >
-    <div>
-      <p class="eyebrow mb-6">For people. For agents. For the work ahead.</p>
-      <h1 id="hero-title" class="hero-title">
-        Good plans.
+  <section class="jg-container pt-12 pb-12 sm:pt-20 sm:pb-16" aria-labelledby="hero-title">
+    <header class="mx-auto max-w-4xl text-center">
+      <p class="eyebrow mb-5 text-accent">The open planning format for people & coding agents</p>
+      <h1 id="hero-title" class="hero-title text-balance">
+        Plans in Markdown.
         <br />
-        <span class="text-accent">Plain Markdown.</span>
+        <span class="text-accent">Possibilities in JSON.</span>
       </h1>
-      <p class="mt-7 max-w-lg text-xl leading-relaxed text-muted">
-        A small, open protocol for plans and optional milestones. Enough structure to build on.
-        Enough freedom to make it yours.
+      <p class="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-muted sm:text-xl">
+        Give your plans a shared format. Turn their metadata and optional milestones into structured
+        data for agent tools, dashboards, and your own workflows.
       </p>
-      <div class="mt-8 flex flex-wrap gap-3">
-        <Button href="/protocol/0.1/">
-          Read the protocol <span aria-hidden="true">↗</span>
+      <div class="mt-7 flex flex-wrap justify-center gap-3">
+        <Button href="/docs/">
+          Start building <span aria-hidden="true">→</span>
         </Button>
-        <Button href="/examples/" variant="outline">
-          Explore examples <span aria-hidden="true">→</span>
+        <Button href="/protocol/0.1/" variant="outline">
+          Read the protocol
         </Button>
       </div>
-      <p class="mt-7 font-mono text-xs text-muted">
-        Open source · Protocol 0.1 · Provisional draft
+      <p class="mt-5 font-mono text-xs text-muted">
+        Markdown protocol · TypeScript library · CLI · MIT licensed
       </p>
+    </header>
+    <div class="mt-10 sm:mt-14">
+      <PlanScene />
     </div>
-    <PlanScene />
   </section>
-  <section class="jg-container border-t border-border py-12 sm:py-16" aria-labelledby="build-title">
-    <div class="grid items-center gap-8 lg:grid-cols-2 lg:gap-16">
+
+  <section class="border-y border-border bg-secondary/35" aria-labelledby="tools-title">
+    <div class="jg-container grid gap-10 py-12 sm:py-16 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] lg:items-center lg:gap-16">
       <div>
-        <p class="eyebrow mb-4">A foundation for your tools</p>
-        <h2 id="build-title" class="section-title">
-          Build on a shared language.
+        <p class="eyebrow mb-4">From a file to your product</p>
+        <h2 id="tools-title" class="section-title">
+          Build the tool
+          <br />
+          you have in mind.
         </h2>
-        <p class="mt-5 max-w-xl text-lg text-muted">
-          Use the reference library and thin CLI for useful observations and deliberate edits. Keep
-          your project's decisions in your project.
+        <p class="mt-5 max-w-lg text-lg text-muted">
+          Read a plan, show its progress, or pass its context to an agent. jg-plans gives you the
+          document layer. You decide how the application works.
         </p>
-        <div class="mt-6 flex flex-wrap gap-3">
-          <Button href="/docs/">Get started</Button>
-          <Button href="/docs/integrations/" variant="outline">
-            Integration guide
-          </Button>
+        <a
+          href="/docs/integrations/"
+          class="mt-6 inline-flex min-h-11 items-center gap-2 font-semibold text-accent underline-offset-4 hover:underline"
+        >
+          See the integration guide <span aria-hidden="true">→</span>
+        </a>
+      </div>
+      <div
+        class="grid min-w-0 gap-4 sm:grid-cols-2"
+        aria-label="Illustrative tools built from planning data"
+      >
+        <Card class="sm:col-span-2">
+          <p class="mb-4 font-mono text-xs text-muted">YOUR DASHBOARD / EXAMPLE VIEW</p>
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <h3 class="text-xl font-semibold">Example gallery</h3>
+            <span class="rounded-full bg-secondary px-3 py-1 font-mono text-xs">
+              {dashboard.plan!.metadata.status}
+            </span>
+          </div>
+          <ol class="mt-5 grid gap-3 text-sm">
+            {dashboard.milestones!.milestones.map((milestone) => (
+              <li class="flex items-center gap-3">
+                <span class="text-accent" aria-hidden="true">
+                  {milestone.status === 'done' ? '✓' : '○'}
+                </span>
+                <span>{milestone.title}</span>
+                <span class="ml-auto font-mono text-xs text-muted">{milestone.status}</span>
+              </li>
+            ))}
+          </ol>
+          <p class="mt-4 border-t border-border pt-3 text-xs text-muted">
+            An example view of the actual parsed milestone data.
+          </p>
+        </Card>
+        <div class="border-l-2 border-accent py-1 pl-4">
+          <h3 class="font-semibold">Agent context</h3>
+          <p class="mt-2 text-sm text-muted">
+            Give an agent the selected plan and the work still ahead.
+          </p>
+        </div>
+        <div class="border-l-2 border-accent py-1 pl-4">
+          <h3 class="font-semibold">Custom automation</h3>
+          <p class="mt-2 text-sm text-muted">
+            Connect JSON observations to your own project rules.
+          </p>
         </div>
       </div>
+    </div>
+  </section>
+
+  <section
+    class="jg-container grid gap-8 py-14 sm:py-20 lg:grid-cols-2 lg:items-center lg:gap-16"
+    aria-labelledby="library-title"
+  >
+    <div class="min-w-0">
+      <p class="eyebrow mb-4">A small API. A useful starting point.</p>
+      <h2 id="library-title" class="section-title">
+        Bring your Markdown.
+        <br />
+        Get useful data.
+      </h2>
+      <p class="mt-5 max-w-lg text-lg text-muted">
+        Parse strings in code, or inspect a selected directory with the CLI. Keep custom metadata
+        and status values. Add checks and targeted edits when you need them.
+      </p>
       {availability.state === 'published' ? (
-        <div class="min-w-0">
+        <div class="mt-6">
           <Fragment set:html="<!--email_off-->" />
           <InstallCommand
             id="install-command"
@@ -72,114 +143,71 @@ const availability = readAvailability(import.meta.env.JG_PLANS_AVAILABILITY);
             title={`Verified package · ${availability.version}`}
           />
           <Fragment set:html="<!--/email_off-->" />
-          <p class="mt-4 text-sm text-muted">
-            Node.js 24.15.0 or newer. Protocol 0.1 remains provisional.
-          </p>
+          <p class="mt-3 text-xs text-muted">Node.js 24.15.0+ · Protocol 0.1 is provisional.</p>
         </div>
       ) : (
-        <div class="border-l-2 border-accent py-2 pl-6">
-          <p class="text-xl font-semibold">Start with the document.</p>
-          <p class="mt-3 max-w-lg text-muted">
-            The protocol and examples work on their own. Reference tools can be built from the
-            source while public package availability is unverified.
-          </p>
-          <a
-            href="/docs/"
-            class="mt-4 inline-flex min-h-8 items-center text-sm underline underline-offset-4"
-          >
+        <p class="mt-6 border-l-2 border-accent pl-4 text-sm text-muted">
+          The protocol works on its own.{' '}
+          <a href="/docs/" class="font-semibold underline underline-offset-4">
             Use a development checkout
-          </a>
-        </div>
+          </a>{' '}
+          while matching package availability is unverified.
+        </p>
       )}
-    </div>
-  </section>
-  <div class="jg-container grid gap-6 border-t border-border py-8 sm:grid-cols-3">
-    {[
-      ['Readable by people', 'Your plan remains a useful document on its own.'],
-      ['Useful to tools', 'Stable identity, recorded revisions, and recognizable progress.'],
-      ['Owned by you', 'Edit it. Move it. Delete it. Absence stays absence.'],
-    ].map(([title, text]) => (
-      <div>
-        <p class="font-semibold">{title}</p>
-        <p class="mt-2 text-sm leading-relaxed text-muted">{text}</p>
+      <div class="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm font-semibold">
+        <a href="/docs/api/" class="min-h-8 content-center underline underline-offset-4">
+          Library API →
+        </a>
+        <a href="/docs/cli/" class="min-h-8 content-center underline underline-offset-4">
+          CLI reference →
+        </a>
       </div>
-    ))}
-  </div>
-  <ProtocolMap />
-  <section
-    id="milestones"
-    class="jg-container grid gap-12 py-16 sm:py-24 lg:grid-cols-2 lg:gap-20"
-    aria-labelledby="milestones-title"
-  >
-    <div>
-      <p class="eyebrow mb-4">Only when the work needs it</p>
-      <h2 id="milestones-title" class="section-title">
-        One plan.
-        <br />
-        Milestones, optional.
-      </h2>
-      <p class="mt-6 max-w-lg text-lg leading-relaxed text-muted">
-        A small task can stay small. Larger work can have separate units, each with its own evidence
-        and review checkpoint.
-      </p>
-      <ol class="milestone-track mt-8 grid gap-5" aria-label="Illustrative milestone sequence">
-        <li>
-          <span class="milestone-dot" aria-hidden="true">
-            1
-          </span>
-          <span>
-            <strong>Understand the work</strong>
-            <span class="block text-sm text-muted">
-              Context, decisions, and the intended outcome.
-            </span>
-          </span>
-        </li>
-        <li>
-          <span class="milestone-dot" aria-hidden="true">
-            2
-          </span>
-          <span>
-            <strong>Make progress visible</strong>
-            <span class="block text-sm text-muted">
-              Explicit observations, with status written in the file.
-            </span>
-          </span>
-        </li>
-        <li>
-          <span class="milestone-dot" aria-hidden="true">
-            3
-          </span>
-          <span>
-            <strong>Review what changed</strong>
-            <span class="block text-sm text-muted">
-              Your project's own acceptance and approval process.
-            </span>
-          </span>
-        </li>
-      </ol>
     </div>
-    <div class="min-w-0 self-center">
-      <CodeBlock code={milestoneSource} lang="markdown" title="milestones.md · optional" />
-      <p class="mt-4 text-sm text-muted">
-        The actual milestone example. The status marker is first; an optional stable ID follows
-        immediately.
-      </p>
+    <div class="min-w-0">
+      <CodeBlock code={integration} lang="typescript" title="your-application.ts" />
     </div>
   </section>
-  <section class="border-t border-border bg-secondary/40" aria-labelledby="freedom-title">
-    <div class="jg-container grid gap-8 py-16 sm:py-20 md:grid-cols-[1fr_auto] md:items-center">
+
+  <ProtocolMap />
+
+  <section class="jg-container py-14 sm:py-20" aria-labelledby="freedom-title">
+    <div class="mb-8 max-w-2xl">
+      <p class="eyebrow mb-4">As much structure as the work needs</p>
+      <h2 id="freedom-title" class="section-title">
+        Start small. Stay in control.
+      </h2>
+    </div>
+    <div class="grid gap-8 md:grid-cols-3">
       <div>
-        <p class="eyebrow mb-4">Structure without ceremony</p>
-        <h2 id="freedom-title" class="section-title">
-          The document serves the work.
-        </h2>
-        <p class="mt-5 max-w-2xl text-lg text-muted">
-          Readers keep useful observations when a document is incomplete. Checks are optional.
-          Deleted files stay deleted. Your workflow stays yours.
+        <p class="mb-4 font-mono text-sm text-accent">plan.md</p>
+        <h3 class="text-xl font-semibold">One file is enough.</h3>
+        <p class="mt-3 text-muted">
+          Identity, dates, revision, and status above an ordinary Markdown body. No fixed list of
+          headings.
         </p>
       </div>
+      <div>
+        <p class="mb-4 font-mono text-sm text-accent">+ milestones.md</p>
+        <h3 class="text-xl font-semibold">Break it down when useful.</h3>
+        <p class="mt-3 text-muted">
+          Optional numbered milestones with explicit status markers. Add stable IDs when they help.
+        </p>
+      </div>
+      <div>
+        <p class="mb-4 font-mono text-sm text-accent">edit · move · delete</p>
+        <h3 class="text-xl font-semibold">Your files remain yours.</h3>
+        <p class="mt-3 text-muted">
+          Keep custom fields. Remove old plans. Readers report what remains without rebuilding
+          deleted history.
+        </p>
+      </div>
+    </div>
+    <div class="mt-10 flex flex-wrap gap-3">
+      <Button href="/examples/">
+        Explore the examples <span aria-hidden="true">→</span>
+      </Button>
       <Button href="/protocol/" variant="outline">
-        Explore the principles <span aria-hidden="true">→</span>
+        Understand the format
       </Button>
     </div>
   </section>

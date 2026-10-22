@@ -1,5 +1,6 @@
 ---
 import Button from 'jg-personal-astro-ui/button';
+import LinkCard from 'jg-personal-astro-ui/link-card';
 import BaseLayout from '../layouts/base-layout.astro';
 ---
 
@@ -12,17 +13,33 @@ import BaseLayout from '../layouts/base-layout.astro';
     description: 'This page is not here. Explore the protocol, documentation, or examples.',
   }}
 >
-  <div class="jg-container py-20 sm:py-32">
-    <p class="eyebrow mb-5">404 / Page not found</p>
-    <h1 class="display-title">Page not found.</h1>
-    <p class="lede mt-6">
-      This page is not here. The protocol, docs, and examples are a good place to start.
-    </p>
-    <div class="mt-8 flex flex-wrap gap-3">
-      <Button href="/">Go home</Button>
-      <Button href="/docs/" variant="outline">
-        Read the docs
-      </Button>
+  <div class="jg-container grid gap-10 py-16 sm:py-24 md:grid-cols-2 md:items-center">
+    <div>
+      <p class="eyebrow mb-5">404 / Page not found</p>
+      <h1 class="display-title">Page not found.</h1>
+      <p class="lede mt-6">
+        This page is not here. The protocol, docs, and examples are a good place to start.
+      </p>
+      <div class="mt-8 flex flex-wrap gap-3">
+        <Button href="/">Go home</Button>
+        <Button href="/docs/" variant="outline">
+          Read the docs
+        </Button>
+      </div>
     </div>
+    <nav aria-label="Find your way" class="grid gap-3">
+      <p class="mb-2 font-mono text-xs text-muted">jg-plans / explore</p>
+      {(
+        [
+          ['/protocol/', 'The protocol', 'Understand the Markdown format.'],
+          ['/docs/', 'Getting started', 'Read your first plan in code.'],
+          ['/examples/', 'Markdown → JSON', 'Explore documents and parsed results.'],
+        ] as const
+      ).map(([href, title, text]) => (
+        <LinkCard href={href} title={title} headingLevel={2}>
+          {text}
+        </LinkCard>
+      ))}
+    </nav>
   </div>
 </BaseLayout>

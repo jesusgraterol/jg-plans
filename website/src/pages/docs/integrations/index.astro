@@ -1,9 +1,71 @@
 ---
-import { Content } from '../../../../../docs/integrations.md';
+import CodeBlock from 'jg-personal-astro-ui/code-block';
+import Callout from 'jg-personal-astro-ui/callout';
+import { Content, getHeadings } from '../../../../../docs/integrations.md';
 import DocumentLayout from '../../../layouts/document-layout.astro';
 import { pageFor } from '../../../site.config.ts';
 ---
 
-<DocumentLayout page={pageFor('/docs/integrations/')}>
+<DocumentLayout page={pageFor('/docs/integrations/')} headings={getHeadings()}>
+  <div slot="overview">
+    <h2 class="text-2xl font-semibold tracking-tight">The document layer for your own tools.</h2>
+    <p class="mt-3 text-muted">
+      Keep the shared format at the boundary. Build your application around the observations it
+      returns.
+    </p>
+    <ol class="mt-6 grid gap-3 sm:grid-cols-3" aria-label="Integration architecture">
+      <li class="rounded-lg border border-border p-5">
+        <span class="font-mono text-xs text-accent">01 / YOUR FILES</span>
+        <p class="mt-4 font-mono text-sm">
+          plan.md
+          <br />
+          milestones.md?
+        </p>
+        <p class="mt-3 text-sm text-muted">Selected by your user or application.</p>
+      </li>
+      <li class="rounded-lg border border-accent bg-secondary/50 p-5">
+        <span class="font-mono text-xs text-accent">02 / JG-PLANS</span>
+        <p class="mt-4 font-mono text-sm">parse → inspect</p>
+        <p class="mt-3 text-sm text-muted">Metadata, milestones, document states, diagnostics.</p>
+      </li>
+      <li class="rounded-lg border border-border p-5">
+        <span class="font-mono text-xs text-accent">03 / YOUR APP</span>
+        <p class="mt-4 text-sm font-semibold">A dashboard. A skill. An agent tool.</p>
+        <p class="mt-3 text-sm text-muted">Your views, policies, and actions.</p>
+      </li>
+    </ol>
+    <section class="mt-8 min-w-0" aria-labelledby="integration-example">
+      <h2 id="integration-example" class="mb-4 text-xl font-semibold">
+        Build a view from explicit observations
+      </h2>
+      <CodeBlock
+        code={`import { inspectPlan } from 'jg-plans';\n\nconst observation = await inspectPlan(selectedDirectory);\n\n// Keep missing, unreadable, and readable states distinct.\nconst view = {\n  plan: observation.plan,\n  milestones: observation.milestones,\n  diagnostics: observation.diagnostics,\n};\n\n// Your application owns rendering and action authorization.`}
+        lang="typescript"
+        title="Your integration boundary"
+      />
+    </section>
+    <div class="mt-6 grid gap-5 sm:grid-cols-2">
+      <div class="border-t-2 border-accent pt-4">
+        <h3 class="font-semibold">jg-plans provides</h3>
+        <ul class="mt-3 grid gap-2 text-sm text-muted">
+          <li>Recognized document fields and progress</li>
+          <li>Useful observations from incomplete files</li>
+          <li>Optional checks and deliberate edits</li>
+        </ul>
+      </div>
+      <div class="border-t-2 border-border-strong pt-4">
+        <h3 class="font-semibold">Your project decides</h3>
+        <ul class="mt-3 grid gap-2 text-sm text-muted">
+          <li>Approvals, permissions, and execution</li>
+          <li>Stricter local schemas and workflow states</li>
+          <li>Writer coordination and retention</li>
+        </ul>
+      </div>
+    </div>
+    <Callout class="mt-6" title="Your application owns the decisions" role="note">
+      A missing plan stays missing. A status is an observation. Use the user's actual authorization
+      when deciding what to do.
+    </Callout>
+  </div>
   <Content />
 </DocumentLayout>

@@ -13,10 +13,11 @@ for (const colorScheme of ['light', 'dark'] as const) {
       testInfo.setTimeout(90_000);
       await page.setViewportSize({ width, height: 1000 });
       await page.emulateMedia({ colorScheme, reducedMotion: 'reduce' });
-      for (const route of PAGES) {
+      for (const route of [...PAGES, { path: '/404.html', label: 'Not found' }]) {
         await page.goto(route.path);
         await waitForPageAssets(page);
         await expect(page.locator('h1')).toHaveCount(1);
+        await expect(page.locator('a[download], a[href^="/downloads/"]')).toHaveCount(0);
         expect(
           await page
             .locator('h1')
@@ -60,8 +61,12 @@ for (const colorScheme of ['light', 'dark'] as const) {
             fullPage: true,
           });
         }
-        if (route.path === '/docs/api/' && width !== 768 && testInfo.repeatEachIndex === 0) {
-          await page.screenshot({ path: testInfo.outputPath(`api-${colorScheme}-${width}.png`) });
+        if (route.path !== '/' && width !== 768 && testInfo.repeatEachIndex === 0) {
+          await page.screenshot({
+            path: testInfo.outputPath(
+              `${route.path.replaceAll('/', '-')}-${colorScheme}-${width}.png`,
+            ),
+          });
         }
       }
     });
@@ -182,13 +187,25 @@ test.describe('without JavaScript', () => {
   });
   test('documents and narrow navigation remain useful', async ({ page }) => {
     await page.goto('/protocol/');
+    await expect(page.getByRole('heading', { level: 1, name: 'Protocol overview' })).toBeVisible();
+    const browse = page.getByText('Browse documentation', { exact: true });
+    await browse.click();
+    const documentation = page.getByRole('navigation', { name: 'Documentation', exact: true });
     await expect(
-      page.getByRole('heading', { level: 1, name: 'The jg-plans protocol' }),
+      documentation.getByRole('link', { name: 'Library API', exact: true }),
     ).toBeVisible();
+    await expect(
+      documentation.getByRole('link', { name: 'Protocol overview', exact: true }),
+    ).toHaveAttribute('aria-current', 'page');
+    await browse.click();
+    await expect(documentation).toBeHidden();
     await page.locator('[data-site-menu] summary').click();
     await expect(page.getByRole('navigation', { name: 'Mobile navigation' })).toBeVisible();
-    await page.locator('article').getByRole('link', { name: 'Protocol 0.1' }).click();
-    await expect(page.locator('h1')).toHaveText('jg-plans protocol 0.1');
+    await page
+      .locator('#reference')
+      .getByRole('link', { name: 'Protocol 0.1', exact: true })
+      .click();
+    await expect(page.locator('h1')).toHaveText('Specification 0.1');
     await expectNoHorizontalOverflow(page);
   });
 });
@@ -198,5 +215,5 @@ test('documents remain readable at the 200-percent desktop equivalent', async ({
   await page.goto('/protocol/0.1/');
   await waitForPageAssets(page);
   await expectNoHorizontalOverflow(page);
-  await expect(page.locator('article')).toBeVisible();
+  await expect(page.getByRole('article', { name: 'Specification 0.1', exact: true })).toBeVisible();
 });

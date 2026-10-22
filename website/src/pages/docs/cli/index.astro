@@ -1,9 +1,82 @@
 ---
-import { Content } from '../../../../../cli/README.md';
+import CodeBlock from 'jg-personal-astro-ui/code-block';
+import LinkCard from 'jg-personal-astro-ui/link-card';
+import { Content, getHeadings } from '../../../../../cli/README.md';
 import DocumentLayout from '../../../layouts/document-layout.astro';
 import { pageFor } from '../../../site.config.ts';
 ---
 
-<DocumentLayout page={pageFor('/docs/cli/')}>
+<DocumentLayout page={pageFor('/docs/cli/')} headings={getHeadings()}>
+  <div slot="overview">
+    <h2 class="text-2xl font-semibold tracking-tight">Planning data, one command away.</h2>
+    <p class="mt-3 mb-6 text-muted">
+      Choose a directory. Inspect its documents. Pass structured JSON to the next step in your
+      toolchain.
+    </p>
+    <div class="mb-6 grid gap-3 sm:grid-cols-3" aria-label="CLI data flow">
+      <div class="rounded-lg bg-secondary/60 p-4">
+        <span class="font-mono text-xs text-accent">01 / INPUT</span>
+        <p class="mt-2 font-mono text-sm">
+          plan.md
+          <br />
+          milestones.md?
+        </p>
+      </div>
+      <div class="rounded-lg bg-secondary/60 p-4">
+        <span class="font-mono text-xs text-accent">02 / COMMAND</span>
+        <p class="mt-2 font-mono text-sm">inspect --json</p>
+      </div>
+      <div class="rounded-lg bg-secondary/60 p-4">
+        <span class="font-mono text-xs text-accent">03 / YOUR TOOL</span>
+        <p class="mt-2 text-sm">JSON → your workflow</p>
+      </div>
+    </div>
+    <CodeBlock
+      code="jg-plans inspect --directory ./jg-plans/example --json"
+      lang="sh"
+      title="Read a selected planning directory"
+    />
+    <div class="mt-6 grid min-w-0 gap-5 xl:grid-cols-2">
+      <div class="min-w-0">
+        <CodeBlock
+          code={JSON.stringify(
+            { schemaVersion: 1, command: 'inspect', data: {}, diagnostics: [], error: null },
+            null,
+            2,
+          )}
+          lang="json"
+          title="Envelope structure · data omitted"
+        />
+      </div>
+      <dl class="grid content-start gap-4 py-2 text-sm">
+        <div>
+          <dt class="font-mono font-semibold">data</dt>
+          <dd class="mt-1 text-muted">Document states, metadata, and recognized milestones.</dd>
+        </div>
+        <div>
+          <dt class="font-mono font-semibold">diagnostics</dt>
+          <dd class="mt-1 text-muted">Findings with stable codes and source locations.</dd>
+        </div>
+        <div>
+          <dt class="font-mono font-semibold">error</dt>
+          <dd class="mt-1 text-muted">A safe operational error, or null.</dd>
+        </div>
+      </dl>
+    </div>
+    <div class="mt-8 grid gap-3 sm:grid-cols-2">
+      {(
+        [
+          ['inspect', 'Observe the documents that exist.', '#inspect'],
+          ['check', 'Assess the preferred writer format.', '#check'],
+          ['create', 'Create a new plan without overwriting.', '#create-and-update'],
+          ['update', 'Change selected metadata or markers.', '#create-and-update'],
+        ] as const
+      ).map(([name, text, href]) => (
+        <LinkCard href={href} title={name} monoTitle>
+          {text}
+        </LinkCard>
+      ))}
+    </div>
+  </div>
   <Content />
 </DocumentLayout>

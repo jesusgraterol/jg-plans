@@ -1,43 +1,70 @@
-<section class="border-y border-border bg-surface/50" aria-labelledby="layers-title">
-  <div class="jg-container py-16 sm:py-20">
-    <div class="mb-12 grid gap-6 lg:grid-cols-2 lg:gap-16">
-      <div>
-        <p class="eyebrow mb-4">A clear boundary</p>
-        <h2 id="layers-title" class="section-title">
-          Shared format.
-          <br />
-          Your way of working.
-        </h2>
-      </div>
-      <p class="max-w-xl self-end text-lg leading-relaxed text-muted">
-        The protocol describes the documents. The reference tools help read and edit them. Your
-        project decides what happens next.
-      </p>
-    </div>
-    <ol class="layer-map grid border border-border lg:grid-cols-3">
-      <li class="layer-item relative p-6 sm:p-8">
-        <span class="font-mono text-xs text-muted">01 / THE PROTOCOL</span>
-        <h3 class="mt-8 text-2xl font-semibold tracking-tight">A common language</h3>
+<section class="border-y border-border bg-secondary/35" aria-labelledby="layers-title">
+  <div class="jg-container py-14 sm:py-20">
+    <header class="mb-8 max-w-2xl">
+      <p class="eyebrow mb-4">Three pieces. Clear responsibilities.</p>
+      <h2 id="layers-title" class="section-title">
+        A format to share.
+        <br />A workflow to make your own.
+      </h2>
+    </header>
+    <ol class="grid gap-6 lg:grid-cols-3">
+      <li class="min-w-0 border-t-2 border-accent pt-5">
+        <p class="font-mono text-xs text-muted">01 / DOCUMENT FORMAT</p>
+        <div class="my-6 rounded-lg border border-border bg-surface p-5 font-mono text-sm leading-7">
+          <p>your-project/</p>
+          <p class="pl-4 text-accent">plan.md</p>
+          <p class="pl-4 text-muted">
+            milestones.md <span class="text-xs">optional</span>
+          </p>
+        </div>
+        <h3 class="text-xl font-semibold">The protocol</h3>
         <p class="mt-3 text-muted">
-          Plans, optional milestones, and a small set of markers that tools can understand.
+          A few shared fields and markers. Ordinary Markdown for the rest.
         </p>
-        <p class="mt-6 font-mono text-xs text-accent">Markdown + YAML</p>
+        <a
+          href="/protocol/"
+          class="mt-4 inline-flex min-h-8 items-center text-sm font-semibold underline underline-offset-4"
+        >
+          Explore the format →
+        </a>
       </li>
-      <li class="layer-item relative border-t border-border p-6 sm:p-8 lg:border-t-0 lg:border-l">
-        <span class="font-mono text-xs text-muted">02 / REFERENCE TOOLS</span>
-        <h3 class="mt-8 text-2xl font-semibold tracking-tight">Practical building blocks</h3>
+      <li class="min-w-0 border-t-2 border-accent pt-5">
+        <p class="font-mono text-xs text-muted">02 / DOCUMENT OPERATIONS</p>
+        <div class="my-6 grid grid-cols-2 gap-2 rounded-lg border border-border bg-surface p-5 font-mono text-sm leading-7">
+          <span>parse</span>
+          <span>inspect</span>
+          <span>check</span>
+          <span>update</span>
+        </div>
+        <h3 class="text-xl font-semibold">The library & CLI</h3>
         <p class="mt-3 text-muted">
-          A library and thin CLI for observations and explicit, targeted edits.
+          Read structured observations. Make explicit edits that preserve unrelated text.
         </p>
-        <p class="mt-6 font-mono text-xs text-muted">Parse · inspect · check · edit</p>
+        <a
+          href="/docs/"
+          class="mt-4 inline-flex min-h-8 items-center text-sm font-semibold underline underline-offset-4"
+        >
+          Meet the tools →
+        </a>
       </li>
-      <li class="layer-item relative border-t border-border p-6 sm:p-8 lg:border-t-0 lg:border-l">
-        <span class="font-mono text-xs text-muted">03 / YOUR PROJECT</span>
-        <h3 class="mt-8 text-2xl font-semibold tracking-tight">Your own decisions</h3>
+      <li class="min-w-0 border-t-2 border-accent pt-5">
+        <p class="font-mono text-xs text-muted">03 / APPLICATION BEHAVIOR</p>
+        <div class="my-6 grid grid-cols-2 gap-2 rounded-lg border border-border bg-surface p-5 text-sm leading-7">
+          <span>Approvals</span>
+          <span>Execution</span>
+          <span>Coordination</span>
+          <span>Retention</span>
+        </div>
+        <h3 class="text-xl font-semibold">Your implementation</h3>
         <p class="mt-3 text-muted">
-          Agents, skills, and applications own approvals, execution, coordination, and retention.
+          Use the data in your product. Your project owns the rules and decisions.
         </p>
-        <p class="mt-6 font-mono text-xs text-accent">Consumer-owned policy</p>
+        <a
+          href="/docs/integrations/"
+          class="mt-4 inline-flex min-h-8 items-center text-sm font-semibold underline underline-offset-4"
+        >
+          Build an integration →
+        </a>
       </li>
     </ol>
   </div>

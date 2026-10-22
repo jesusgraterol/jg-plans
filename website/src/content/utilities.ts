@@ -36,8 +36,18 @@ const SOURCE_LINKS: Record<string, string> = {
       'orphan/milestones.md',
       'library.mjs',
     ].flatMap((path) => [
-      [path, `/downloads/examples/${path}`],
-      [`../examples/${path}`, `/downloads/examples/${path}`],
+      [
+        path,
+        path.endsWith('.mjs')
+          ? `${SITE.repository}/blob/main/examples/${path}`
+          : `/raw/examples/${path}`,
+      ],
+      [
+        `../examples/${path}`,
+        path.endsWith('.mjs')
+          ? `${SITE.repository}/blob/main/examples/${path}`
+          : `/raw/examples/${path}`,
+      ],
     ]),
   ),
 };
@@ -51,7 +61,7 @@ export const resolveSourceLink = (href: string): string => {
     : `${SOURCE_LINKS[path]}${separator < 0 ? '' : href.slice(separator)}`;
 };
 
-// Canonical documents own their titles; the example guide follows the page's explorer.
+// Page layouts own h1; canonical references keep their original title as h2.
 export const documentTitlePlugin = {
   name: 'jg-plans-document-title',
   element: {
@@ -62,7 +72,7 @@ export const documentTitlePlugin = {
     ): TNode | void => {
       if (context.fileURL?.pathname.endsWith('/examples/README.md'))
         return { ...node, tagName: node.tagName === 'h1' ? 'h2' : 'h3' };
-      if (node.tagName === 'h1') context.setProperty(node, 'className', 'display-title');
+      if (node.tagName === 'h1') return { ...node, tagName: 'h2' };
     },
   },
 };

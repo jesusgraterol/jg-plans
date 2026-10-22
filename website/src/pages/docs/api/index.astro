@@ -1,9 +1,59 @@
 ---
-import { Content } from '../../../../../api/README.md';
+import CodeBlock from 'jg-personal-astro-ui/code-block';
+import LinkCard from 'jg-personal-astro-ui/link-card';
+import { Content, getHeadings } from '../../../../../api/README.md';
+import { loadExample } from '../../../content/examples.ts';
+import DocumentFlow from '../../../components/document-flow/document-flow.astro';
 import DocumentLayout from '../../../layouts/document-layout.astro';
 import { pageFor } from '../../../site.config.ts';
+const example = await loadExample('small');
 ---
 
-<DocumentLayout page={pageFor('/docs/api/')}>
+<DocumentLayout page={pageFor('/docs/api/')} headings={getHeadings()}>
+  <div slot="overview">
+    <h2 class="mb-3 text-2xl font-semibold tracking-tight">A document in. An object out.</h2>
+    <p class="mb-6 text-muted">
+      Pure parsers work with strings. Filesystem operations take explicit paths. Import the public
+      API from <code class="font-mono text-sm">jg-plans</code>.
+    </p>
+    <DocumentFlow
+      source={example.documents.plan!}
+      filename="plan.md"
+      call="parsePlan(source)"
+      result={{
+        metadata: example.plan!.metadata,
+        body: example.plan!.body,
+        diagnostics: example.plan!.diagnostics,
+      }}
+    />
+    <div class="mt-8 grid gap-3 sm:grid-cols-2">
+      {(
+        [
+          ['parsePlan / parseMilestones', 'Strings → observations', '#parsing-and-checking'],
+          ['inspectPlan', 'Selected directory → document states', '#selected-directory-inspection'],
+          ['createPlan', 'Body + metadata → new files', '#exclusive-creation'],
+          ['updatePlan', 'Explicit patch → targeted edit', '#targeted-updates'],
+        ] as const
+      ).map(([name, description, href]) => (
+        <LinkCard href={href} title={name} monoTitle>
+          {description}
+        </LinkCard>
+      ))}
+    </div>
+    <section class="mt-8 min-w-0" aria-labelledby="api-example">
+      <h2 id="api-example" class="mb-4 text-xl font-semibold">
+        Use the result in your own application
+      </h2>
+      <CodeBlock
+        code={`import { parsePlan, parseMilestones } from 'jg-plans';\n\nconst plan = parsePlan(planMarkdown);\nconst progress = parseMilestones(milestonesMarkdown);\n\nconst view = {\n  ...plan.metadata,\n  milestones: progress.milestones.map(({ title, status }) => ({\n    title,\n    status,\n  })),\n};`}
+        lang="typescript"
+        title="Build your own view model"
+      />
+      <p class="mt-3 text-sm text-muted">
+        Parsing returns observations and diagnostics. Your application decides what those
+        observations mean for its workflow.
+      </p>
+    </section>
+  </div>
   <Content />
 </DocumentLayout>
