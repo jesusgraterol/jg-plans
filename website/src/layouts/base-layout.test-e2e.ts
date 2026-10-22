@@ -122,11 +122,21 @@ test('keyboard navigation, theme persistence, copy, and mobile menu', async ({ p
   );
   await page.getByRole('link', { name: 'Read the protocol' }).click();
   await expect(page).toHaveURL('/protocol/0.1/');
+  // Let the native page transition finish before another programmatic navigation can cancel it.
+  await waitForPageAssets(page);
+  await page.evaluate(async () => {
+    await document.activeViewTransition?.finished;
+  });
   await expect(page.locator('html')).toHaveAttribute(
     'data-resolved-theme',
     initial === 'dark' ? 'light' : 'dark',
   );
   await page.goto('/');
+  // Settle the return transition before the mobile viewport resize below.
+  await waitForPageAssets(page);
+  await page.evaluate(async () => {
+    await document.activeViewTransition?.finished;
+  });
   await page.locator('[data-copy-button]').first().click();
   await expect(page.locator('[data-copy-button]').first()).toHaveAttribute(
     'data-copy-state',
