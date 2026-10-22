@@ -22,7 +22,11 @@ it('ships the real canonical protocol and original example in the production art
   expect(homepage).toContain('1792612800_search-feedback');
   expect(homepage).toContain('Explain an empty search result');
   expect(homepage).toContain('5a148c73-7d38-4a2f-9c0f-903d93b9b764');
-  expect(specification).toContain('Consumers serialize the whole read/edit/write operation');
+  expect(specification).toContain(
+    'Library and CLI filesystem mutations share short local document locks',
+  );
+  expect(specification).toContain('href="/docs/api/#shared-document-locks"');
+  expect(specification).not.toContain('href="../../api/README.md#shared-document-locks"');
   expect(specification).toContain('id="revisions-history-and-deletion"');
   expect(specification).toContain('href="/docs/integrations/"');
   expect(specification).not.toContain('href="../../docs/integrations.md"');

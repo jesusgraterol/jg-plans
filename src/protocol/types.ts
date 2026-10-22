@@ -47,6 +47,34 @@ export const ReadOptionsSchema = z.strictObject({
 
 export type IReadOptions = z.infer<typeof ReadOptionsSchema>;
 
+/** Exclusions are caller policy; no metadata key is excluded implicitly. */
+export const PlanFingerprintOptionsSchema = z.strictObject({
+  excludeMetadataKeys: z.array(z.string()).optional(),
+});
+
+export type IPlanFingerprintOptions = z.infer<typeof PlanFingerprintOptionsSchema>;
+
+/** Closed JSON result for library and CLI consumers; unavailable identity has diagnostics. */
+export const PlanFingerprintSchema = z
+  .strictObject({
+    sha256: z
+      .string()
+      .regex(/^[a-f0-9]{64}$/)
+      .nullable(),
+    excludeMetadataKeys: z.array(z.string()).refine((keys) => new Set(keys).size === keys.length),
+    diagnostics: z.array(DiagnosticSchema),
+  })
+  .refine((value) => value.sha256 !== null || value.diagnostics.length > 0);
+
+export type IPlanFingerprint = z.infer<typeof PlanFingerprintSchema>;
+
+/** Request a structural fingerprint without another document read or parse. */
+export const InspectPlanOptionsSchema = ReadOptionsSchema.extend({
+  fingerprint: PlanFingerprintOptionsSchema.optional(),
+});
+
+export type IInspectPlanOptions = z.infer<typeof InspectPlanOptionsSchema>;
+
 /** Creation accepts JSON metadata, including project extensions and nonconforming known values. */
 export const CreatePlanOptionsSchema = z.strictObject({
   slug: z
@@ -93,9 +121,20 @@ export const MilestoneSetSchema = z
 
 /** A call edits one document with one closed patch, never arbitrary prose. */
 export const PlanUpdateSchema = z.discriminatedUnion('document', [
-  z.strictObject({ document: z.literal('plan'), set: PlanSetSchema }),
+  z.strictObject({
+    document: z.literal('plan'),
+    set: PlanSetSchema,
+    expectedSha256: z
+      .string()
+      .regex(/^[a-f0-9]{64}$/)
+      .optional(),
+  }),
   z.strictObject({
     document: z.literal('milestones'),
+    expectedSha256: z
+      .string()
+      .regex(/^[a-f0-9]{64}$/)
+      .optional(),
     changes: z
       .array(z.strictObject({ select: MilestoneSelectorSchema, set: MilestoneSetSchema }))
       .min(1),
@@ -103,3 +142,31 @@ export const PlanUpdateSchema = z.discriminatedUnion('document', [
 ]);
 
 export type IPlanUpdate = z.infer<typeof PlanUpdateSchema>;
+
+/** Guarded document replacement; null expectations permit only absent milestone creation. */
+export const PlanDocumentWriteSchema = z.discriminatedUnion('document', [
+  z.strictObject({
+    document: z.literal('plan'),
+    expectedSha256: z.string().regex(/^[a-f0-9]{64}$/),
+    body: z.string(),
+    set: PlanSetSchema.optional(),
+  }),
+  z.strictObject({
+    document: z.literal('milestones'),
+    expectedSha256: z
+      .string()
+      .regex(/^[a-f0-9]{64}$/)
+      .nullable(),
+    source: z.string(),
+    assignMissingIds: z.boolean().optional(),
+  }),
+]);
+
+export type IPlanDocumentWrite = z.infer<typeof PlanDocumentWriteSchema>;
+
+/** Removing a selected regular milestone document always requires its observed hash. */
+export const RemoveMilestonesSchema = z.strictObject({
+  expectedSha256: z.string().regex(/^[a-f0-9]{64}$/),
+});
+
+export type IRemoveMilestones = z.infer<typeof RemoveMilestonesSchema>;

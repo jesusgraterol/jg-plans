@@ -6,6 +6,7 @@ import {
   open,
   readFile,
   readdir,
+  realpath,
   rename,
   rm,
   symlink,
@@ -16,7 +17,14 @@ import { basename, join } from 'node:path';
 import { Exception } from 'jg-exception';
 import { expectToRejectCode } from 'jg-exception/testing';
 import { writeFileAtomicIfUnchanged } from 'jg-fs';
-import { createPlan, ERRORS, inspectPlan, parsePlan, updatePlan } from 'jg-plans';
+import {
+  createPlan,
+  ERRORS,
+  inspectPlan,
+  parsePlan,
+  updatePlan,
+  writePlanDocument,
+} from 'jg-plans';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 // Only external I/O boundaries are controlled in failure tests; the owned pipeline stays real.
@@ -55,6 +63,42 @@ afterEach(async () => {
 });
 
 describe('exclusive creation through the built public API', () => {
+  it.each([false, true])(
+    'cleans only recognizable partial milestone creation when user changed bytes: %j',
+    async (intervening) => {
+      let root = await fixture();
+      if (process.platform !== 'win32') {
+        const alias = join(await fixture(), 'alias');
+        await symlink(root, alias, 'dir');
+        root = alias;
+      }
+      // The public writer canonicalizes the selected directory before opening a file.
+      // macOS temp aliases and Windows path spelling must reach this real failure boundary.
+      const path = join(await realpath(root), 'milestones.md');
+      const actual = await vi.importActual<typeof import('node:fs/promises')>('node:fs/promises');
+      vi.mocked(open).mockImplementation(async (target, flags, mode) => {
+        const handle = await actual.open(target, flags, mode);
+        if (String(target) !== path || flags !== 'wx') return handle;
+        vi.spyOn(handle, 'writeFile').mockImplementationOnce(async () => {
+          await actual.writeFile(path, intervening ? '# User edit' : '##');
+          throw new Exception('Injected partial failure', { code: 'EIO' });
+        });
+        return handle;
+      });
+      const operation = writePlanDocument(root, {
+        document: 'milestones',
+        expectedSha256: null,
+        source: '## Milestone 1: Work\n**Status:** pending',
+      });
+      await expectToRejectCode(operation, ERRORS.WRITE_FAILED);
+      if (intervening) {
+        await expect(operation).rejects.toMatchObject({ data: { cleanupFailedPaths: [path] } });
+        expect(await readFile(path, 'utf8')).toBe('# User edit');
+      } else expect(await readdir(root)).toEqual([]);
+      expect((await readdir(root)).filter((name) => name.endsWith('.lock'))).toEqual([]);
+    },
+  );
+
   it('captures one creation time and preserves supplied body, metadata, and milestone bytes', async () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date('2026-10-21T20:00:00Z'));
@@ -126,8 +170,9 @@ describe('exclusive creation through the built public API', () => {
   it('cleans an owned partial file after a real prefix write followed by I/O failure', async () => {
     const root = await fixture();
     const actual = await vi.importActual<typeof import('node:fs/promises')>('node:fs/promises');
-    vi.mocked(open).mockImplementationOnce(async (path, flags, mode) => {
+    vi.mocked(open).mockImplementation(async (path, flags, mode) => {
       const handle = await actual.open(path, flags, mode);
+      if (basename(String(path)) !== 'plan.md' || flags !== 'wx') return handle;
       const write = handle.writeFile.bind(handle);
       vi.spyOn(handle, 'writeFile').mockImplementationOnce(async () => {
         await write(Buffer.from('---\n'));
@@ -147,13 +192,13 @@ describe('exclusive creation through the built public API', () => {
     const root = await fixture();
     const actual = await vi.importActual<typeof import('node:fs/promises')>('node:fs/promises');
     let planPath = '';
-    vi.mocked(open).mockImplementationOnce(async (path, flags, mode) => {
-      planPath = String(path);
+    vi.mocked(open).mockImplementation(async (path, flags, mode) => {
+      if (basename(String(path)) === 'plan.md' && flags === 'wx') planPath = String(path);
+      if (basename(String(path)) === 'milestones.md' && flags === 'wx') {
+        await writeFile(planPath, '# New user content');
+        throw new Exception('Injected failure', { code: 'EIO' });
+      }
       return actual.open(path, flags, mode);
-    });
-    vi.mocked(open).mockImplementationOnce(async () => {
-      await writeFile(planPath, '# New user content');
-      throw new Exception('Injected failure', { code: 'EIO' });
     });
     const operation = createPlan({
       root,
@@ -172,19 +217,20 @@ describe('exclusive creation through the built public API', () => {
     const root = await fixture();
     const actual = await vi.importActual<typeof import('node:fs/promises')>('node:fs/promises');
     let createdDirectory = '';
-    vi.mocked(open).mockImplementationOnce(async (path, flags, mode) => {
-      createdDirectory = String(path).slice(0, -'/plan.md'.length);
+    vi.mocked(open).mockImplementation(async (path, flags, mode) => {
+      if (basename(String(path)) === 'plan.md' && flags === 'wx')
+        createdDirectory = String(path).slice(0, -'/plan.md'.length);
+      if (basename(String(path)) === 'milestones.md' && flags === 'wx') {
+        await rename(createdDirectory, `${createdDirectory}-moved`);
+        await mkdir(createdDirectory);
+        throw new Exception('Injected disk failure', { code: 'EIO' });
+      }
       return actual.open(path, flags, mode);
     });
-    vi.mocked(open).mockImplementationOnce(async () => {
-      await rename(createdDirectory, `${createdDirectory}-moved`);
-      await mkdir(createdDirectory);
-      throw new Exception('Injected disk failure', { code: 'EIO' });
-    });
     const operation = createPlan({ root, slug: 'moved', body: '# Keep', milestones: '# Explicit' });
-    await expectToRejectCode(operation, ERRORS.WRITE_FAILED);
+    await expectToRejectCode(operation, ERRORS.LOCK_FAILED);
     await expect(operation).rejects.toMatchObject({
-      data: { cleanupFailedPaths: [createdDirectory] },
+      data: { phase: 'release', mutationOutcome: 'uncertain', operationCompleted: false },
     });
     expect(await readdir(createdDirectory)).toEqual([]);
     expect(await readFile(join(`${createdDirectory}-moved`, 'plan.md'), 'utf8')).toContain(
@@ -224,10 +270,10 @@ describe('targeted updates through the built public API', () => {
   });
 
   it('inserts only requested metadata without inventing historical fields or changing the body', async () => {
-    const root = await put('\uFEFF# Legacy 😀');
+    const root = await put('\uFEFF# Existing 😀');
     await updatePlan(root, { document: 'plan', set: { status: 'done' } });
     expect(await readFile(join(root, 'plan.md'), 'utf8')).toBe(
-      '\uFEFF---\nstatus: "done"\n---\n# Legacy 😀',
+      '\uFEFF---\nstatus: "done"\n---\n# Existing 😀',
     );
     const after = await inspectPlan(root);
     if (after.plan.state === 'readable')

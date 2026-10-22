@@ -4,6 +4,92 @@ import { describe, expect, it } from 'vitest';
 const id = '5a148c73-7d38-4a2f-9c0f-903d93b9b764';
 
 describe('built milestone parser', () => {
+  it('keeps Unicode line-separator characters inside headings and fenced info strings', () => {
+    const source =
+      '```markdown\u2028example\n## Milestone 9: Fenced\n**Status:** done\n```\n## Milestone 1: Work\u2028details\n**Status:** pending';
+    const parsed = parseMilestones(source);
+    expect(parsed.milestones.map((entry) => entry.title)).toEqual(['Work\u2028details']);
+    expect(parsed.sections.map((section) => section.title)).toEqual([
+      'Milestone 1: Work\u2028details',
+    ]);
+    expect(parsed.diagnostics).toEqual([]);
+  });
+
+  it('retains long heading whitespace and nonclosing hash suffixes without ambiguous boundaries', () => {
+    const padding = ' '.repeat(20_000);
+    const title = `Work${padding}x###`;
+    const source = `## Milestone 1: ${title}\n**Status:** pending\n## Requirements\nKeep this.`;
+    const parsed = parseMilestones(source);
+    expect(parsed.milestones[0]!.title).toBe(title);
+    expect(parsed.sections.map((section) => section.title)).toEqual([
+      `Milestone 1: ${title}`,
+      'Requirements',
+    ]);
+    expect(parsed.diagnostics).toEqual([]);
+  });
+
+  it('observes optional frontmatter once without scanning its Markdown-looking values or requiring plan fields', () => {
+    const source =
+      '\uFEFF---\r\njg_skills: {plan_id: example, plan_revision: 2}\r\nexample: |\r\n  ```\r\n  ## Milestone 9: Not work\r\n  **Status:** done\r\n---\r\n# Sequence 😀\r\n\r\n## Shared requirements\r\nKeep shared requirements.\r\n## Milestone 1: Implement\r\n**Status:** custom\r\nImplementation prose.\r\n## Approval required\r\nKeep this final requirement.\r\n';
+    const parsed = parseMilestones(source);
+    expect(parsed.rawMetadata).toMatchObject({
+      jg_skills: { plan_id: 'example', plan_revision: 2 },
+    });
+    expect(parsed.body).toBe(
+      '# Sequence 😀\r\n\r\n## Shared requirements\r\nKeep shared requirements.\r\n## Milestone 1: Implement\r\n**Status:** custom\r\nImplementation prose.\r\n## Approval required\r\nKeep this final requirement.\r\n',
+    );
+    expect(parsed.milestones).toHaveLength(1);
+    expect(parsed.sections.map((section) => section.title)).toEqual([
+      'Shared requirements',
+      'Milestone 1: Implement',
+      'Approval required',
+    ]);
+    expect(parsed.milestones[0]!.body).toBe('**Status:** custom\r\nImplementation prose.\r\n');
+    expect(
+      source.slice(parsed.milestones[0]!.location.offset, parsed.milestones[0]!.headingEnd),
+    ).toBe('## Milestone 1: Implement\r\n');
+    const spans = [
+      parsed.preamble,
+      ...parsed.sections.flatMap((section) => [section.heading, section.body]),
+    ];
+    expect(spans.map((span) => source.slice(span.start, span.end)).join('')).toBe(source);
+    expect(spans.every((span, index) => index === 0 || spans[index - 1]!.end === span.start)).toBe(
+      true,
+    );
+    expect(parsed.diagnostics).toEqual([]);
+  });
+
+  it('returns exact overview table ranges without adjacent prose or fenced tables', () => {
+    const table = '| Milestone | Name | Status |\n| --- | --- | --- |\n| 1 | Work | pending |\n';
+    const source =
+      '## Overview\nProse before.\n' +
+      table +
+      'Prose after.\n```md\n' +
+      table +
+      '```\n## Milestone 1: Work\n**Status:** pending\n';
+    const parsed = parseMilestones(source);
+    expect(parsed.overviewTables.map((span) => source.slice(span.start, span.end))).toEqual([
+      table,
+    ]);
+    expect(parsed.overview).toHaveLength(1);
+    expect(parsed.diagnostics).toEqual([]);
+  });
+
+  it('retains malformed milestone metadata and suppresses scanning inside unterminated frontmatter', () => {
+    const malformed = parseMilestones(
+      '---\ncustom: [broken\n---\n## Milestone 1: Work\n**Status:** custom',
+    );
+    expect(malformed.milestones).toHaveLength(1);
+    expect(malformed.diagnostics.map((item) => item.code)).toContain('INVALID_YAML');
+    const unterminated = '---\ncustom: value\n## Milestone 9: Ambiguous\n**Status:** done';
+    const parsed = parseMilestones(unterminated);
+    expect(parsed.source).toBe(unterminated);
+    expect(parsed.body).toBe(unterminated);
+    expect(parsed.milestones).toEqual([]);
+    expect(parsed.sections).toEqual([]);
+    expect(parsed.diagnostics.map((item) => item.code)).toContain('UNTERMINATED_FRONTMATTER');
+  });
+
   it('retains optional IDs and custom statuses without an overview', () => {
     const source = `# Work\r\n\r\n## Milestone 1: Café 😀\r\n\r\n**Status:** waiting-for-feedback\r\n**Milestone ID:** ${id}\r\n\r\nEvidence.\r\n## Milestone 2: Review\r\n**Status:** pending`;
     const result = parseMilestones(source);

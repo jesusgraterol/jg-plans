@@ -1,5 +1,15 @@
 import type { IDiagnostic, IPlanMetadata, ISourceLocation } from '../protocol/index.ts';
 
+/** Original-source UTF-16 offsets, with an exclusive end. */
+export type ISourceSpan = { start: number; end: number };
+
+/** One unfenced level-two heading and all text up to the next such heading. */
+export type IHeadingSection = {
+  title: string;
+  heading: ISourceSpan;
+  body: ISourceSpan;
+};
+
 /** Read models retain original text and partial observations; diagnostics carry ambiguity. */
 export type IFrontmatter = {
   start: number;
@@ -15,6 +25,8 @@ export type IParsedPlan = {
   frontmatter: IFrontmatter | null;
   rawMetadata: unknown;
   metadata: Partial<IPlanMetadata>;
+  preamble: ISourceSpan;
+  sections: IHeadingSection[];
   diagnostics: IDiagnostic[];
 };
 
@@ -34,6 +46,7 @@ export type IMilestone = {
   status: string | null;
   id: string | null;
   location: ISourceLocation;
+  headingEnd: number;
   end: number;
   body: string;
   statusMarkers: IMarker[];
@@ -50,6 +63,12 @@ export type IOverviewRow = {
 
 export type IParsedMilestones = {
   source: string;
+  body: string;
+  frontmatter: IFrontmatter | null;
+  rawMetadata: unknown;
+  preamble: ISourceSpan;
+  sections: IHeadingSection[];
+  overviewTables: ISourceSpan[];
   milestones: IMilestone[];
   overview: IOverviewRow[];
   overviewPresent: boolean;
@@ -57,6 +76,9 @@ export type IParsedMilestones = {
 };
 
 export type ICheckResult = { conforms: boolean; diagnostics: IDiagnostic[] };
+
+/** A structural observation; consumers decide exclusions and authorization policy. */
+export type { IPlanFingerprint } from '../protocol/index.ts';
 
 export type ISourceLine = {
   text: string;

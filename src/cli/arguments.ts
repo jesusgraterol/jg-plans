@@ -1,7 +1,11 @@
 import { parseStrictArgs } from 'jg-process';
 
 import { planErrors } from '../errors/index.ts';
-import { ReadOptionsSchema } from '../protocol/index.ts';
+import {
+  PlanFingerprintOptionsSchema,
+  ReadOptionsSchema,
+  type IPlanFingerprintOptions,
+} from '../protocol/index.ts';
 
 import type { IArguments } from './types.ts';
 
@@ -22,6 +26,7 @@ export const parseArguments = (args: string[]): IArguments => {
       root: { type: 'string' },
       'max-bytes': { type: 'string' },
       'include-body': { type: 'boolean' },
+      'fingerprint-exclude': { type: 'string' },
       json: { type: 'boolean' },
       help: { type: 'boolean', short: 'h' },
       version: { type: 'boolean', short: 'v' },
@@ -34,15 +39,26 @@ export const parseArguments = (args: string[]): IArguments => {
   if (flags.help || args.length === 0)
     return { command: 'help', json: flags.json, includeBody: false };
   if (flags.version) return { command: 'version', json: flags.json, includeBody: false };
-  if (first !== 'inspect' && first !== 'check' && first !== 'create' && first !== 'update')
+  if (!['inspect', 'check', 'create', 'update', 'write', 'remove-milestones'].includes(first!))
     throw planErrors.create('invalidInput');
+  let fingerprint: IPlanFingerprintOptions | undefined;
+  if (flags['fingerprint-exclude'] !== undefined) {
+    if (first !== 'inspect') throw planErrors.create('invalidInput');
+    try {
+      fingerprint = PlanFingerprintOptionsSchema.parse({
+        excludeMetadataKeys: JSON.parse(flags['fingerprint-exclude']) as unknown,
+      });
+    } catch {
+      throw planErrors.create('invalidInput');
+    }
+  }
   if (first === 'create') {
     if (!flags.slug || !flags.input || flags.directory || flags['include-body'])
       throw planErrors.create('invalidInput');
   } else {
     if (!flags.directory || flags.root || flags.slug) throw planErrors.create('invalidInput');
     if (
-      first === 'update'
+      first === 'update' || first === 'write' || first === 'remove-milestones'
         ? !flags.input || flags['include-body']
         : Boolean(flags.input) || (first === 'check' && flags['include-body'])
     )
@@ -53,12 +69,13 @@ export const parseArguments = (args: string[]): IArguments => {
   const maxBytes = maximum === undefined ? undefined : Number(maximum);
   if (!ReadOptionsSchema.safeParse({ maxBytes }).success) throw planErrors.create('invalidInput');
   return {
-    command: first,
+    command: first as IArguments['command'],
     ...(flags.directory ? { directory: flags.directory } : {}),
     ...(flags.input ? { input: flags.input } : {}),
     ...(flags.slug ? { slug: flags.slug } : {}),
     ...(flags.root ? { root: flags.root } : {}),
     includeBody: flags['include-body'],
+    ...(fingerprint ? { fingerprint } : {}),
     json: flags.json,
     ...(maxBytes === undefined ? {} : { maxBytes }),
   };

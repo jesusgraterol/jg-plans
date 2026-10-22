@@ -1,24 +1,16 @@
-import { lstat, mkdir, open, rmdir, unlink } from 'node:fs/promises';
+import { lstat, mkdir, rmdir, unlink } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { getErrorCode } from 'jg-exception';
-import { assertNoLinksBelow, readBoundedFile, writeFileAtomicIfUnchanged } from 'jg-fs';
+import { readBoundedFile } from 'jg-fs';
+import { hashValue } from 'jg-crypto';
 import { stringify } from 'yaml';
-import { z } from 'zod';
 
 import { parseMilestones, parsePlan } from '../documents/index.ts';
-import {
-  applyEdits,
-  decodeSource,
-  encodeSource,
-  milestoneEdits,
-  planEdits,
-} from '../edits/index.ts';
+import { decodeSource, encodeSource, preparePlanUpdate } from '../edits/index.ts';
 import { planErrors } from '../errors/index.ts';
 import {
   CreatePlanOptionsSchema,
-  DEFAULT_MAX_BYTES,
   PlanUpdateSchema,
-  ReadOptionsSchema,
   type ICreatePlanOptions,
   type IPlanUpdate,
   type IReadOptions,
@@ -26,7 +18,14 @@ import {
 
 import type { IPlanCreation, IPlanUpdateResult } from './types.ts';
 
-type IOwnedFile = { path: string; dev: bigint; ino: bigint; bytes: Buffer };
+import {
+  persistPrepared,
+  readMutationSource,
+  validateMutationOptions,
+  writeExclusive,
+  type IOwnedFile,
+} from './documents.ts';
+import { withPlanDocumentLocks } from './locks.ts';
 type IOwnedDirectory = { dev: bigint; ino: bigint };
 
 const validateNewText = (value: unknown): void => {
@@ -37,24 +36,6 @@ const validateNewText = (value: unknown): void => {
       encodeSource(key);
       validateNewText(item);
     }
-};
-
-const writeExclusive = async (
-  root: string,
-  path: string,
-  bytes: Buffer,
-  owned: IOwnedFile[],
-): Promise<void> => {
-  await assertNoLinksBelow(root, path);
-  const handle = await open(path, 'wx');
-  try {
-    const stat = await handle.stat({ bigint: true });
-    owned.push({ path, dev: stat.dev, ino: stat.ino, bytes });
-    await handle.writeFile(bytes);
-    await handle.sync();
-  } finally {
-    await handle.close();
-  }
 };
 
 /** Remove only files this call created and still recognizes, followed by the empty owned directory. */
@@ -106,6 +87,8 @@ const cleanupCreation = async (
  * - JG_PLANS_INVALID_INPUT: Invalid jg-plans input
  * - JG_PLANS_UNSUPPORTED_ENCODING: Document text is not valid UTF-8
  * - JG_PLANS_DESTINATION_EXISTS: The plan destination already exists
+ * - JG_PLANS_LOCK_BUSY: The plan document is locked
+ * - JG_PLANS_LOCK_FAILED: The plan document lock operation failed
  * - JG_PLANS_WRITE_FAILED: The plan document could not be written
  */
 export const createPlan = async (options: ICreatePlanOptions): Promise<IPlanCreation> => {
@@ -163,10 +146,22 @@ export const createPlan = async (options: ICreatePlanOptions): Promise<IPlanCrea
   }
   const owned: IOwnedFile[] = [];
   try {
-    await writeExclusive(root, join(directory, 'plan.md'), planBytes, owned);
-    if (milestoneBytes !== null)
-      await writeExclusive(root, join(directory, 'milestones.md'), milestoneBytes, owned);
+    await withPlanDocumentLocks(
+      directory,
+      milestoneBytes === null ? ['plan'] : ['plan', 'milestones'],
+      async (selected) => {
+        await writeExclusive(selected, join(selected, 'plan.md'), planBytes, owned);
+        if (milestoneBytes !== null)
+          await writeExclusive(selected, join(selected, 'milestones.md'), milestoneBytes, owned);
+      },
+    );
   } catch (cause) {
+    // Release failure can follow a durable write. Preserve its files and uncertainty.
+    if (
+      getErrorCode(cause) === 'JG_PLANS_LOCK_FAILED' ||
+      getErrorCode(cause) === 'JG_PLANS_LOCK_BUSY'
+    )
+      throw cause;
     const cleanupFailedPaths = await cleanupCreation(directory, identity, owned);
     throw planErrors.create('writeFailed', {
       cause,
@@ -177,16 +172,16 @@ export const createPlan = async (options: ICreatePlanOptions): Promise<IPlanCrea
   const milestones = input.milestones === undefined ? null : parseMilestones(input.milestones);
   return {
     directory,
-    plan,
-    milestones,
+    plan: { ...plan, sha256: hashValue(planBytes) },
+    milestones: milestones === null ? null : { ...milestones, sha256: hashValue(milestoneBytes!) },
     diagnostics: [...plan.diagnostics, ...(milestones?.diagnostics ?? [])],
   };
 };
 
 /**
- * Apply one explicit metadata or marker patch, preserving every other source byte.
- * Callers serialize the whole read/edit/write operation. The final byte comparison
- * detects observed changes but has a comparison-to-rename race; no retry or lock is used.
+ * Apply an explicit narrow patch under the shared selected-document lock.
+ * Guard optional observed bytes before preparation; unchanged output is never replaced.
+ * Nonparticipating editors retain a final comparison-to-rename race.
  * @throws
  * - JG_PLANS_INVALID_INPUT: Invalid jg-plans input
  * - JG_PLANS_READ_FAILED: The selected document could not be read
@@ -194,74 +189,26 @@ export const createPlan = async (options: ICreatePlanOptions): Promise<IPlanCrea
  * - JG_PLANS_UNSAFE_EDIT: The requested edit is unsupported or ambiguous
  * - JG_PLANS_SOURCE_CHANGED: The document changed before replacement
  * - JG_PLANS_WRITE_FAILED: The plan document could not be written
+ * - JG_PLANS_LOCK_BUSY: The plan document is locked
+ * - JG_PLANS_LOCK_FAILED: The plan document lock operation failed
  */
 export const updatePlan = async (
   directory: string,
   patch: IPlanUpdate,
   options: IReadOptions = {},
 ): Promise<IPlanUpdateResult> => {
+  validateMutationOptions(directory, options);
   const validated = PlanUpdateSchema.safeParse(patch);
-  if (
-    !validated.success ||
-    !z
-      .string()
-      .min(1)
-      .refine((value) => !value.includes('\0'))
-      .safeParse(directory).success ||
-    !ReadOptionsSchema.safeParse(options).success
-  )
-    throw planErrors.create('invalidInput');
+  if (!validated.success) throw planErrors.create('invalidInput');
   const request = validated.data;
-  const selected = resolve(directory);
-  const path = join(selected, `${request.document}.md`);
-  let before: Buffer;
-  try {
-    await assertNoLinksBelow(selected, path);
-    before = await readBoundedFile(path, options.maxBytes ?? DEFAULT_MAX_BYTES);
-  } catch (cause) {
-    const reason = getErrorCode(cause);
-    throw planErrors.create('readFailed', { cause, ...(reason ? { data: { reason } } : {}) });
-  }
-  let source: string;
-  try {
-    source = decodeSource(before);
-  } catch {
-    throw planErrors.create('unsupportedEncoding');
-  }
-  const edits =
-    request.document === 'plan' ? planEdits(source, request) : milestoneEdits(source, request);
-  const after = applyEdits(before, source, edits);
-  const text = decodeSource(after);
-  const observation = request.document === 'plan' ? parsePlan(text) : parseMilestones(text);
-  if (request.document === 'plan') {
-    const updated = parsePlan(text);
-    if (
-      updated.diagnostics.some(
-        (item) => item.code === 'INVALID_YAML' || item.code === 'UNTERMINATED_FRONTMATTER',
-      )
-    )
-      throw planErrors.create('unsafeEdit', { data: { reason: 'invalid-serialized-frontmatter' } });
-    for (const [key, value] of Object.entries(request.set))
-      if (!Object.is(updated.metadata[key], value))
-        throw planErrors.create('unsafeEdit', {
-          data: { reason: 'unsupported-serialized-value', field: key },
-        });
-  }
-  const changed = !before.equals(after);
-  if (changed) {
-    try {
-      await assertNoLinksBelow(selected, path);
-      await writeFileAtomicIfUnchanged(path, after, before);
-    } catch (cause) {
-      if (getErrorCode(cause) === 'FILE_CHANGED')
-        throw planErrors.create('sourceChanged', { cause });
-      throw planErrors.create('writeFailed', { cause });
-    }
-  }
-  return {
-    directory: selected,
-    document: request.document,
-    changed,
-    diagnostics: observation.diagnostics,
-  };
+  return withPlanDocumentLocks(directory, [request.document], async (selected) => {
+    const before = await readMutationSource(
+      selected,
+      request.document,
+      options,
+      request.expectedSha256,
+    );
+    const prepared = preparePlanUpdate(decodeSource(before!), request);
+    return persistPrepared(selected, request.document, before, prepared);
+  });
 };

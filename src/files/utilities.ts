@@ -1,16 +1,18 @@
 import { join, resolve } from 'node:path';
 import { getErrorCode } from 'jg-exception';
+import { hashValue } from 'jg-crypto';
 import { readBoundedFile } from 'jg-fs';
 import { z } from 'zod';
 
 import { parseMilestones, parsePlan } from '../documents/index.ts';
+import { fingerprintObservation } from '../documents/fingerprints.ts';
 import { decodeSource } from '../edits/index.ts';
 import { planErrors } from '../errors/index.ts';
 import {
   DEFAULT_MAX_BYTES,
-  ReadOptionsSchema,
+  InspectPlanOptionsSchema,
   type IDiagnostic,
-  type IReadOptions,
+  type IInspectPlanOptions,
 } from '../protocol/index.ts';
 
 import type { IDocumentRead, IPlanInspection } from './types.ts';
@@ -61,34 +63,36 @@ const observeFile = async <TDocument>(
       ],
     };
   }
-  return { state: 'readable', path, value: parse(source) };
+  return { state: 'readable', path, sha256: hashValue(bytes), value: parse(source) };
 };
 
 /**
  * Read only plan.md and milestones.md beneath the explicitly selected directory.
  * Missing, oversized, unreadable, and undecodable files are observations; other
  * readable documents remain available. No history is discovered or restored.
- * @param directory Caller-selected path, including custom or legacy locations.
- * @param options Per-file byte bound, defaulting to 1 MiB.
+ * @param directory Caller-selected path, including custom locations.
+ * @param options Per-file byte bound, defaulting to 1 MiB, and optional fingerprint exclusions.
  * @returns Per-document availability, partial parsed data, and diagnostics.
  * @throws
  * - JG_PLANS_INVALID_INPUT: Invalid jg-plans input
  */
 export const inspectPlan = async (
   directory: string,
-  options: IReadOptions = {},
+  options: IInspectPlanOptions = {},
 ): Promise<IPlanInspection> => {
+  const parsed = InspectPlanOptionsSchema.safeParse(options);
   if (
     !z
       .string()
       .min(1)
       .refine((value) => !value.includes('\0'))
       .safeParse(directory).success ||
-    !ReadOptionsSchema.safeParse(options).success
+    !parsed.success
   )
     throw planErrors.create('invalidInput');
   const selected = resolve(directory);
-  const maxBytes = options.maxBytes ?? DEFAULT_MAX_BYTES;
+  const input = parsed.data;
+  const maxBytes = input.maxBytes ?? DEFAULT_MAX_BYTES;
   const [plan, milestones] = await Promise.all([
     observeFile(selected, 'plan', maxBytes, parsePlan),
     observeFile(selected, 'milestones', maxBytes, parseMilestones),
@@ -116,5 +120,19 @@ export const inspectPlan = async (
       severity: 'warning',
       message: 'Milestones remain without a plan; no plan is restored.',
     });
-  return { directory: selected, plan, milestones, diagnostics };
+  const fingerprint =
+    input.fingerprint === undefined
+      ? undefined
+      : fingerprintObservation(plan.state === 'readable' ? plan.value : null, input.fingerprint);
+  if (fingerprint) {
+    const known = new Set(diagnostics);
+    diagnostics.push(...fingerprint.diagnostics.filter((item) => !known.has(item)));
+  }
+  return {
+    directory: selected,
+    plan,
+    milestones,
+    diagnostics,
+    ...(fingerprint ? { fingerprint } : {}),
+  };
 };

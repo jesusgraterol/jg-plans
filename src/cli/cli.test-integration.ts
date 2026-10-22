@@ -43,11 +43,109 @@ const it = baseIt.extend('cli', ({ signal }, { onCleanup }) => {
 });
 
 describe('compiled CLI read contract', () => {
+  it('includes exact hashes, ranges, and milestone metadata without bodies, and requests explicit fingerprint exclusions', async ({
+    cli: { fixture, run },
+  }) => {
+    const root = await fixture();
+    await writeFile(
+      join(root, 'plan.md'),
+      '---\nid: sample\nstatus: pending\nrevision: 1\n---\n# PRIVATE_PLAN_BODY',
+    );
+    await writeFile(
+      join(root, 'milestones.md'),
+      '---\njg_skills: {plan_id: sample}\n---\n## Shared requirements\nPRIVATE_SHARED_BODY\n## Milestone 1: Work\n**Status:** custom\nPRIVATE_MILESTONE_BODY',
+    );
+    const args = [
+      'inspect',
+      '--directory',
+      root,
+      '--fingerprint-exclude',
+      '["revision","status","status"]',
+      '--json',
+    ];
+    const result = await run(args);
+    expect(result.exitCode).toBe(0);
+    expect(result.stderr).toBe('');
+    const data = JSON.parse(result.stdout).data;
+    expect(data.plan.sha256).toMatch(/^[a-f0-9]{64}$/);
+    expect(data.milestones.sha256).toMatch(/^[a-f0-9]{64}$/);
+    expect(data.milestones.rawMetadata).toEqual({ jg_skills: { plan_id: 'sample' } });
+    expect(data.milestones.sections.map((section: { title: string }) => section.title)).toEqual([
+      'Shared requirements',
+      'Milestone 1: Work',
+    ]);
+    expect(data.milestones.milestones[0].headingEnd).toBeGreaterThan(
+      data.milestones.milestones[0].location.offset,
+    );
+    expect(data.fingerprint).toMatchObject({
+      sha256: expect.stringMatching(/^[a-f0-9]{64}$/),
+      excludeMetadataKeys: ['revision', 'status'],
+      diagnostics: [],
+    });
+    expect(result.stdout).not.toContain('PRIVATE_');
+    await writeFile(
+      join(root, 'plan.md'),
+      '---\nid: sample\nstatus: done\nrevision: 4\n---\n# PRIVATE_PLAN_BODY',
+    );
+    const changed = JSON.parse((await run(args)).stdout).data;
+    expect(changed.plan.sha256).not.toBe(data.plan.sha256);
+    expect(changed.fingerprint.sha256).toBe(data.fingerprint.sha256);
+    const included = await run([...args, '--include-body']);
+    expect(included.stdout).toContain('PRIVATE_PLAN_BODY');
+    expect(included.stdout).toContain('PRIVATE_SHARED_BODY');
+    expect(included.stdout).toContain('PRIVATE_MILESTONE_BODY');
+  });
+
+  it('rejects malformed exclusions and unsupported commands before document reads', async ({
+    cli: { fixture, run },
+  }) => {
+    const root = await fixture();
+    await mkdir(join(root, 'plan.md'));
+    for (const value of ['broken', 'null', '{}', '[1]']) {
+      const result = await run([
+        'inspect',
+        '--directory',
+        root,
+        '--fingerprint-exclude',
+        value,
+        '--json',
+      ]);
+      expect(result.exitCode).toBe(2);
+      expect(JSON.parse(result.stdout).error.code).toBe('JG_PLANS_INVALID_INPUT');
+    }
+    const rejected = await run([
+      'check',
+      '--directory',
+      root,
+      '--fingerprint-exclude',
+      '[]',
+      '--json',
+    ]);
+    expect(JSON.parse(rejected.stdout).error.code).toBe('JG_PLANS_INVALID_INPUT');
+    await rm(join(root, 'plan.md'), { recursive: true });
+    await writeFile(
+      join(root, 'plan.md'),
+      '---\nid: sample\nextension: [broken\n---\n# PRIVATE_BODY',
+    );
+    const partial = await run([
+      'inspect',
+      '--directory',
+      root,
+      '--fingerprint-exclude',
+      '[]',
+      '--json',
+    ]);
+    expect(partial.exitCode).toBe(0);
+    expect(JSON.parse(partial.stdout).data.fingerprint.sha256).toBeNull();
+    expect(JSON.parse(partial.stdout).data.plan.state).toBe('readable');
+    expect(partial.stdout).not.toContain('PRIVATE_BODY');
+  });
+
   it('has JSON-only stdout, retains partial observations, and includes bodies only by request', async ({
     cli: { fixture, run },
   }) => {
     const root = await fixture();
-    await writeFile(join(root, 'plan.md'), '# SECRET_BODY_MARKER\nUseful legacy prose.');
+    await writeFile(join(root, 'plan.md'), '# SECRET_BODY_MARKER\nUseful prose.');
     await writeFile(
       join(root, 'milestones.md'),
       '## Milestone 3: Remaining\n**Status:** custom\nSECRET_MILESTONE_BODY',
@@ -146,6 +244,79 @@ describe('compiled CLI read contract', () => {
 });
 
 describe('compiled CLI mutation contract', () => {
+  it(
+    'writes guarded sources, returns assigned IDs, removes milestones, and rejects stale or invalid input',
+    { timeout: 30_000 },
+    async ({ cli: { fixture, run } }) => {
+      const root = await fixture();
+      await writeFile(join(root, 'plan.md'), '# Original');
+      const before = JSON.parse(
+        (await run(['inspect', '--directory', root, '--json'])).stdout,
+      ).data;
+      const written = await run(
+        ['write', '--directory', root, '--input', '-', '--json'],
+        JSON.stringify({
+          document: 'plan',
+          expectedSha256: before.plan.sha256,
+          body: '# PRIVATE_REPLACEMENT',
+          set: { revision: 2 },
+        }),
+      );
+      expect(written.exitCode).toBe(0);
+      expect(written.stderr).toBe('');
+      expect(written.stdout).not.toContain('PRIVATE_REPLACEMENT');
+      expect(JSON.parse(written.stdout)).toMatchObject({
+        command: 'write',
+        error: null,
+        data: {
+          changed: true,
+          sha256: expect.stringMatching(/^[a-f0-9]{64}$/),
+          assignedMilestoneIds: [],
+        },
+      });
+      const stale = await run(
+        ['write', '--directory', root, '--input', '-', '--json'],
+        JSON.stringify({ document: 'plan', expectedSha256: before.plan.sha256, body: '# Stale' }),
+      );
+      expect(stale.exitCode).toBe(2);
+      expect(JSON.parse(stale.stdout).error.code).toBe('JG_PLANS_SOURCE_CHANGED');
+      const created = await run(
+        ['write', '--directory', root, '--input', '-', '--json'],
+        JSON.stringify({
+          document: 'milestones',
+          expectedSha256: null,
+          source: '## Milestone 1: Work\n**Status:** custom',
+          assignMissingIds: true,
+        }),
+      );
+      expect(created.exitCode).toBe(0);
+      expect(JSON.parse(created.stdout).data.assignedMilestoneIds).toEqual([
+        { ordinal: 1, id: expect.stringMatching(/^[0-9a-f-]{36}$/) },
+      ]);
+      const removed = await run(
+        ['remove-milestones', '--directory', root, '--input', '-', '--json'],
+        JSON.stringify({ expectedSha256: JSON.parse(created.stdout).data.sha256 }),
+      );
+      expect(removed.exitCode).toBe(0);
+      expect(JSON.parse(removed.stdout)).toMatchObject({
+        command: 'remove-milestones',
+        data: { changed: true, sha256: null },
+        error: null,
+      });
+      for (const command of ['write', 'remove-milestones']) {
+        const invalid = await run([command, '--directory', root, '--input', '-', '--json'], '{}');
+        expect(invalid.exitCode).toBe(2);
+        expect(invalid.stderr).toBe('');
+        expect(JSON.parse(invalid.stdout).error.code).toBe('JG_PLANS_INVALID_INPUT');
+        const flags = await run(
+          [command, '--directory', root, '--input', '-', '--include-body', '--json'],
+          '{}',
+        );
+        expect(JSON.parse(flags.stdout).error.code).toBe('JG_PLANS_INVALID_INPUT');
+      }
+    },
+  );
+
   // Four native steps each retain a ten-second deadline, including real fsync work.
   it(
     'creates, inspects, updates, and checks with explicit JSON inputs',

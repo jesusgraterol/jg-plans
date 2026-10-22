@@ -7,8 +7,13 @@ import type { IPlanUpdate } from '../protocol/index.ts';
 import type { ITextEdit } from './types.ts';
 
 /** Decode strictly while retaining an existing BOM character. */
-export const decodeSource = (bytes: Uint8Array): string =>
-  new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(bytes);
+export const decodeSource = (bytes: Uint8Array): string => {
+  try {
+    return new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(bytes);
+  } catch {
+    throw planErrors.create('unsupportedEncoding');
+  }
+};
 
 /**
  * Reject unpaired surrogates rather than letting UTF-8 encoding replace them.
@@ -20,7 +25,7 @@ export const encodeSource = (source: string): Buffer => {
   return Buffer.from(source, 'utf8');
 };
 
-const lineEnding = (source: string): string => /\r\n|\n|\r/.exec(source)?.[0] ?? '\n';
+export const lineEnding = (source: string): string => /\r\n|\n|\r/.exec(source)?.[0] ?? '\n';
 
 const scalarText = (value: string | number, style?: string): string => {
   if (typeof value === 'number') return String(value);

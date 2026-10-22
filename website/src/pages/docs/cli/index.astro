@@ -51,7 +51,9 @@ import { pageFor } from '../../../site.config.ts';
       <dl class="grid content-start gap-4 py-2 text-sm">
         <div>
           <dt class="font-mono font-semibold">data</dt>
-          <dd class="mt-1 text-muted">Document states, metadata, and recognized milestones.</dd>
+          <dd class="mt-1 text-muted">
+            Document states, metadata, ranges, hashes, and requested fingerprints.
+          </dd>
         </div>
         <div>
           <dt class="font-mono font-semibold">diagnostics</dt>
@@ -70,6 +72,12 @@ import { pageFor } from '../../../site.config.ts';
           ['check', 'Assess the preferred writer format.', '#check'],
           ['create', 'Create a new plan without overwriting.', '#create-and-update'],
           ['update', 'Change selected metadata or markers.', '#create-and-update'],
+          ['write', 'Replace a guarded body or milestone source.', '#write-and-remove-milestones'],
+          [
+            'remove-milestones',
+            'Remove only matching milestone bytes.',
+            '#write-and-remove-milestones',
+          ],
         ] as const
       ).map(([name, text, href]) => (
         <LinkCard href={href} title={name} monoTitle>

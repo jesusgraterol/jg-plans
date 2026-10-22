@@ -19,6 +19,7 @@ const SOURCE_LINKS: Record<string, string> = {
   '0.1/README.md': '/protocol/0.1/',
   '../protocol/0.1/README.md': '/protocol/0.1/',
   '../api/README.md': '/docs/api/',
+  '../../api/README.md': '/docs/api/',
   '../cli/README.md': '/docs/cli/',
   '../docs/integrations.md': '/docs/integrations/',
   '../../docs/integrations.md': '/docs/integrations/',

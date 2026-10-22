@@ -2,8 +2,16 @@ import { z } from 'zod';
 
 import { planErrors } from '../errors/index.ts';
 
-import type { IMilestone, IMarker, IOverviewRow, IParsedMilestones, ISourceLine } from './types.ts';
-import { diagnostic, sourceLines, sourceLocation } from './utilities.ts';
+import type {
+  IMilestone,
+  IMarker,
+  IOverviewRow,
+  IParsedMilestones,
+  ISourceLine,
+  ISourceSpan,
+  IHeadingSection,
+} from './types.ts';
+import { diagnostic, headingSections, readFrontmatter, sourceLocation } from './utilities.ts';
 
 const markerFrom = (line: ISourceLine, prefix: string): IMarker | null => {
   const leading = line.text.length - line.text.trimStart().length;
@@ -28,45 +36,52 @@ const cells = (line: string): string[] =>
     .split('|')
     .map((cell) => cell.trim());
 
-const readOverview = (lines: ISourceLine[]): { present: boolean; rows: IOverviewRow[] } => {
+const readOverview = (
+  lines: ISourceLine[],
+  sections: IHeadingSection[],
+): { present: boolean; rows: IOverviewRow[]; tables: ISourceSpan[] } => {
   const rows: IOverviewRow[] = [];
+  const tables: ISourceSpan[] = [];
   let present = false;
   let inOverview = false;
-  let inTable = false;
+  const headings = new Map(sections.map((section) => [section.heading.start, section.title]));
   for (let index = 0; index < lines.length; index++) {
     const line = lines[index]!;
     if (line.fenced) continue;
-    const text = line.start === 0 ? line.text.replace(/^\uFEFF/, '') : line.text;
-    if (/^ {0,3}##[ \t]+/.test(text)) {
-      inOverview = /^ {0,3}## Overview[ \t]*$/.test(text);
-      inTable = false;
-    }
+    const start = line.start + (line.start === 0 && line.text.startsWith('\uFEFF') ? 1 : 0);
+    if (headings.has(start)) inOverview = headings.get(start) === 'Overview';
     if (!inOverview) continue;
     const columns = cells(line.text);
     if (columns.join('|') === 'Milestone|Name|Status') {
       const separator = cells(lines[index + 1]?.text ?? '');
-      inTable = separator.length === 3 && separator.every((cell) => /^:?-{3,}:?$/.test(cell));
-      if (inTable) {
+      if (
+        !lines[index + 1]?.fenced &&
+        separator.length === 3 &&
+        separator.every((cell) => /^:?-{3,}:?$/.test(cell))
+      ) {
         present = true;
-        index++;
+        const start = line.start;
+        let end = lines[++index]!.fullEnd;
+        while (index + 1 < lines.length) {
+          const row = lines[index + 1]!;
+          const values = cells(row.text);
+          if (row.fenced || values.length !== 3 || !/^\d+$/.test(values[0]!)) break;
+          index++;
+          end = row.fullEnd;
+          const ordinal = Number(values[0]);
+          rows.push({
+            ordinal: Number.isSafeInteger(ordinal) && ordinal > 0 ? ordinal : null,
+            ordinalText: values[0]!,
+            name: values[1]!,
+            status: values[2]!,
+            location: { offset: row.start, line: row.number, column: 1 },
+          });
+        }
+        tables.push({ start, end });
       }
-      continue;
     }
-    if (!inTable) continue;
-    if (columns.length !== 3 || !/^\d+$/.test(columns[0]!)) {
-      inTable = false;
-      continue;
-    }
-    const ordinal = Number(columns[0]);
-    rows.push({
-      ordinal: Number.isSafeInteger(ordinal) && ordinal > 0 ? ordinal : null,
-      ordinalText: columns[0]!,
-      name: columns[1]!,
-      status: columns[2]!,
-      location: { offset: line.start, line: line.number, column: 1 },
-    });
   }
-  return { present, rows };
+  return { present, rows, tables };
 };
 
 /**
@@ -79,28 +94,32 @@ const readOverview = (lines: ISourceLine[]): { present: boolean; rows: IOverview
  */
 export const parseMilestones = (source: string): IParsedMilestones => {
   if (!z.string().safeParse(source).success) throw planErrors.create('invalidInput');
-  const lines = sourceLines(source);
-  const overview = readOverview(lines);
+  const observed = readFrontmatter(source, 'milestones');
+  const { lines } = observed;
+  const sections = headingSections(source, lines);
+  const overview = readOverview(lines, sections);
   const result: IParsedMilestones = {
     source,
+    body: observed.body,
+    frontmatter: observed.frontmatter,
+    rawMetadata: observed.rawMetadata,
+    preamble: { start: 0, end: sections[0]?.heading.start ?? source.length },
+    sections,
+    overviewTables: overview.tables,
     milestones: [],
     overview: overview.rows,
     overviewPresent: overview.present,
-    diagnostics: [],
+    diagnostics: observed.diagnostics,
   };
-  const headings = lines.filter(
-    (line) =>
-      !line.fenced &&
-      /^ {0,3}##[ \t]+/.test(line.start === 0 ? line.text.replace(/^\uFEFF/, '') : line.text),
+  const headings = sections.map(
+    (section) => lines[sourceLocation(lines, section.heading.start).line - 1]!,
   );
   const ordinals = new Set<number>();
   const ids = new Set<string>();
   let previous = 0;
   for (let index = 0; index < headings.length; index++) {
     const heading = headings[index]!;
-    const match = /^ {0,3}##[ \t]+Milestone (-?\d+):[ \t]*(.*?)(?:[ \t]+#+)?[ \t]*$/.exec(
-      heading.text.replace(/^\uFEFF/, ''),
-    );
+    const match = /^Milestone (-?\d+):[ \t]*(.*)$/s.exec(sections[index]!.title);
     if (!match) continue;
     const end = headings[index + 1]?.start ?? source.length;
     const number = Number(match[1]);
@@ -127,6 +146,7 @@ export const parseMilestones = (source: string): IParsedMilestones => {
       status: statuses[0]?.value ?? null,
       id: identities[0]?.value ?? null,
       location,
+      headingEnd: heading.fullEnd,
       end,
       body: source.slice(heading.fullEnd, end),
       statusMarkers: statuses,

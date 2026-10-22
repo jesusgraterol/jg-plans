@@ -4,6 +4,9 @@ export {
   PlanDocumentsSchema,
   PlanMetadataSchema,
   ReadOptionsSchema,
+  PlanFingerprintOptionsSchema,
+  PlanFingerprintSchema,
+  InspectPlanOptionsSchema,
   SourceLocationSchema,
 } from './types.ts';
 export type {
@@ -11,6 +14,9 @@ export type {
   IPlanDocuments,
   IPlanMetadata,
   IReadOptions,
+  IPlanFingerprintOptions,
+  IPlanFingerprint,
+  IInspectPlanOptions,
   ISourceLocation,
 } from './types.ts';
 export {
@@ -19,5 +25,12 @@ export {
   MilestoneSetSchema,
   PlanSetSchema,
   PlanUpdateSchema,
+  PlanDocumentWriteSchema,
+  RemoveMilestonesSchema,
 } from './types.ts';
-export type { ICreatePlanOptions, IPlanUpdate } from './types.ts';
+export type {
+  ICreatePlanOptions,
+  IPlanUpdate,
+  IPlanDocumentWrite,
+  IRemoveMilestones,
+} from './types.ts';

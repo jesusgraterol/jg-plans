@@ -29,7 +29,7 @@ Protocol 0.1 is provisional. The [website](https://jg-plans.jesusgraterol.dev) p
 
 Users own their documents and can edit or delete them. No history store, metadata field, CLI, or website is required to read Markdown. Optional conformance checks do not authorize execution or become a prerequisite to inspection.
 
-The protocol stays separate from application schemas, approvals, resource allocations, locking and reconciliation. Future jg-skills and HQ adoption are independent integrations.
+The protocol stays separate from application schemas, approvals, resource allocations, coordination journals and reconciliation. Future jg-skills and HQ adoption are independent integrations.
 
 ## Development
 
@@ -44,7 +44,7 @@ pnpm check
 
 The [development guide](https://github.com/jesusgraterol/jg-plans/blob/main/docs/development.md) owns checks and package/site boundaries. Root tests build first, exercise public compiled exports, and install the actual tarball in an isolated consumer. Website tests verify production output in both themes and narrow layouts.
 
-The [runnable library example](examples/library.mjs) creates, inspects, updates, and checks documents in an owned temporary directory. Mutations preserve unrelated bytes and require callers to serialize edits to each document; unsupported edits fail without rewriting it. The [API](api/README.md) describes the exact preservation and concurrency limits.
+The [runnable library example](examples/library.mjs) creates, inspects, updates, and checks documents in an owned temporary directory. Guarded mutations and pure preparation preserve unaffected bytes and share local document locks; unsupported edits fail without rewriting it. The [API](api/README.md) describes the exact preservation and concurrency limits.
 
 ## License
 
