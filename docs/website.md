@@ -6,7 +6,7 @@ The website is a private pnpm workspace. The root publishes the library/CLI; the
 
 website/src/site.config.ts owns the eight canonical page records. The layout emits metadata through jg-personal-astro-ui's DocumentHead and jg-site. Sitemap, robots.txt, llms.txt, navigation, and Markdown alternatives derive from those records. The real 404 is noindex and omitted from discovery.
 
-The protocol, getting-started, API, CLI, integration, and example guides render their canonical Markdown files. website/src/content/sources.ts explicitly registers the public inputs. It never discovers planning roots, old plans, instruction files, or history. The gallery computes observations through jg-plans at build time; no browser parser or service is introduced. Downloads match the original files byte-for-byte. Raw Markdown adds availability context without replacing the canonical content.
+The protocol, getting-started, API, CLI, integration, and example guides render their canonical Markdown files. website/src/content/sources.ts explicitly registers the public inputs. It never discovers planning roots, old plans, instruction files, or history. The gallery computes observations through jg-plans at build time; no browser parser or service is introduced. Visual guides pair Markdown with selected JSON result fields before the complete references. Visitor-facing download controls are removed; sample links open readable Markdown. Legacy download endpoints still match original files byte-for-byte. Raw Markdown adds availability context without replacing the canonical content.
 
 ## Availability is evidence
 
@@ -26,4 +26,4 @@ After npm publication is verified, manually run Check on main with published_ver
 
 ## Verification
 
-The [website development guide](../website/README.md) owns commands and retained screenshot locations. Build verification parses HTML, checks canonical links/fragments, metadata, raw Markdown, original downloads, discovery output, and output hygiene. Browser checks cover all pages in both themes at 320px/tablet/desktop, WCAG 2.2 AA, keyboard/focus, examples, copy success/failure, downloads, no JavaScript, zoom, and reduced motion. Generated sharing assets use pinned Chromium and local licensed fonts.
+The [website development guide](../website/README.md) owns commands and retained screenshot locations. Build verification parses HTML, checks canonical links/fragments, metadata, raw Markdown, original downloads, discovery output, and output hygiene. Browser checks cover all pages, including the custom 404, in both themes at 320px/tablet/desktop, WCAG 2.2 AA, keyboard/focus, Markdown-to-JSON examples, icon-only copy success/failure, readable source links, absence of download controls, no JavaScript, zoom, and reduced motion. Generated sharing assets use pinned Chromium and local licensed fonts.

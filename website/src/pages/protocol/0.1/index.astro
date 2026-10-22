@@ -1,24 +1,91 @@
 ---
+import CodeBlock from 'jg-personal-astro-ui/code-block';
 import { Content, getHeadings } from '../../../../../protocol/0.1/README.md';
 import { loadSource } from '../../../content/index.ts';
 import DocumentLayout from '../../../layouts/document-layout.astro';
 import { PAGES } from '../../../site.config.ts';
-
 await loadSource('specification');
-const headings = getHeadings().filter((heading) => heading.depth === 2);
+const example = await loadSource('smallPlan');
+const metadata = example.slice(0, example.indexOf('\n---', 4) + 4);
 ---
 
-<DocumentLayout page={PAGES[2]}>
-  <Fragment slot="navigation">
-    <p class="eyebrow mb-4">Protocol 0.1</p>
-    <a href={PAGES[1].path} class="mb-6 inline-block min-h-8 text-sm text-muted">
-      ← All versions
-    </a>
-    <nav aria-label="On this page" class="grid gap-3 text-sm">
-      {headings.map((heading) => (
-        <a href={`#${heading.slug}`}>{heading.text}</a>
-      ))}
-    </nav>
-  </Fragment>
+<DocumentLayout page={PAGES[2]} headings={getHeadings()}>
+  <div slot="overview">
+    <div class="mb-6 flex flex-wrap gap-2 font-mono text-xs">
+      <a
+        href="#plan-metadata"
+        class="rounded-full border border-border px-3 py-2 hover:bg-secondary"
+      >
+        5 core fields ↓
+      </a>
+      <a
+        href="#optional-milestones"
+        class="rounded-full border border-border px-3 py-2 hover:bg-secondary"
+      >
+        optional milestones ↓
+      </a>
+      <a
+        href="#consumer-owned-policy"
+        class="rounded-full border border-border px-3 py-2 hover:bg-secondary"
+      >
+        your project rules ↓
+      </a>
+    </div>
+    <section class="grid min-w-0 gap-6 xl:grid-cols-2" aria-labelledby="spec-at-a-glance">
+      <div>
+        <h2 id="spec-at-a-glance" class="text-2xl font-semibold tracking-tight">
+          The format at a glance.
+        </h2>
+        <p class="mt-3 text-muted">
+          Preferred writers record these fields. Readers still inspect documents after users change
+          or remove them.
+        </p>
+        <dl class="mt-5 grid gap-3 text-sm">
+          {[
+            ['id', 'Stable document identity'],
+            ['created_at / updated_at', 'Known creation and revision times'],
+            ['revision', 'Author-maintained positive integer'],
+            ['status', 'Your project’s state vocabulary'],
+          ].map(([name, text]) => (
+            <div class="border-t border-border pt-3">
+              <dt class="font-mono font-semibold wrap-anywhere">{name}</dt>
+              <dd class="mt-1 text-muted">{text}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+      <div class="min-w-0">
+        <CodeBlock
+          class="[&_pre]:whitespace-pre-wrap [&_pre]:wrap-anywhere"
+          code={metadata}
+          lang="yaml"
+          title="plan.md · frontmatter"
+        />
+        <div class="mt-4 rounded-lg border border-dashed border-border-strong p-5">
+          <p class="font-semibold">Your Markdown goes here.</p>
+          <p class="mt-2 text-sm text-muted">
+            No fixed heading inventory. Write the context the task needs.
+          </p>
+        </div>
+      </div>
+    </section>
+    <section class="mt-8 min-w-0 border-t border-border pt-6" aria-labelledby="spec-milestone">
+      <h2 id="spec-milestone" class="mb-4 text-xl font-semibold">
+        Add milestones only when useful.
+      </h2>
+      <CodeBlock
+        class="[&_pre]:whitespace-pre-wrap [&_pre]:wrap-anywhere"
+        code={
+          '## Milestone 1: Explain empty search results\n**Status:** pending\n**Milestone ID:** 5a148c73-7d38-4a2f-9c0f-903d93b9b764\n\nDescribe the work and how to review it.'
+        }
+        lang="markdown"
+        title="milestones.md · one reviewable unit"
+      />
+      <p class="mt-3 text-sm text-muted">
+        Status is the first nonblank line after the heading. An optional UUID follows immediately.
+        The complete rules and tolerance boundaries are below.
+      </p>
+    </section>
+  </div>
   <Content />
 </DocumentLayout>

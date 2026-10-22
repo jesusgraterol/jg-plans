@@ -1,9 +1,103 @@
 ---
-import { Content } from '../../../../docs/getting-started.md';
+import CodeBlock from 'jg-personal-astro-ui/code-block';
+import { Content, getHeadings } from '../../../../docs/getting-started.md';
+import { readAvailability } from '../../availability.ts';
 import DocumentLayout from '../../layouts/document-layout.astro';
 import { pageFor } from '../../site.config.ts';
+import { loadExample } from '../../content/examples.ts';
+const example = await loadExample('small');
+const availability = readAvailability(import.meta.env.JG_PLANS_AVAILABILITY);
 ---
 
-<DocumentLayout page={pageFor('/docs/')}>
+<DocumentLayout page={pageFor('/docs/')} headings={getHeadings()}>
+  <div slot="overview" class="grid min-w-0 gap-8">
+    <section
+      aria-labelledby="start-file"
+      class="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)]"
+    >
+      <div>
+        <p class="eyebrow mb-3 text-accent">01 / Write a plan</p>
+        <h2 id="start-file" class="text-2xl font-semibold tracking-tight">
+          Start with a file.
+        </h2>
+        <p class="mt-3 text-muted">
+          Save a Markdown document as <code class="font-mono text-sm">plan.md</code>. Record the
+          basic metadata, then explain the work in your own words.
+        </p>
+        <p class="mt-3 text-sm text-muted">
+          Milestones are optional. A small task can stay this small.
+        </p>
+      </div>
+      <div class="min-w-0">
+        <CodeBlock
+          class="[&_pre]:whitespace-pre-wrap [&_pre]:wrap-anywhere"
+          code={example.documents.plan!}
+          lang="markdown"
+          title="plan.md · complete example"
+        />
+      </div>
+    </section>
+    <section
+      aria-labelledby="start-tools"
+      class="grid min-w-0 gap-5 border-t border-border pt-8 xl:grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)]"
+    >
+      <div>
+        <p class="eyebrow mb-3 text-accent">02 / Read it in code</p>
+        <h2 id="start-tools" class="text-2xl font-semibold tracking-tight">
+          Turn text into data.
+        </h2>
+        <p class="mt-3 text-muted">
+          Pass the file's text to the library. Use the returned metadata and body in your
+          application.
+        </p>
+        <a
+          href="/docs/api/"
+          class="mt-4 inline-flex min-h-8 items-center text-sm font-semibold underline underline-offset-4"
+        >
+          See the library API →
+        </a>
+      </div>
+      <div class="grid min-w-0 gap-4">
+        {availability.state === 'published' && (
+          <CodeBlock code="npm install jg-plans" lang="sh" title="Install · Node.js 24.15.0+" />
+        )}
+        <CodeBlock
+          code={`import { readFile } from 'node:fs/promises';\nimport { parsePlan } from 'jg-plans';\n\nconst source = await readFile('./plan.md', 'utf8');\nconst plan = parsePlan(source);\n\nconsole.log(plan.metadata.status); // "pending"\nconsole.log(plan.metadata.revision); // 1`}
+          lang="typescript"
+          title="read-plan.ts"
+        />
+      </div>
+    </section>
+    <section
+      aria-labelledby="start-cli"
+      class="grid min-w-0 gap-5 border-t border-border pt-8 xl:grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)]"
+    >
+      <div>
+        <p class="eyebrow mb-3 text-accent">03 / Or use the CLI</p>
+        <h2 id="start-cli" class="text-2xl font-semibold tracking-tight">
+          The same files. JSON output.
+        </h2>
+        <p class="mt-3 text-muted">
+          Point the CLI at one planning directory. It reads that plan and its optional milestones.
+        </p>
+        <a
+          href="/docs/cli/"
+          class="mt-4 inline-flex min-h-8 items-center text-sm font-semibold underline underline-offset-4"
+        >
+          Explore CLI commands →
+        </a>
+      </div>
+      <div class="min-w-0">
+        <CodeBlock
+          code="jg-plans inspect --directory ./jg-plans/example --json"
+          lang="sh"
+          title="Inspect a selected directory"
+        />
+        <p class="mt-3 text-sm text-muted">
+          Use the checkout instructions below while published-package availability is unverified.
+        </p>
+      </div>
+    </section>
+  </div>
   <Content />
 </DocumentLayout>

@@ -79,6 +79,14 @@ const structuredData = noIndex
   <body>
     <noscript>
       <style is:inline>
+        [data-static-tabs] [role='tablist'] {
+          display: none;
+        }
+        @layer base {
+          [data-static-tabs] [data-tab-panel][hidden] {
+            display: block !important;
+          }
+        }
         [data-copy-button] {
           display: none;
         }
@@ -138,7 +146,7 @@ const structuredData = noIndex
       <BrandLogo slot="brand" name="jg-plans">
         <JGMark slot="mark" class="size-8 shrink-0" />
       </BrandLogo>
-      <p slot="about">A shared language for work worth thinking through.</p>
+      <p slot="about">Markdown plans, structured data, and tools you can build on.</p>
     </SiteFooter>
   </body>
 </html>

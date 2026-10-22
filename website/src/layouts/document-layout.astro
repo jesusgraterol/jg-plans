@@ -1,54 +1,121 @@
 ---
 import Prose from 'jg-personal-astro-ui/prose';
-
+import LinkCard from 'jg-personal-astro-ui/link-card';
 import BaseLayout from './base-layout.astro';
 import { PAGES, type IPage } from '../site.config.ts';
 
 interface Props {
   page: IPage;
+  headings?: readonly { depth: number; slug: string; text: string }[];
 }
-const { page } = Astro.props;
+const { page, headings = [] } = Astro.props;
+const next = PAGES[(PAGES.findIndex((entry) => entry.path === page.path) + 1) % PAGES.length]!;
 ---
 
 <BaseLayout page={page}>
-  <div class="document-layout jg-container grid gap-6 py-8 sm:gap-10 sm:py-16 lg:grid-cols-[13rem_minmax(0,1fr)] lg:gap-16">
-    <aside aria-label="Documentation navigation">
-      <slot name="navigation">
-        <p class="eyebrow mb-4">Build with jg-plans</p>
-        <nav class="flex flex-wrap gap-x-5 gap-y-1 text-sm lg:grid lg:gap-2">
+  <div class="document-layout jg-container grid gap-8 py-8 sm:py-12 lg:grid-cols-[12rem_minmax(0,1fr)] lg:gap-12">
+    <aside class="min-w-0" aria-label="Documentation navigation">
+      <div class="lg:sticky lg:top-24">
+        <p class="eyebrow mb-3 hidden lg:block">Explore jg-plans</p>
+        <nav aria-label="Documentation" class="hidden gap-1 text-sm lg:grid">
           {PAGES.slice(1).map((entry) => (
             <a
               href={entry.path}
               aria-current={entry.path === page.path ? 'page' : undefined}
-              class="inline-flex min-h-8 items-center"
+              class="inline-flex min-h-10 shrink-0 items-center rounded-md px-3 text-muted hover:bg-secondary hover:text-foreground aria-[current=page]:bg-secondary aria-[current=page]:font-semibold aria-[current=page]:text-accent"
             >
               {entry.label}
             </a>
           ))}
         </nav>
-      </slot>
+        <details class="rounded-lg border border-border lg:hidden">
+          <summary class="min-h-11 cursor-pointer content-center px-4 text-sm font-semibold">
+            Browse documentation
+          </summary>
+          <nav aria-label="Documentation" class="grid gap-1 border-t border-border p-2 text-sm">
+            {PAGES.slice(1).map((entry) => (
+              <a
+                href={entry.path}
+                aria-current={entry.path === page.path ? 'page' : undefined}
+                class="flex min-h-11 items-center rounded-md px-3 text-muted hover:bg-secondary hover:text-foreground aria-[current=page]:bg-secondary aria-[current=page]:font-semibold aria-[current=page]:text-accent"
+              >
+                {entry.label}
+              </a>
+            ))}
+          </nav>
+        </details>
+        {headings.length > 0 && (
+          <nav
+            aria-label="On this page"
+            class="mt-8 hidden border-t border-border pt-5 text-xs lg:block"
+          >
+            <p class="eyebrow mb-3">On this page</p>
+            <ul class="grid gap-1">
+              {headings
+                .filter((heading) => heading.depth === 2)
+                .map((heading) => (
+                  <li>
+                    <a
+                      class="block rounded-md px-3 py-2 text-muted hover:bg-secondary hover:text-foreground"
+                      href={`#${heading.slug}`}
+                    >
+                      {heading.text}
+                    </a>
+                  </li>
+                ))}
+            </ul>
+          </nav>
+        )}
+      </div>
     </aside>
-    <article class="min-w-0 max-w-3xl">
-      {page.source && (
-        <div class="mb-4 flex flex-wrap gap-x-5 gap-y-2 font-mono text-xs text-muted sm:mb-7">
+    <article class="min-w-0" aria-labelledby="document-title">
+      <header class="mb-8 border-b border-border pb-8 sm:mb-10 sm:pb-10">
+        <p class="eyebrow mb-4 text-accent">
+          {page.path.startsWith('/protocol/') ? 'The shared format' : 'Build with jg-plans'}
+        </p>
+        <h1 id="document-title" class="display-title">
+          {page.label}
+        </h1>
+        <p class="mt-5 max-w-2xl text-lg leading-relaxed text-muted">{page.description}</p>
+        <div class="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-muted">
+          <span class="font-mono">Protocol 0.1 · provisional</span>
+          {page.source && (
+            <a
+              href={`/raw/${page.source}`}
+              class="inline-flex min-h-8 items-center underline underline-offset-4"
+            >
+              Read as Markdown
+            </a>
+          )}
           <a
-            href={`/raw/${page.source}`}
-            class="inline-flex min-h-8 items-center underline underline-offset-4"
+            href="#reference"
+            class="inline-flex min-h-8 items-center font-semibold text-accent underline underline-offset-4"
           >
-            Read as Markdown
-          </a>
-          <a
-            href={`/downloads/${page.source}`}
-            download
-            class="inline-flex min-h-8 items-center underline underline-offset-4"
-          >
-            Download source
+            Jump to reference ↓
           </a>
         </div>
-      )}
-      <Prose>
-        <slot />
-      </Prose>
+      </header>
+      <div class="min-w-0">
+        <slot name="overview" />
+      </div>
+      <section
+        id="reference"
+        class="mt-12 min-w-0 border-t border-border pt-8 sm:mt-16 sm:pt-10"
+        aria-label="Complete reference"
+      >
+        <p class="eyebrow mb-6 text-muted">Complete reference</p>
+        <Prose>
+          <slot />
+        </Prose>
+      </section>
+      <nav aria-label="Continue reading" class="mt-12 border-t border-border pt-6">
+        <LinkCard href={next.path} title={next.label} headingLevel={2}>
+          <span slot="kicker" class="mb-2 block text-xs text-muted">
+            Continue exploring
+          </span>
+          {next.description}
+        </LinkCard>
+      </nav>
     </article>
   </div>
 </BaseLayout>

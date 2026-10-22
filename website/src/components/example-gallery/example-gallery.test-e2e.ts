@@ -1,5 +1,3 @@
-import { readFile } from 'node:fs/promises';
-import { resolve } from 'node:path';
 import AxeBuilder from '@axe-core/playwright';
 import { expectNoHorizontalOverflow, waitForPageAssets } from 'jg-playwright';
 
@@ -35,7 +33,9 @@ for (const colorScheme of ['light', 'dark'] as const) {
         extensions.getByRole('definition').filter({ hasText: 'waiting-for-feedback' }),
       ).toBeVisible();
       await extensions.getByText('All observed metadata', { exact: true }).click();
-      await expect(extensions.getByText('"example-team"', { exact: true })).toBeVisible();
+      await expect(
+        extensions.locator('details').getByText('"example-team"', { exact: true }),
+      ).toBeVisible();
       await tabs.getByRole('tab', { name: 'Partly deleted', exact: true }).click();
       const incomplete = page.getByRole('tabpanel', { name: 'Partly deleted', exact: true });
       await expect(
@@ -77,18 +77,19 @@ for (const colorScheme of ['light', 'dark'] as const) {
   }
 }
 
-test('downloads exact source bytes through the visible download control', async ({ page }) => {
+test('examples offer readable source and JSON without download controls', async ({ page }) => {
   await page.goto('/examples/');
   const panel = page.getByRole('tabpanel', { name: 'Small plan', exact: true });
-  const pending = page.waitForEvent('download');
-  await panel.getByRole('link', { name: 'Download plan.md', exact: true }).click();
-  const download = await pending;
-  expect(download.suggestedFilename()).toBe('plan.md');
-  expect(await download.failure()).toBeNull();
-  const path = await download.path();
-  expect(await readFile(path!)).toEqual(
-    await readFile(resolve(import.meta.dirname, '../../../../examples/small/plan.md')),
-  );
+  await expect(panel.getByText('JSON · selected result fields', { exact: true })).toBeVisible();
+  await expect(page.locator('a[download], a[href^="/downloads/"]')).toHaveCount(0);
+  await page.getByText('About these examples and their expected results', { exact: true }).click();
+  const source = page
+    .getByRole('row')
+    .filter({ has: page.getByRole('cell', { name: 'Small plan', exact: true }) })
+    .getByRole('link', { name: 'plan.md', exact: true });
+  await expect(source).toHaveAttribute('href', '/raw/examples/small/plan.md');
+  await source.click();
+  await expect(page.locator('body')).toContainText('# Search feedback');
 });
 
 test.describe('without JavaScript', () => {

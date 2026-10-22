@@ -5,22 +5,11 @@ import { EXAMPLES } from '../../content/sources.ts';
 import ExamplePanel from '../example-panel/example-panel.astro';
 ---
 
-<div data-example-gallery>
+<div data-example-gallery data-static-tabs>
   <noscript>
     <p class="mb-5 text-sm text-muted">
-      All examples are shown below. Each source can be selected or downloaded.
+      All examples are shown below. Each source and its JSON result can be read directly.
     </p>
-    <style is:inline>
-      [data-example-gallery] [role='tablist'] {
-        display: none;
-      }
-      @layer base {
-        /* Override preflight's important hidden rule within its own layer. */
-        [data-example-gallery] [data-tab-panel][hidden] {
-          display: block !important;
-        }
-      }
-    </style>
   </noscript>
   <Tabs id="examples" label="Planning examples" tabs={EXAMPLES}>
     <ExamplePanel slot="small" id="small" />

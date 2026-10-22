@@ -1,12 +1,76 @@
 ---
-import { Content } from '../../../../protocol/README.md';
+import CodeBlock from 'jg-personal-astro-ui/code-block';
+import LinkCard from 'jg-personal-astro-ui/link-card';
+import { Content, getHeadings } from '../../../../protocol/README.md';
 import { loadSource } from '../../content/index.ts';
 import DocumentLayout from '../../layouts/document-layout.astro';
 import { PAGES } from '../../site.config.ts';
-
-await loadSource('protocol');
+const plan = await loadSource('smallPlan');
 ---
 
-<DocumentLayout page={PAGES[1]}>
+<DocumentLayout page={PAGES[1]} headings={getHeadings()}>
+  <div slot="overview">
+    <section class="grid min-w-0 gap-6 xl:grid-cols-2" aria-labelledby="protocol-anatomy">
+      <div>
+        <h2 id="protocol-anatomy" class="text-2xl font-semibold tracking-tight">
+          A little structure.
+          <br />
+          Room for the whole idea.
+        </h2>
+        <p class="mt-4 text-muted">
+          The format connects human-readable planning with fields that tools can recognize.
+        </p>
+        <dl class="mt-6 grid gap-5">
+          <div class="border-l-2 border-accent pl-4">
+            <dt class="font-semibold">YAML frontmatter</dt>
+            <dd class="mt-2 text-sm text-muted">
+              Identity, creation and update times, revision, and your project's status.
+            </dd>
+          </div>
+          <div class="border-l-2 border-border-strong pl-4">
+            <dt class="font-semibold">Markdown body</dt>
+            <dd class="mt-2 text-sm text-muted">
+              Explain the outcome, scope, decisions, and validation. Use the headings that fit.
+            </dd>
+          </div>
+          <div class="border-l-2 border-border-strong pl-4">
+            <dt class="font-semibold">Optional milestones</dt>
+            <dd class="mt-2 text-sm text-muted">
+              A companion file for work that benefits from separate reviewable units.
+            </dd>
+          </div>
+        </dl>
+      </div>
+      <div class="min-w-0">
+        <CodeBlock
+          class="[&_pre]:whitespace-pre-wrap [&_pre]:wrap-anywhere"
+          code={plan}
+          lang="markdown"
+          title="The anatomy of a plan"
+        />
+      </div>
+    </section>
+    <div class="mt-8 grid gap-5 sm:grid-cols-3">
+      {[
+        ['Write', 'Generate the preferred format so other tools can recognize it.'],
+        ['Read', 'Keep useful observations from edited or incomplete documents.'],
+        ['Extend', 'Add project metadata and custom status values without changing the core.'],
+      ].map(([title, text]) => (
+        <div class="border-t border-border pt-4">
+          <h3 class="font-semibold">{title}</h3>
+          <p class="mt-2 text-sm text-muted">{text}</p>
+        </div>
+      ))}
+    </div>
+    <div class="mt-8">
+      <LinkCard href="/protocol/0.1/" title="Protocol 0.1" headingLevel={2}>
+        <span slot="kicker" class="mb-2 block font-mono text-xs text-muted">
+          CURRENT / PROVISIONAL DRAFT
+        </span>
+        Read the full specification for metadata, milestone markers, reader tolerance, and project
+        extensions.
+      </LinkCard>
+    </div>
+  </div>
   <Content />
 </DocumentLayout>

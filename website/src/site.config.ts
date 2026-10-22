@@ -25,9 +25,9 @@ export const PAGES = [
   {
     path: '/',
     label: 'Home',
-    title: 'jg-plans — Good plans. Plain Markdown.',
+    title: 'jg-plans — Markdown plans, structured JSON',
     description:
-      'A compact, open protocol for plans and optional milestones. Built for people, coding agents, and the tools around them.',
+      'An open Markdown planning protocol with a TypeScript library and CLI. Turn plans and optional milestones into JSON for your own tools.',
   },
   {
     path: '/protocol/',
@@ -35,7 +35,7 @@ export const PAGES = [
     label: 'Protocol overview',
     title: 'The protocol · jg-plans',
     description:
-      'Start with the jg-plans protocol: ordinary Markdown, optional milestones, tolerant readers, and project-owned policies.',
+      'A shared Markdown format for plans and optional milestones. Readable by people, useful to tools, and flexible enough for your project.',
     source: 'protocol/README.md',
   },
   {
@@ -52,7 +52,7 @@ export const PAGES = [
     label: 'Getting started',
     title: 'Getting started · jg-plans',
     description:
-      'Read a small plan, add optional milestones, and use the reference library or CLI when they help your work.',
+      'Go from a Markdown plan to structured data. Start with one file, then choose the library or CLI to build it into your workflow.',
     source: 'docs/getting-started.md',
   },
   {
