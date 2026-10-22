@@ -9,6 +9,8 @@ export const ERRORS = {
   DESTINATION_EXISTS: 'JG_PLANS_DESTINATION_EXISTS',
   SOURCE_CHANGED: 'JG_PLANS_SOURCE_CHANGED',
   WRITE_FAILED: 'JG_PLANS_WRITE_FAILED',
+  LOCK_BUSY: 'JG_PLANS_LOCK_BUSY',
+  LOCK_FAILED: 'JG_PLANS_LOCK_FAILED',
 } as const;
 
 // Underlying errors may contain user paths or input snippets. Stable public messages
@@ -33,4 +35,6 @@ export const planErrors = defineErrorCatalog({
     message: 'The document changed before replacement',
   },
   writeFailed: { code: ERRORS.WRITE_FAILED, message: 'The plan document could not be written' },
+  lockBusy: { code: ERRORS.LOCK_BUSY, message: 'The plan document is locked' },
+  lockFailed: { code: ERRORS.LOCK_FAILED, message: 'The plan document lock operation failed' },
 });

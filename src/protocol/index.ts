@@ -25,5 +25,12 @@ export {
   MilestoneSetSchema,
   PlanSetSchema,
   PlanUpdateSchema,
+  PlanDocumentWriteSchema,
+  RemoveMilestonesSchema,
 } from './types.ts';
-export type { ICreatePlanOptions, IPlanUpdate } from './types.ts';
+export type {
+  ICreatePlanOptions,
+  IPlanUpdate,
+  IPlanDocumentWrite,
+  IRemoveMilestones,
+} from './types.ts';

@@ -146,7 +146,7 @@ export const verifyPackedConsumer = async (
       import { createRequire } from 'node:module';
       import * as plans from 'jg-plans';
       assert.equal(plans.PROTOCOL_VERSION, '0.1');
-      assert.deepEqual(Object.keys(plans).sort(), ['CreatePlanOptionsSchema','DiagnosticSchema','ERRORS','InspectPlanOptionsSchema','MilestoneSelectorSchema','MilestoneSetSchema','PROTOCOL_VERSION','PlanDocumentsSchema','PlanFingerprintOptionsSchema','PlanFingerprintSchema','PlanMetadataSchema','PlanSetSchema','PlanUpdateSchema','ReadOptionsSchema','SourceLocationSchema','checkPlan','createPlan','fingerprintPlan','inspectPlan','parseMilestones','parsePlan','updatePlan'].sort());
+      assert.deepEqual(Object.keys(plans).sort(), ['CreatePlanOptionsSchema','DiagnosticSchema','ERRORS','InspectPlanOptionsSchema','MilestoneSelectorSchema','MilestoneSetSchema','PROTOCOL_VERSION','PlanDocumentsSchema','PlanDocumentWriteSchema','RemoveMilestonesSchema','PlanFingerprintOptionsSchema','PlanFingerprintSchema','PlanMetadataSchema','PlanSetSchema','PlanUpdateSchema','ReadOptionsSchema','SourceLocationSchema','checkPlan','createPlan','fingerprintPlan','inspectPlan','parseMilestones','parsePlan','updatePlan','preparePlanUpdate','preparePlanDocumentWrite','writePlanDocument','removeMilestones','withPlanDocumentLocks'].sort());
       assert.equal(plans.parsePlan('# Useful document').body, '# Useful document');
       assert.match(plans.fingerprintPlan('# Work').sha256, /^[a-f0-9]{64}$/);
       assert.equal(plans.parseMilestones('## Milestone 1: Work\\n**Status:** custom').milestones[0].status, 'custom');
@@ -176,7 +176,7 @@ export const verifyPackedConsumer = async (
 
     await writeFile(
       join(directory, 'types.mts'),
-      `import { parsePlan, inspectPlan, createPlan, updatePlan, fingerprintPlan, type IPlanUpdate, type IPlanCreation, type IParsedPlan, type IPlanInspection, type IDiagnostic, type ISourceSpan, type IHeadingSection, type IPlanFingerprint, type IInspectPlanOptions, type IPlanFingerprintOptions } from 'jg-plans';
+      `import { parsePlan, inspectPlan, createPlan, updatePlan, fingerprintPlan, preparePlanUpdate, preparePlanDocumentWrite, writePlanDocument, removeMilestones, withPlanDocumentLocks, type IPreparedPlanEdit, type IAssignedMilestoneId, type IPlanDocumentWrite, type IPlanDocumentWriteResult, type IRemoveMilestones, type IRemoveMilestonesResult, type IPlanUpdate, type IPlanCreation, type IParsedPlan, type IPlanInspection, type IDiagnostic, type ISourceSpan, type IHeadingSection, type IPlanFingerprint, type IInspectPlanOptions, type IPlanFingerprintOptions } from 'jg-plans';
 const plan: IParsedPlan = parsePlan('# Work');
 const inspection: IPlanInspection = await inspectPlan('.');
 const diagnostics: IDiagnostic[] = plan.diagnostics;
@@ -188,7 +188,15 @@ const inspectOptions: IInspectPlanOptions = {fingerprint: fingerprintOptions};
 const fingerprint: IPlanFingerprint = fingerprintPlan(plan.source, fingerprintOptions);
 const preamble: ISourceSpan = plan.preamble;
 const sections: IHeadingSection[] = plan.sections;
-void [inspection, diagnostics, changed, fingerprint, preamble, sections, inspectOptions];\n`,
+const input: IPlanDocumentWrite = {document: 'plan', expectedSha256: created.plan.sha256, body: '# Revised'};
+const prepared: IPreparedPlanEdit = preparePlanDocumentWrite(created.plan.source, input);
+const narrow: IPreparedPlanEdit = preparePlanUpdate(created.plan.source, {document: 'plan', set: {status: 'custom'}});
+const assignments: IAssignedMilestoneId[] = prepared.assignedMilestoneIds;
+const written: IPlanDocumentWriteResult = await writePlanDocument(created.directory, input);
+const removal: IRemoveMilestones = {expectedSha256: prepared.sha256};
+const removed: IRemoveMilestonesResult = await removeMilestones(created.directory, removal);
+const locked: number = await withPlanDocumentLocks(created.directory, ['milestones', 'plan'], () => 1);
+void [inspection, diagnostics, changed, fingerprint, preamble, sections, inspectOptions, narrow, assignments, written, removed, locked];\n`,
     );
     const require = createRequire(import.meta.url);
     const typecheck = await runProcess({
@@ -241,7 +249,7 @@ void [inspection, diagnostics, changed, fingerprint, preamble, sections, inspect
       .parse(JSON.parse(cli.stdout));
     assert.equal(envelope.data.plan.state, 'missing');
 
-    const runCli = async (args: string[]): Promise<unknown> => {
+    const runCli = async (args: string[], expectedExit = 0): Promise<unknown> => {
       const result = await runProcess({
         ...cancellation,
         ...resolvePackageManagerCommand(['exec', 'jg-plans', ...args, '--json'], {
@@ -253,7 +261,7 @@ void [inspection, diagnostics, changed, fingerprint, preamble, sections, inspect
         timeoutSeconds: 30,
         maxOutputBytes: 1024 * 1024,
       });
-      assert.equal(result.exitCode, 0, result.stderr || result.stdout);
+      assert.equal(result.exitCode, expectedExit, result.stderr || result.stdout);
       assert.equal(result.stderr, '');
       return JSON.parse(result.stdout) as unknown;
     };
@@ -312,6 +320,101 @@ void [inspection, diagnostics, changed, fingerprint, preamble, sections, inspect
       })
       .parse(await runCli(['check', '--directory', created.data.directory]));
     assert.equal(checked.data.conforms, true);
+    const writeInput = join(directory, 'write.json');
+    const removeInput = join(directory, 'remove.json');
+    const observedForWrite = z
+      .object({
+        data: z.object({
+          plan: z.object({ sha256: z.string() }),
+          milestones: z.object({ sha256: z.string() }),
+        }),
+      })
+      .parse(await runCli(['inspect', '--directory', created.data.directory]));
+    await writeFile(
+      writeInput,
+      JSON.stringify({
+        document: 'plan',
+        expectedSha256: observedForWrite.data.plan.sha256,
+        body: '# Revised installed example\n',
+        set: { revision: 2 },
+      }),
+    );
+    const bodyWritten = z
+      .object({
+        data: z.object({
+          changed: z.literal(true),
+          sha256: z.string(),
+          assignedMilestoneIds: z.array(z.unknown()),
+        }),
+        error: z.null(),
+      })
+      .parse(await runCli(['write', '--directory', created.data.directory, '--input', writeInput]));
+    assert.notEqual(bodyWritten.data.sha256, observedForWrite.data.plan.sha256);
+    const stale = z
+      .object({ data: z.null(), error: z.object({ code: z.literal('JG_PLANS_SOURCE_CHANGED') }) })
+      .parse(
+        await runCli(['write', '--directory', created.data.directory, '--input', writeInput], 2),
+      );
+    assert.equal(stale.data, null);
+    await writeFile(
+      removeInput,
+      JSON.stringify({ expectedSha256: observedForWrite.data.milestones.sha256 }),
+    );
+    const removed = z
+      .object({ data: z.object({ changed: z.literal(true), sha256: z.null() }), error: z.null() })
+      .parse(
+        await runCli([
+          'remove-milestones',
+          '--directory',
+          created.data.directory,
+          '--input',
+          removeInput,
+        ]),
+      );
+    assert.equal(removed.data.sha256, null);
+    await writeFile(
+      writeInput,
+      JSON.stringify({
+        document: 'milestones',
+        expectedSha256: null,
+        source: '## Milestone 1: New scope\n**Status:** pending\n',
+        assignMissingIds: true,
+      }),
+    );
+    const assigned = z
+      .object({
+        data: z.object({
+          sha256: z.string(),
+          assignedMilestoneIds: z.array(z.object({ ordinal: z.number(), id: z.uuid() })),
+        }),
+        error: z.null(),
+      })
+      .parse(await runCli(['write', '--directory', created.data.directory, '--input', writeInput]));
+    assert.equal(assigned.data.assignedMilestoneIds.length, 1);
+    await runCli(['check', '--directory', created.data.directory]);
+    const lockSmoke = await runProcess({
+      ...cancellation,
+      command: process.execPath,
+      args: [
+        '--input-type=module',
+        '-e',
+        `
+        import assert from 'node:assert/strict';
+        import { withPlanDocumentLocks, updatePlan, preparePlanDocumentWrite } from 'jg-plans';
+        const prepared = preparePlanDocumentWrite(null, {document: 'milestones', expectedSha256: null, source: '## Milestone 1: Work\\n**Status:** pending', assignMissingIds: true});
+        assert.equal(prepared.assignedMilestoneIds.length, 1);
+        await withPlanDocumentLocks(process.argv[1], ['plan'], async () => {
+          await assert.rejects(updatePlan(process.argv[1], {document: 'plan', set: {status: 'done'}}), {code: 'JG_PLANS_LOCK_BUSY'});
+        });
+      `,
+        created.data.directory,
+      ],
+      cwd: directory,
+      env,
+      timeoutSeconds: 30,
+      maxOutputBytes: 1024 * 1024,
+    });
+    assert.equal(lockSmoke.exitCode, 0, lockSmoke.stderr);
     const example = await runProcess({
       ...cancellation,
       command: process.execPath,

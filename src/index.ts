@@ -13,9 +13,22 @@ export type {
 } from './documents/index.ts';
 export { ERRORS } from './errors/index.ts';
 export { inspectPlan } from './files/index.ts';
-export { createPlan, updatePlan } from './files/index.ts';
+export {
+  createPlan,
+  updatePlan,
+  writePlanDocument,
+  removeMilestones,
+  withPlanDocumentLocks,
+} from './files/index.ts';
+export { preparePlanUpdate, preparePlanDocumentWrite } from './edits/index.ts';
+export type { IPreparedPlanEdit, IAssignedMilestoneId } from './edits/index.ts';
 export type { IDocumentRead, IPlanInspection } from './files/index.ts';
-export type { IPlanCreation, IPlanUpdateResult } from './files/index.ts';
+export type {
+  IPlanCreation,
+  IPlanUpdateResult,
+  IPlanDocumentWriteResult,
+  IRemoveMilestonesResult,
+} from './files/index.ts';
 export {
   PROTOCOL_VERSION,
   DiagnosticSchema,
@@ -42,5 +55,12 @@ export {
   MilestoneSetSchema,
   PlanSetSchema,
   PlanUpdateSchema,
+  PlanDocumentWriteSchema,
+  RemoveMilestonesSchema,
 } from './protocol/index.ts';
-export type { ICreatePlanOptions, IPlanUpdate } from './protocol/index.ts';
+export type {
+  ICreatePlanOptions,
+  IPlanUpdate,
+  IPlanDocumentWrite,
+  IRemoveMilestones,
+} from './protocol/index.ts';

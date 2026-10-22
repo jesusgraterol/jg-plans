@@ -244,6 +244,79 @@ describe('compiled CLI read contract', () => {
 });
 
 describe('compiled CLI mutation contract', () => {
+  it(
+    'writes guarded sources, returns assigned IDs, removes milestones, and rejects stale or invalid input',
+    { timeout: 30_000 },
+    async ({ cli: { fixture, run } }) => {
+      const root = await fixture();
+      await writeFile(join(root, 'plan.md'), '# Original');
+      const before = JSON.parse(
+        (await run(['inspect', '--directory', root, '--json'])).stdout,
+      ).data;
+      const written = await run(
+        ['write', '--directory', root, '--input', '-', '--json'],
+        JSON.stringify({
+          document: 'plan',
+          expectedSha256: before.plan.sha256,
+          body: '# PRIVATE_REPLACEMENT',
+          set: { revision: 2 },
+        }),
+      );
+      expect(written.exitCode).toBe(0);
+      expect(written.stderr).toBe('');
+      expect(written.stdout).not.toContain('PRIVATE_REPLACEMENT');
+      expect(JSON.parse(written.stdout)).toMatchObject({
+        command: 'write',
+        error: null,
+        data: {
+          changed: true,
+          sha256: expect.stringMatching(/^[a-f0-9]{64}$/),
+          assignedMilestoneIds: [],
+        },
+      });
+      const stale = await run(
+        ['write', '--directory', root, '--input', '-', '--json'],
+        JSON.stringify({ document: 'plan', expectedSha256: before.plan.sha256, body: '# Stale' }),
+      );
+      expect(stale.exitCode).toBe(2);
+      expect(JSON.parse(stale.stdout).error.code).toBe('JG_PLANS_SOURCE_CHANGED');
+      const created = await run(
+        ['write', '--directory', root, '--input', '-', '--json'],
+        JSON.stringify({
+          document: 'milestones',
+          expectedSha256: null,
+          source: '## Milestone 1: Work\n**Status:** custom',
+          assignMissingIds: true,
+        }),
+      );
+      expect(created.exitCode).toBe(0);
+      expect(JSON.parse(created.stdout).data.assignedMilestoneIds).toEqual([
+        { ordinal: 1, id: expect.stringMatching(/^[0-9a-f-]{36}$/) },
+      ]);
+      const removed = await run(
+        ['remove-milestones', '--directory', root, '--input', '-', '--json'],
+        JSON.stringify({ expectedSha256: JSON.parse(created.stdout).data.sha256 }),
+      );
+      expect(removed.exitCode).toBe(0);
+      expect(JSON.parse(removed.stdout)).toMatchObject({
+        command: 'remove-milestones',
+        data: { changed: true, sha256: null },
+        error: null,
+      });
+      for (const command of ['write', 'remove-milestones']) {
+        const invalid = await run([command, '--directory', root, '--input', '-', '--json'], '{}');
+        expect(invalid.exitCode).toBe(2);
+        expect(invalid.stderr).toBe('');
+        expect(JSON.parse(invalid.stdout).error.code).toBe('JG_PLANS_INVALID_INPUT');
+        const flags = await run(
+          [command, '--directory', root, '--input', '-', '--include-body', '--json'],
+          '{}',
+        );
+        expect(JSON.parse(flags.stdout).error.code).toBe('JG_PLANS_INVALID_INPUT');
+      }
+    },
+  );
+
   // Four native steps each retain a ten-second deadline, including real fsync work.
   it(
     'creates, inspects, updates, and checks with explicit JSON inputs',

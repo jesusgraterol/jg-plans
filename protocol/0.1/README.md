@@ -107,13 +107,13 @@ Inspection explicitly distinguishes a missing plan, missing milestone file, orph
 
 ## Reference mutation boundary
 
-The first reference library supports creation and targeted edits to core metadata and milestone status/ID markers. It does not rewrite general Markdown, normalize extension fields, reorder milestones, remap progress, maintain a snapshot service, or migrate repositories.
+The reference library supports creation, narrow core-metadata/marker patches, guarded plan-body/core-metadata replacement, complete milestone-source replacement with explicit missing-ID assignment, and guarded milestone removal. Pure preparation supplies exact output for consumer persistence. It never remaps progress, normalizes unrelated extension fields, maintains a snapshot service, or migrates repositories.
 
 For existing documents, preserve the original bytes outside the exact requested values or inserted field/marker lines, including unknown data, comments, whitespace, BOM, Unicode, CRLF, and final-newline state. Decode UTF-8 strictly and map character positions to original byte spans correctly. Unsupported or ambiguous affected YAML, unsupported encoding, invalid UTF-8, or unencodable replacement text leaves that file unchanged with a specific failure.
 
 A malformed plan must not prevent independent milestone observations or an unambiguous marker edit. Update does not recreate a missing/deleted target. Creation never overwrites an existing destination.
 
-Consumers serialize the whole read/edit/write operation for each document, including concurrent calls in one process and across processes. The standalone CLI provides no cross-process coordination: run its updates to the same document sequentially. Atomic replacement prevents partial-file output; a prior-content check detects observed changes but has a comparison-to-rename race. Do not claim protection against every writer or silently retry over newer contents.
+Library and CLI filesystem mutations share short local document locks, acquired in plan-then-milestones order and released in reverse. The public lock callback allows consumers to prepare and persist under that same namespace. Busy/dead owners fail immediately; recovery is an explicit operator decision. Atomic replacement and byte guards detect observed changes, but nonparticipating editors retain a comparison-to-replacement/deletion race. No cross-document transaction, automatic retry, or completion inference is supplied. See the [API](../../api/README.md#shared-document-locks) for lock names and uncertain release outcomes.
 
 ## Consumer-owned policy
 

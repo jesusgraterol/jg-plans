@@ -39,6 +39,12 @@ const example = await loadExample('small');
           ['inspectPlan', 'Selected directory → document states', '#selected-directory-inspection'],
           ['createPlan', 'Body + metadata → new files', '#exclusive-creation'],
           ['updatePlan', 'Explicit patch → targeted edit', '#targeted-updates'],
+          [
+            'Preparation / writes / removal',
+            'Guarded source → exact result',
+            '#pure-preparation-and-guarded-document-writes',
+          ],
+          ['withPlanDocumentLocks', 'Shared local writer coordination', '#shared-document-locks'],
         ] as const
       ).map(([name, description, href]) => (
         <LinkCard href={href} title={name} monoTitle>

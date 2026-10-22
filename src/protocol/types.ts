@@ -121,9 +121,20 @@ export const MilestoneSetSchema = z
 
 /** A call edits one document with one closed patch, never arbitrary prose. */
 export const PlanUpdateSchema = z.discriminatedUnion('document', [
-  z.strictObject({ document: z.literal('plan'), set: PlanSetSchema }),
+  z.strictObject({
+    document: z.literal('plan'),
+    set: PlanSetSchema,
+    expectedSha256: z
+      .string()
+      .regex(/^[a-f0-9]{64}$/)
+      .optional(),
+  }),
   z.strictObject({
     document: z.literal('milestones'),
+    expectedSha256: z
+      .string()
+      .regex(/^[a-f0-9]{64}$/)
+      .optional(),
     changes: z
       .array(z.strictObject({ select: MilestoneSelectorSchema, set: MilestoneSetSchema }))
       .min(1),
@@ -131,3 +142,31 @@ export const PlanUpdateSchema = z.discriminatedUnion('document', [
 ]);
 
 export type IPlanUpdate = z.infer<typeof PlanUpdateSchema>;
+
+/** Guarded document replacement; null expectations permit only absent milestone creation. */
+export const PlanDocumentWriteSchema = z.discriminatedUnion('document', [
+  z.strictObject({
+    document: z.literal('plan'),
+    expectedSha256: z.string().regex(/^[a-f0-9]{64}$/),
+    body: z.string(),
+    set: PlanSetSchema.optional(),
+  }),
+  z.strictObject({
+    document: z.literal('milestones'),
+    expectedSha256: z
+      .string()
+      .regex(/^[a-f0-9]{64}$/)
+      .nullable(),
+    source: z.string(),
+    assignMissingIds: z.boolean().optional(),
+  }),
+]);
+
+export type IPlanDocumentWrite = z.infer<typeof PlanDocumentWriteSchema>;
+
+/** Removing a selected regular milestone document always requires its observed hash. */
+export const RemoveMilestonesSchema = z.strictObject({
+  expectedSha256: z.string().regex(/^[a-f0-9]{64}$/),
+});
+
+export type IRemoveMilestones = z.infer<typeof RemoveMilestonesSchema>;

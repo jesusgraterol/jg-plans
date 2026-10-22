@@ -7,29 +7,40 @@ import { z } from 'zod';
 import { checkPlan } from '../documents/index.ts';
 import { decodeSource } from '../edits/index.ts';
 import { planErrors } from '../errors/index.ts';
-import { createPlan, inspectPlan, updatePlan, type IPlanInspection } from '../files/index.ts';
+import {
+  createPlan,
+  inspectPlan,
+  updatePlan,
+  writePlanDocument,
+  removeMilestones,
+  type IPlanInspection,
+} from '../files/index.ts';
 import {
   CreatePlanOptionsSchema,
   DEFAULT_MAX_BYTES,
   PlanUpdateSchema,
+  PlanDocumentWriteSchema,
+  RemoveMilestonesSchema,
   type IDiagnostic,
 } from '../protocol/index.ts';
 
 import { parseArguments } from './arguments.ts';
 
-const HELP = `jg-plans — inspect Markdown plans without enforcing a workflow
+const HELP = `jg-plans — read and edit Markdown plans without enforcing a workflow
 
 Commands:
   inspect --directory <path> [--fingerprint-exclude <JSON-array>] [--include-body] [--json] [--max-bytes <bytes>]
   check   --directory <path> [--json] [--max-bytes <bytes>]
   create  --slug <slug> --input <file-or-dash> [--root <path>] [--json] [--max-bytes <bytes>]
   update  --directory <path> --input <file-or-dash> [--json] [--max-bytes <bytes>]
+  write   --directory <path> --input <file-or-dash> [--json] [--max-bytes <bytes>]
+  remove-milestones --directory <path> --input <file-or-dash> [--json] [--max-bytes <bytes>]
   --help, -h
   --version, -v
 
 Only the selected plan.md and optional milestones.md are read.
 The default bound is 1048576 bytes per file. Checks are optional.
-Updates to the same document must run sequentially. No history is required.
+Mutations share local document locks. Busy owners require explicit recovery. No history is required.
 Exit 0: completed inspection, successful mutation, or conforming check; 1: conformance errors;
 2: invalid command or operational failure. Missing files do not imply completion.`;
 
@@ -136,16 +147,24 @@ export const runCli = async (args: string[]): Promise<number> => {
       diagnostics = result.diagnostics;
       data = {
         directory: result.directory,
-        plan: { metadata: result.plan.metadata, rawMetadata: result.plan.rawMetadata },
-        milestones:
-          result.milestones?.milestones.map((entry) => ({
-            ordinal: entry.ordinal,
-            ordinalText: entry.ordinalText,
-            title: entry.title,
-            id: entry.id,
-            status: entry.status,
-            location: entry.location,
-          })) ?? null,
+        plan: {
+          sha256: result.plan.sha256,
+          metadata: result.plan.metadata,
+          rawMetadata: result.plan.rawMetadata,
+        },
+        milestones: result.milestones
+          ? {
+              sha256: result.milestones.sha256,
+              milestones: result.milestones.milestones.map((entry) => ({
+                ordinal: entry.ordinal,
+                ordinalText: entry.ordinalText,
+                title: entry.title,
+                id: entry.id,
+                status: entry.status,
+                location: entry.location,
+              })),
+            }
+          : null,
       };
     } else if (options.command === 'update') {
       const raw = await readMutationInput(options.input!, options.maxBytes ?? DEFAULT_MAX_BYTES);
@@ -157,7 +176,38 @@ export const runCli = async (args: string[]): Promise<number> => {
         options.maxBytes === undefined ? {} : { maxBytes: options.maxBytes },
       );
       diagnostics = result.diagnostics;
-      data = { directory: result.directory, document: result.document, changed: result.changed };
+      data = {
+        directory: result.directory,
+        document: result.document,
+        changed: result.changed,
+        sha256: result.sha256,
+        ...('assignedMilestoneIds' in result
+          ? { assignedMilestoneIds: result.assignedMilestoneIds }
+          : {}),
+      };
+    } else if (options.command === 'write' || options.command === 'remove-milestones') {
+      const raw = await readMutationInput(options.input!, options.maxBytes ?? DEFAULT_MAX_BYTES);
+      const readOptions = options.maxBytes === undefined ? {} : { maxBytes: options.maxBytes };
+      let result;
+      if (options.command === 'write') {
+        const parsed = PlanDocumentWriteSchema.safeParse(raw);
+        if (!parsed.success) throw planErrors.create('invalidInput');
+        result = await writePlanDocument(options.directory!, parsed.data, readOptions);
+      } else {
+        const parsed = RemoveMilestonesSchema.safeParse(raw);
+        if (!parsed.success) throw planErrors.create('invalidInput');
+        result = await removeMilestones(options.directory!, parsed.data, readOptions);
+      }
+      diagnostics = result.diagnostics;
+      data = {
+        directory: result.directory,
+        document: result.document,
+        changed: result.changed,
+        sha256: result.sha256,
+        ...('assignedMilestoneIds' in result
+          ? { assignedMilestoneIds: result.assignedMilestoneIds }
+          : {}),
+      };
     } else {
       const inspection = await inspectPlan(options.directory!, {
         ...(options.maxBytes === undefined ? {} : { maxBytes: options.maxBytes }),

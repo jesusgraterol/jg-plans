@@ -16,9 +16,9 @@ For implementation commands and dependency ownership, read [development](../../.
 ## Preserve the document boundary
 
 - Keep optional milestones, unknown metadata and custom statuses useful. Missing or deleted material never implies approval, completion, or a need to restore history.
-- Keep project schemas, approvals, digests, registries, locks and reconciliation with consumers. Protocol 0.1 stays provisional until separately scoped skill and HQ adoption exercises it.
-- Restrict reference-library writes to explicitly requested metadata fields and milestone markers. Preserve every other byte, including encoding/BOM and line-ending details; report unsupported edits without silently normalizing prose.
-- Consumers serialize the complete read/edit/write operation. Atomic replacement and a prior-content comparison do not remove the comparison-to-rename race.
+- Keep project schemas, approvals, digests, registries, coordination journals and reconciliation with consumers. Protocol 0.1 stays provisional until separately scoped skill and HQ adoption exercises it.
+- Keep narrow patches, explicit guarded body/source writes, guarded removal, and pure preparation on the same edit engine. Assign missing UUIDs only on request. Preserve every other byte, including encoding/BOM and line-ending details; report unsupported edits without silently normalizing prose.
+- Filesystem mutations and consumer persistence share canonical local document locks. Inside the public callback use pure preparation and your own persistence, never nested mutation calls. Busy/dead owners require explicit operator inspection; failed release may follow durable writes. Atomic replacement and prior-content comparison do not remove the nonparticipating-writer race.
 
 ## Keep evidence and publication aligned
 

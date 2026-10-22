@@ -42,9 +42,9 @@ Create input is a closed JSON object with body, optional metadata, and optional 
 }
 ```
 
-Slug and root are command flags, not JSON fields. Creation uses ./jg-plans relative to the working directory by default, without root discovery or migration. It creates an exclusive timestamp_slug directory, defaults missing metadata, preserves supplied body/milestones, and never overwrites. Slugs use lowercase ASCII kebab case; the generated component must fit 64 characters. Returned create data contains directory, plan metadata/rawMetadata, and milestone summaries or null. No body is emitted.
+Slug and root are command flags, not JSON fields. Creation uses ./jg-plans relative to the working directory by default, without root discovery or migration. It creates an exclusive timestamp_slug directory, defaults missing metadata, preserves supplied body/milestones, and never overwrites. Slugs use lowercase ASCII kebab case; the generated component must fit 64 characters. Returned create data contains directory, plan metadata/rawMetadata/sha256, and milestones as { sha256, milestones: summaries } or null. No body is emitted.
 
-Update input selects one document. For a plan, use `{ "document": "plan", "set": { "status": "done", "revision": 2 } }`. The only allowed fields are id, created_at, updated_at, revision, and status. For milestones:
+Update input selects one document and optionally expectedSha256 from a fresh inspection; a stale or deleted guarded target fails before preparation. For a plan, use `{ "document": "plan", "set": { "status": "done", "revision": 2 } }`. The only allowed fields are id, created_at, updated_at, revision, and status. For milestones:
 
 ```json
 {
@@ -53,11 +53,26 @@ Update input selects one document. For a plan, use `{ "document": "plan", "set":
 }
 ```
 
-Select by ordinal or UUID id, with one change per target. Set status and/or UUID id. The result contains directory, document, and changed. Equal values skip the write. Revision/timestamps never advance implicitly. Overview rows, prose, and extension metadata remain byte-identical. Missing selected files are not recreated. Existing misplaced markers remain in place with diagnostics; new markers require canonical insertion points.
+Select by ordinal or UUID id, with one change per target. Set status and/or UUID id. The result contains directory, document, changed, sha256, and assignedMilestoneIds (empty for narrow updates). Equal values skip the write. Revision/timestamps never advance implicitly. Overview rows, prose, and extension metadata remain byte-identical. Missing selected files are not recreated. Existing misplaced markers remain in place with diagnostics; new markers require canonical insertion points.
 
 Input comes from a file or `-` for stdin and must be valid UTF-8 JSON, at most 1 MiB by default. `--max-bytes` overrides both mutation-input and selected-document limits. Unknown JSON fields, nonconforming requested core values, invalid encoding, unsupported YAML, ambiguous edits, destination collisions, detected source changes, and I/O failures exit 2. Unsupported edits explain the case in error.data.reason; cleanup failures report owned paths. See [the API](../api/README.md) for precise preservation and unsupported-edit limits.
 
-Serialize commands that edit the same document, including the whole read/edit/write operation. A prior-content check detects observed intervening changes, but the comparison-to-rename race remains. The CLI supplies no lock, queue, retry, or history service.
+All mutations share local document locks with library/HQ consumers. Busy and dead owners fail immediately; recovery requires explicit operator inspection. A prior-content check detects observed intervening changes, but nonparticipating writers retain a comparison-to-rename race. Release failures report uncertain mutation outcomes even when bytes were written. There is no cross-document transaction, automatic retry, or history service.
+
+## Write and remove milestones
+
+```sh
+jg-plans write --directory ./jg-plans/example --input write.json --json
+jg-plans remove-milestones --directory ./jg-plans/example --input remove.json --json
+```
+
+Write accepts PlanDocumentWriteSchema. For plan bodies, use `{ "document": "plan", "expectedSha256": "<observed 64-character lowercase hash>", "body": "# Revised intent\n", "set": { "revision": 2 } }`. Set is optional and changes only core metadata. Body-only writes can preserve closed malformed YAML; unterminated framing fails. Unaffected frontmatter, BOM, and permissions are retained.
+
+For complete milestone replacement use `{ "document": "milestones", "expectedSha256": "<observed hash>", "source": "## Milestone 1: Work\n**Status:** pending\n", "assignMissingIds": true }`. Null expectedSha256 explicitly creates an absent milestone file exclusively. Existing expectations never recreate deleted targets. UUID assignment is opt-in, preserves valid IDs, and rejects ambiguous identities/insertion points. Write output includes directory, document, changed, sha256, and assignedMilestoneIds, never full source.
+
+Remove input is `{ "expectedSha256": "<observed milestone hash>" }`. Only matching regular UTF-8 milestones.md is removed; absent/stale targets fail SOURCE_CHANGED. Successful data contains directory, document milestones, changed true, and sha256 null. No plan, directory, or coordination file is removed.
+
+The placeholders above must be replaced with actual hashes returned by inspect/create or a preceding mutation. Every command uses the same input limits, safe errors, envelope, and exits. See [the API](../api/README.md#pure-preparation-and-guarded-document-writes) for source preservation and [shared document locks](../api/README.md#shared-document-locks).
 
 ## Limits and output
 

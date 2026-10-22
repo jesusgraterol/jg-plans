@@ -31,7 +31,7 @@ Archive inspection uses tar as a development-only parser, with no extraction: at
 
 `check:package` composes those tests with type, lint, and format checks. Root `check` runs that package boundary followed by the website's production checks, in an explicit order; the root public package and private website share a pnpm workspace/lockfile. The website declares jg-plans through workspace:\* and builds the root before reading its exports. `release:pack` builds, writes a local archive under ignored .release/, and verifies that exact retained archive through the installed consumer; it does not publish. Build and archive scripts bound child processes and forward shutdown signals. Check qualifies Node 24.15.0 and 24.22.1 across Linux, macOS, and Windows; website/browser checks run once on Linux at 24.22.1.
 
-The installed executable performs create → inspect → update → check against its real bin shim, and the shipped examples/library.mjs is run from the installed archive. Creation failures exercise actual prefix writes and cleanup; conflict tests control only the external write boundary before invoking the real atomic comparison. Byte-preservation expectations are independent literal buffers, not parser-generated expected output.
+The installed executable performs create → inspect → update → write → check → remove → create-milestones against its real bin shim, and the shipped examples/library.mjs is run from the installed archive. Creation failures exercise actual prefix writes and cleanup; conflict tests control only the external write boundary before invoking the real atomic comparison. Byte-preservation expectations are independent literal buffers, not parser-generated expected output.
 
 Run changed integration tests three consecutive times without retries: `pnpm test:integration --repeats=2 --retry=0`. Reuse existing successful checks when their inputs are unchanged. Native symlink rejection is tested on POSIX; nonregular-file failures are tested on every host.
 
@@ -51,7 +51,7 @@ Use the approved exact dependency baselines and JG Packages. Read the actual res
 
 Start from the independently specified observations in examples/README.md. Add synthetic parser/encoding/edit fixtures alongside owning implementation tests, never by copying private plans. Do not auto-format byte-sensitive inputs or compute expected results from the parser being tested.
 
-Test public built exports and the installed executable. Keep known-field diagnostics separate from tolerant source observations and verify every byte outside targeted edit spans. Consumers serialize document mutations; detected conflicts are failures, never an instruction to retry over newer user content.
+Test public built exports and the installed executable. Keep known-field diagnostics separate from tolerant source observations and verify every byte outside targeted edit spans. Filesystem mutations share canonical local document locks; detected conflicts are failures, never an instruction to retry over newer user content.
 
 ## First delivery prerequisites
 

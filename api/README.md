@@ -61,9 +61,9 @@ Bytes must decode strictly as UTF-8. An existing BOM is retained in source. Inva
 
 ## Types and schemas
 
-Creation and update contracts are described below. A [runnable library example](../examples/library.mjs) exercises creation, sequential updates, inspection, and checking in an owned temporary directory.
+Creation, preparation, updates, guarded writes, removal, and locks are described below. A [runnable library example](../examples/library.mjs) exercises creation, sequential updates, inspection, and checking in an owned temporary directory.
 
-Named public types are IPlanMetadata, IDiagnostic, ISourceLocation, ISourceSpan, IHeadingSection, IReadOptions, IPlanFingerprintOptions, IInspectPlanOptions, IPlanFingerprint, IPlanDocuments, IParsedPlan, IFrontmatter, IMarker, IMilestone, IOverviewRow, IParsedMilestones, ICheckResult, IDocumentRead, IPlanInspection, ICreatePlanOptions, IPlanCreation, IPlanUpdate, and IPlanUpdateResult.
+Named public types are IPlanMetadata, IDiagnostic, ISourceLocation, ISourceSpan, IHeadingSection, IReadOptions, IPlanFingerprintOptions, IInspectPlanOptions, IPlanFingerprint, IPlanDocuments, IParsedPlan, IFrontmatter, IMarker, IMilestone, IOverviewRow, IParsedMilestones, ICheckResult, IDocumentRead, IPlanInspection, ICreatePlanOptions, IPlanCreation, IPlanUpdate, IPlanUpdateResult, IPlanDocumentWrite, IPlanDocumentWriteResult, IRemoveMilestones, IRemoveMilestonesResult, IPreparedPlanEdit, and IAssignedMilestoneId.
 
 PlanMetadataSchema defines preferred complete metadata and allows project extensions. DiagnosticSchema, SourceLocationSchema, ReadOptionsSchema, PlanFingerprintOptionsSchema, PlanFingerprintSchema, InspectPlanOptionsSchema, and PlanDocumentsSchema own the corresponding boundary contracts. Fingerprint results and inspection/fingerprint options are closed schemas; only explicit supported keys are accepted. Known metadata fields are validated independently during tolerant reads. PROTOCOL_VERSION is `0.1`; it is independent of the npm package version.
 
@@ -88,11 +88,11 @@ await updatePlan(created.directory, { document: 'plan', set: { revision: 2 } });
 
 The closed CreatePlanOptionsSchema accepts slug, optional root, body, optional JSON metadata, and optional milestones text. Missing core metadata defaults to the generated name as id, one captured ISO creation time for created_at and updated_at, revision 1, and pending status. Supplied values override defaults, including nonconforming known values; diagnostics describe them without refusing to preserve them. Unknown project metadata is retained. The supplied Markdown body and milestone bytes are preserved; creation emits new UTF-8 frontmatter with LF separators.
 
-The result contains directory, parsed plan, parsed milestones or null, and diagnostics. Existing destinations fail without overwriting. Failed creation attempts remove only recognized files created by that call and the empty owned plan directory. Intervening user content is preserved; incomplete cleanup is reported in error.data.cleanupFailedPaths. An empty selected storage root can remain after failure.
+The result contains directory, parsed plan with its exact-byte sha256, parsed milestones with sha256 or null, and diagnostics. Existing destinations fail without overwriting. Failed creation attempts remove only recognized files created by that call and the empty owned plan directory. Intervening user content is preserved; incomplete cleanup is reported in error.data.cleanupFailedPaths. An empty selected storage root can remain after failure.
 
 ## Targeted updates
 
-`updatePlan(directory, patch, { maxBytes? }?)` edits one existing document and returns `{ directory, document, changed, diagnostics }`. The closed PlanUpdateSchema accepts either:
+`updatePlan(directory, patch, { maxBytes? }?)` edits one existing document and returns `{ directory, document, changed, sha256, diagnostics, assignedMilestoneIds }`. The closed PlanUpdateSchema accepts either variant below, with optional expectedSha256 on either variant. Supply a freshly observed lowercase SHA-256 to reject stale or deleted sources before preparation:
 
 ```json
 { "document": "plan", "set": { "status": "in progress", "revision": 2 } }
@@ -111,11 +111,46 @@ The update reads only the selected document, bounded at 1 MiB by default. A malf
 
 Every byte outside the requested value spans or insertion points is preserved, including BOM, supplementary Unicode, unrelated nested metadata, comments, quotes, whitespace, line endings, and final-newline state. Equal values produce a no-op and skip replacement. Existing single quotes are retained when their style can represent the value; replacements otherwise use quoted YAML scalars.
 
-Unsupported edits fail without writing. These include malformed/unterminated frontmatter, a flow-style root mapping, complex/anchored/tagged root keys, merge keys, duplicate affected keys, and affected aliases, anchors, tags, block/multiline scalars, or implicit empty nulls. Duplicate/missing milestone selectors, repeated targets, duplicate affected markers, and overlapping spans also fail. Unrelated nonconforming fields are not a conformance gate. error.data.reason identifies the unsupported case, with field when relevant; it contains no source snippet. This is a conservative scalar/marker editor, with no general YAML or Markdown rewrite API.
+Unsupported edits fail without writing. These include malformed/unterminated frontmatter, a flow-style root mapping, complex/anchored/tagged root keys, merge keys, duplicate affected keys, and affected aliases, anchors, tags, block/multiline scalars, or implicit empty nulls. Duplicate/missing milestone selectors, repeated targets, duplicate affected markers, and overlapping spans also fail. Unrelated nonconforming fields are not a conformance gate. error.data.reason identifies the unsupported case, with field when relevant; it contains no source snippet. This narrow operation is a conservative scalar/marker editor; use explicit document writes below for body or milestone-source replacement.
 
-Bytes must be valid UTF-8, and replacement strings cannot contain unpaired UTF-16 surrogates. The caller-selected directory and its ancestors are trusted path choices; links below that root are rejected. Replacement preserves file permissions. **Serialize the entire read/edit/write operation for a document, including within one process.** The prior-content comparison detects observed intervening changes, but a comparison-to-rename race remains. No lock, queue, journal, snapshot service, or automatic retry is provided.
+Bytes must be valid UTF-8, and replacement strings cannot contain unpaired UTF-16 surrogates. The caller-selected directory and its ancestors are trusted path choices; links below that root are rejected. Replacement preserves file permissions. All filesystem mutations acquire the shared selected-document lock before reading or preparing. The prior-content comparison detects observed intervening changes, but nonparticipating editors retain a comparison-to-rename race. No journal, snapshot service, or automatic retry is provided.
 
 CreatePlanOptionsSchema and PlanUpdateSchema are public boundary schemas; PlanSetSchema, MilestoneSelectorSchema, and MilestoneSetSchema expose their constituent contracts. New metadata is JSON-compatible; original YAML source remains authoritative on reads.
+
+## Pure preparation and guarded document writes
+
+`preparePlanUpdate(source, patch)` applies the same narrow edit entirely in memory. `preparePlanDocumentWrite(source, input)` prepares the explicit replacement below. Both return `{ source, changed, sha256, diagnostics, assignedMilestoneIds }` (IPreparedPlanEdit). They perform no filesystem access, locks, timestamps, revision increments, or implicit ID assignment. Persist the exact prepared source once in a consumer journal; do not regenerate random IDs during replay. IAssignedMilestoneId contains ordinal and id.
+
+`writePlanDocument(directory, input, { maxBytes? }?)` reads only the selected document, validates its required expectedSha256 before preparation, and persists the prepared output under its shared lock. PlanDocumentWriteSchema is closed and discriminated by document:
+
+```ts
+import { inspectPlan, writePlanDocument } from 'jg-plans';
+const observed = await inspectPlan('./jg-plans/example');
+if (observed.plan.state === 'readable') {
+  await writePlanDocument(observed.directory, {
+    document: 'plan',
+    expectedSha256: observed.plan.sha256,
+    body: '# Revised intent\n',
+    set: { revision: 2 },
+  });
+}
+```
+
+The plan variant requires an existing digest, a replacement body, and optional core metadata set. Body and supplied metadata are changed together, preserving all unaffected frontmatter bytes. Closed malformed YAML permits body-only replacement; ambiguous/unterminated boundaries fail. A needed line separator is inserted after a closing delimiter at EOF. The existing BOM encoding marker is preserved; on metadata-free source, a leading BOM also present in the supplied body is treated as that same marker. A body-only operation cannot introduce frontmatter into metadata-free source. Replacement strings must encode strictly as UTF-8.
+
+The milestones variant accepts `{ document: 'milestones', expectedSha256: string | null, source: string, assignMissingIds?: boolean }`. Null requires an absent file and uses exclusive creation; a digest never recreates deleted files. Source is verbatim unless explicit assignMissingIds is true. That option preserves valid IDs and inserts random UUIDs immediately after unique canonical nonempty status lines. Duplicate/invalid identities, ordinals, or ambiguous insertion targets fail. It returns assigned ordinal/id pairs; without the option, missing IDs remain missing. No timestamps, completion, or approvals are inferred.
+
+Pure preparation accepts null original source only for explicit absent milestone creation. Existing-source expectations are checked against strict UTF-8 bytes. Filesystem guards compare the original bytes before decoding. Writes return `{ directory, document, changed, sha256, diagnostics, assignedMilestoneIds }`; a no-op still checks its expectation and skips replacement. Existing permissions are preserved. maxBytes bounds reads rather than the size of the prepared output.
+
+`removeMilestones(directory, { expectedSha256 }, { maxBytes? }?)` (RemoveMilestonesSchema) removes only an existing regular UTF-8 milestones.md matching that digest. Missing or changed targets fail SOURCE_CHANGED. The result is `{ directory, document: 'milestones', changed: true, sha256: null, diagnostics: [] }`. The plan, selected directory, coordination files, and history are untouched. Links, nonregular targets, unreadable/oversized source, and unsupported encoding fail. Nonparticipating editors retain a check-to-unlink race.
+
+## Shared document locks
+
+`withPlanDocumentLocks(directory, documents, operation)` accepts a nonempty unique selection of plan/milestones and calls operation with the canonical real directory. It acquires `.plan.md.jg-plans.lock` before `.milestones.md.jg-plans.lock` regardless of input order, then releases in reverse order. Every filesystem mutation, including initial creation, uses this namespace. Failed creation releases locks before owned empty-directory cleanup.
+
+Use pure preparation and consumer persistence inside a callback; nesting filesystem mutations reacquires the held lock and fails busy. Keep callbacks bounded to one operation, never across model/agent turns. Locks use jg-fs ownership checks, support local filesystems, and fail immediately for busy or dead owners. There is no TTL, polling, or automatic takeover. After a crash, inspect the owner and affected documents before explicit operator recovery through jg-fs; never remove an unfamiliar lock.
+
+LOCK_BUSY and acquisition LOCK_FAILED report phase/document/reason and mutationOutcome not-applied. Release LOCK_FAILED reports operationCompleted and mutationOutcome uncertain when the callback started, even if all writes landed; inspect/reconcile durable state before retrying. Callback and release failures are retained in its internal AggregateError cause. These locks coordinate participants, not every editor. They provide neither a cross-document transaction nor an HQ journal.
 
 ## Failures
 

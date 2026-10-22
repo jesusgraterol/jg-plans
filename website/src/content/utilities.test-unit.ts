@@ -5,6 +5,9 @@ import { resolveSourceLink, sourceLinksPlugin } from './utilities.ts';
 describe('canonical Markdown links', () => {
   it('routes canonical documentation locally and examples to readable Markdown', () => {
     expect(resolveSourceLink('0.1/README.md')).toBe('/protocol/0.1/');
+    expect(resolveSourceLink('../../api/README.md#shared-document-locks')).toBe(
+      '/docs/api/#shared-document-locks',
+    );
     expect(resolveSourceLink('../../docs/integrations.md')).toBe('/docs/integrations/');
     expect(resolveSourceLink('../api/README.md#targeted-updates')).toBe(
       '/docs/api/#targeted-updates',

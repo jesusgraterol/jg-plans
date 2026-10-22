@@ -39,7 +39,7 @@ export const parseArguments = (args: string[]): IArguments => {
   if (flags.help || args.length === 0)
     return { command: 'help', json: flags.json, includeBody: false };
   if (flags.version) return { command: 'version', json: flags.json, includeBody: false };
-  if (first !== 'inspect' && first !== 'check' && first !== 'create' && first !== 'update')
+  if (!['inspect', 'check', 'create', 'update', 'write', 'remove-milestones'].includes(first!))
     throw planErrors.create('invalidInput');
   let fingerprint: IPlanFingerprintOptions | undefined;
   if (flags['fingerprint-exclude'] !== undefined) {
@@ -58,7 +58,7 @@ export const parseArguments = (args: string[]): IArguments => {
   } else {
     if (!flags.directory || flags.root || flags.slug) throw planErrors.create('invalidInput');
     if (
-      first === 'update'
+      first === 'update' || first === 'write' || first === 'remove-milestones'
         ? !flags.input || flags['include-body']
         : Boolean(flags.input) || (first === 'check' && flags['include-body'])
     )
@@ -69,7 +69,7 @@ export const parseArguments = (args: string[]): IArguments => {
   const maxBytes = maximum === undefined ? undefined : Number(maximum);
   if (!ReadOptionsSchema.safeParse({ maxBytes }).success) throw planErrors.create('invalidInput');
   return {
-    command: first,
+    command: first as IArguments['command'],
     ...(flags.directory ? { directory: flags.directory } : {}),
     ...(flags.input ? { input: flags.input } : {}),
     ...(flags.slug ? { slug: flags.slug } : {}),
