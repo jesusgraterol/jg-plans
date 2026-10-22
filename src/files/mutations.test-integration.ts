@@ -6,6 +6,7 @@ import {
   open,
   readFile,
   readdir,
+  realpath,
   rename,
   rm,
   symlink,
@@ -65,8 +66,15 @@ describe('exclusive creation through the built public API', () => {
   it.each([false, true])(
     'cleans only recognizable partial milestone creation when user changed bytes: %j',
     async (intervening) => {
-      const root = await fixture();
-      const path = join(root, 'milestones.md');
+      let root = await fixture();
+      if (process.platform !== 'win32') {
+        const alias = join(await fixture(), 'alias');
+        await symlink(root, alias, 'dir');
+        root = alias;
+      }
+      // The public writer canonicalizes the selected directory before opening a file.
+      // macOS temp aliases and Windows path spelling must reach this real failure boundary.
+      const path = join(await realpath(root), 'milestones.md');
       const actual = await vi.importActual<typeof import('node:fs/promises')>('node:fs/promises');
       vi.mocked(open).mockImplementation(async (target, flags, mode) => {
         const handle = await actual.open(target, flags, mode);
