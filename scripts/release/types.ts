@@ -39,6 +39,13 @@ export const RegistryVersionSchema = z.object({
 });
 export type IRegistryVersion = z.infer<typeof RegistryVersionSchema>;
 
+/** Validate the package envelope; only the selected version needs release metadata. */
+export const RegistryPackageSchema = z.object({
+  name: z.literal('jg-plans'),
+  versions: z.record(z.string(), z.unknown()),
+  'dist-tags': z.object({ latest: z.string().optional() }),
+});
+
 export type IRegistryOptions = { registry?: string; signal?: AbortSignal };
 export type IPublishedObservation =
   | { state: 'missing' }

@@ -8,7 +8,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { archiveIntegrity, payloadHashes } from './manifest.ts';
 import { readProvenanceCommit } from './provenance.ts';
 import { publishRelease } from './publish.ts';
-import { observePublished, qualifyVersion } from './registry.ts';
+import { observePublished, qualifyVersion, readLatest } from './registry.ts';
 import type { IReleaseManifest } from './types.ts';
 
 const servers: Server[] = [];
@@ -53,6 +53,8 @@ const fixture = async () => {
     files: await payloadHashes(bytes),
   };
   const state = {
+    packageExists: true,
+    validMetadata: true,
     exists: true,
     tarball: true,
     bytes,
@@ -75,27 +77,37 @@ const fixture = async () => {
       send({}, state.status);
       return;
     }
-    if (request.url === '/-/package/jg-plans/dist-tags') {
-      send({ latest: state.latest });
-      return;
-    }
-    if (request.url === '/jg-plans/0.1.1') {
-      if (!state.exists) {
+    if (request.url === '/jg-plans') {
+      if (!state.packageExists) {
         send({}, 404);
         return;
       }
       send({
         name: 'jg-plans',
-        version: '0.1.1',
-        dist: {
-          tarball: `${registry}/jg-plans/-/jg-plans-0.1.1.tgz`,
-          integrity: archiveIntegrity(state.bytes),
-          ...(state.provenance
+        'dist-tags': { latest: state.latest },
+        versions: {
+          // Historical placeholders do not have to be valid release candidates.
+          '0.0.0-stage': { description: 'An earlier staged placeholder' },
+          ...(state.exists
             ? {
-                attestations: {
-                  url: `${registry}/-/npm/v1/attestations/jg-plans@0.1.1`,
-                  provenance: { predicateType: 'https://slsa.dev/provenance/v1' },
-                },
+                '0.1.1': state.validMetadata
+                  ? {
+                      name: 'jg-plans',
+                      version: '0.1.1',
+                      dist: {
+                        tarball: `${registry}/jg-plans/-/jg-plans-0.1.1.tgz`,
+                        integrity: archiveIntegrity(state.bytes),
+                        ...(state.provenance
+                          ? {
+                              attestations: {
+                                url: `${registry}/-/npm/v1/attestations/jg-plans@0.1.1`,
+                                provenance: { predicateType: 'https://slsa.dev/provenance/v1' },
+                              },
+                            }
+                          : {}),
+                      },
+                    }
+                  : null,
               }
             : {}),
         },
@@ -161,6 +173,7 @@ describe('real bounded registry observations', () => {
   it('requires matching downloadable payloads and distinguishes absence, propagation, and failure', async () => {
     const { state, manifest, registry } = await fixture();
     expect((await observePublished(manifest, { registry })).state).toBe('published');
+    expect(await readLatest({ registry })).toBe(manifest.version);
     state.tarball = false;
     expect(await observePublished(manifest, { registry })).toEqual({
       state: 'pending',
@@ -168,6 +181,18 @@ describe('real bounded registry observations', () => {
     });
     state.exists = false;
     expect(await observePublished(manifest, { registry })).toEqual({ state: 'missing' });
+    state.packageExists = false;
+    expect(await observePublished(manifest, { registry })).toEqual({ state: 'missing' });
+    expect(await readLatest({ registry })).toBeNull();
+    state.packageExists = true;
+    state.exists = true;
+    state.validMetadata = false;
+    await expectToRejectCode(
+      observePublished(manifest, { registry }),
+      'RELEASE_REGISTRY_UNAVAILABLE',
+      'The registry could not be verified',
+    );
+    state.validMetadata = true;
     state.status = 503;
     await expectToRejectCode(
       observePublished(manifest, { registry }),
