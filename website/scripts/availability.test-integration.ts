@@ -35,21 +35,24 @@ it(
         response.end('{}');
         return;
       }
-      if (request.url === `/jg-plans/${manifest.version}`) {
-        if (!state.exists) {
-          response.writeHead(404);
-          response.end('{}');
-          return;
-        }
+      if (request.url === '/jg-plans') {
         response.setHeader('Content-Type', 'application/json');
         response.end(
           JSON.stringify({
             name: 'jg-plans',
-            version: manifest.version,
-            dist: {
-              tarball: `${origin}/jg-plans/-/jg-plans-${manifest.version}.tgz`,
-              integrity: archiveIntegrity(state.bytes),
-            },
+            'dist-tags': { latest: manifest.version },
+            versions: state.exists
+              ? {
+                  [manifest.version]: {
+                    name: 'jg-plans',
+                    version: manifest.version,
+                    dist: {
+                      tarball: `${origin}/jg-plans/-/jg-plans-${manifest.version}.tgz`,
+                      integrity: archiveIntegrity(state.bytes),
+                    },
+                  },
+                }
+              : {},
           }),
         );
       } else if (request.url === `/jg-plans/-/jg-plans-${manifest.version}.tgz`) {

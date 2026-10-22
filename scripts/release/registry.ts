@@ -1,6 +1,5 @@
 import { hashValue } from 'jg-crypto';
 import { request } from 'jg-fetch';
-import { z } from 'zod';
 
 import { ARCHIVE_LIMITS } from '../package/index.ts';
 
@@ -8,6 +7,7 @@ import { REGISTRY, releaseErrors } from './constants.ts';
 import { archiveIntegrity, payloadHashes, samePayload } from './manifest.ts';
 import {
   RegistryVersionSchema,
+  RegistryPackageSchema,
   type IPublishedObservation,
   type IRegistryOptions,
   type IReleaseManifest,
@@ -19,6 +19,20 @@ const requestOptions = (options: IRegistryOptions) => ({
   init: { redirect: 'error' as const },
   ...(options.signal ? { signal: options.signal } : {}),
 });
+
+// The full package record contains versions and tags, including when the selected version is absent.
+const readPackage = async (options: IRegistryOptions) => {
+  const result = await request(`${options.registry ?? REGISTRY}/jg-plans`, {
+    ...requestOptions(options),
+    maxResponseBytes: 1024 * 1024,
+    schema: RegistryPackageSchema,
+  });
+  if (result.error) {
+    if (result.error.status === 404) return null;
+    throw releaseErrors.create('registryUnavailable', { cause: result.error });
+  }
+  return result.data;
+};
 
 /**
  * Distinguish confirmed absence, metadata-before-tarball propagation, and unavailable registry evidence.
@@ -32,16 +46,12 @@ export const observePublished = async (
   options: IRegistryOptions = {},
 ): Promise<IPublishedObservation> => {
   const registry = options.registry ?? REGISTRY;
-  const result = await request(`${registry}/jg-plans/${manifest.version}`, {
-    ...requestOptions(options),
-    maxResponseBytes: 1024 * 1024,
-    schema: RegistryVersionSchema,
-  });
-  if (result.error) {
-    if (result.error.status === 404) return { state: 'missing' };
-    throw releaseErrors.create('registryUnavailable', { cause: result.error });
-  }
-  const metadata = result.data;
+  const packument = await readPackage(options);
+  if (packument === null || !Object.hasOwn(packument.versions, manifest.version))
+    return { state: 'missing' };
+  const parsed = RegistryVersionSchema.safeParse(packument.versions[manifest.version]);
+  if (!parsed.success) throw releaseErrors.create('registryUnavailable');
+  const metadata = parsed.data;
   if (
     metadata.version !== manifest.version ||
     metadata.dist.tarball !== `${registry}/jg-plans/-/jg-plans-${manifest.version}.tgz`
@@ -69,16 +79,8 @@ export const observePublished = async (
  * - RELEASE_REGISTRY_UNAVAILABLE: The registry could not be verified
  */
 export const readLatest = async (options: IRegistryOptions = {}): Promise<string | null> => {
-  const result = await request(`${options.registry ?? REGISTRY}/-/package/jg-plans/dist-tags`, {
-    ...requestOptions(options),
-    maxResponseBytes: 1024 * 1024,
-    schema: z.object({ latest: z.string().optional() }),
-  });
-  if (result.error) {
-    if (result.error.status === 404) return null;
-    throw releaseErrors.create('registryUnavailable', { cause: result.error });
-  }
-  return result.data.latest ?? null;
+  const packument = await readPackage(options);
+  return packument?.['dist-tags'].latest ?? null;
 };
 
 /** Compare stable numeric versions without floating-point rounding. */

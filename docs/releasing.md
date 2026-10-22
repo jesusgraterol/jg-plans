@@ -14,6 +14,8 @@ Every change to a shipped file needs a new version and changelog section after t
 
 Registry reads have bounded bodies, reject redirects, and distinguish confirmed absence, pending tarballs, and unavailable evidence. Metadata requests allow 1 MiB, archives 8 MiB compressed, and attestation responses 4 MiB. Post-publication reconciliation shares a 15-minute deadline across requests, waits, publication and verification; the publish command runs at most once per invocation. An accepted publication with a lost response can still finish after verification. Failure requires reconciliation before another attempt.
 
+Version presence and latest come from npm's full package metadata document. Validate the selected version before downloading its archive; unrelated historical or staged version entries are not release candidates. A missing package or absent version differs from malformed or unavailable metadata. Archive contents, integrity, latest, and provenance still require independent verification.
+
 ## First owner handoff
 
 Do this only after both retained main artifacts have passed qualification: the manual **0.1.0 bootstrap** and the **0.1.1 automated follow-up**. The concrete handoff identifies their Actions runs, source commits, local download paths and checksums. Keep them in separate directories, such as .release/bootstrap-0.1.0/ and .release/automated-0.1.1/. Later main work may advance the automated version; keep the bootstrap archive unchanged.
@@ -32,8 +34,8 @@ Do this only after both retained main artifacts have passed qualification: the m
      jg_plans_logged_in=0
      cleanup() {
        if [[ "$jg_plans_logged_in" == 1 ]]; then
-         if ! npm logout --registry=https://registry.npmjs.org >/dev/null 2>&1; then
-           printf '%s\n' 'Logout failed: revoke this temporary login in npm account settings.' >&2
+         if ! npm logout --registry=https://registry.npmjs.org --fetch-retries=0 --fetch-timeout=10000 >/dev/null 2>&1; then
+           printf '%s\n' 'Logout was not confirmed; this npm login session expires automatically after two hours.' >&2
          fi
        fi
        rm -rf -- "${jg_plans_npm_dir:?}"
@@ -54,7 +56,7 @@ Do this only after both retained main artifacts have passed qualification: the m
    )
    ```
 
-   If login or publishing fails, the trap still removes only these temporary credentials and revokes the temporary session after successful login. Resolve any reported logout failure by revoking that login manually. Do not place tokens in commands, logs, the repository, or GitHub secrets.
+   If login or publishing fails, the trap still removes only these temporary credentials and attempts to revoke the temporary session after successful login. A failed logout is not confirmed revocation: report it separately from local credential removal. npm login sessions expire automatically after two hours and do not appear in UI/CLI token lists, so token-list revocation is not a recovery path for this session. See [npm session authentication](https://github.blog/changelog/2025-12-09-npm-classic-tokens-revoked-session-based-auth-and-cli-token-management-now-available/). Do not place tokens in commands, logs, the repository, or GitHub secrets.
 
 3. Complete any requested browser/2FA approval. If npm stages the first publication, approve that specific release on npmjs.com. A **0.0.0-stage** placeholder is not 0.1.0; staging is conditional on the observed npm flow. After the intended version is public, run `pnpm exec node scripts/release/release.ts verify --bootstrap --from .release/bootstrap-0.1.0`. It requires the actual matching downloadable archive and latest=0.1.0. See [npm staged publishing](https://docs.npmjs.com/staged-publishing/).
 
