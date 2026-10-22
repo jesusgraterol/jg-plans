@@ -132,6 +132,11 @@ test('keyboard navigation, theme persistence, copy, and mobile menu', async ({ p
     initial === 'dark' ? 'light' : 'dark',
   );
   await page.goto('/');
+  // Settle the return transition before the mobile viewport resize below.
+  await waitForPageAssets(page);
+  await page.evaluate(async () => {
+    await document.activeViewTransition?.finished;
+  });
   await page.locator('[data-copy-button]').first().click();
   await expect(page.locator('[data-copy-button]').first()).toHaveAttribute(
     'data-copy-state',
