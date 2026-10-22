@@ -14,10 +14,11 @@ import type { IReleaseManifest } from './types.ts';
 const servers: Server[] = [];
 afterEach(async () => {
   for (const server of servers.splice(0)) {
-    server.closeAllConnections();
-    await new Promise<void>((resolve, reject) =>
-      server.close((error) => (error ? reject(error) : resolve())),
-    );
+    await new Promise<void>((resolve, reject) => {
+      // Stop accepting connections before closing sockets, including stalled requests.
+      server.close((error) => (error ? reject(error) : resolve()));
+      server.closeAllConnections();
+    });
   }
 });
 
