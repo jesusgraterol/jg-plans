@@ -79,6 +79,10 @@ for (const colorScheme of ['light', 'dark'] as const) {
 
 test('examples offer readable source and JSON without download controls', async ({ page }) => {
   await page.goto('/examples/');
+  await waitForPageAssets(page);
+  await page.evaluate(async () => {
+    await document.activeViewTransition?.finished;
+  });
   const panel = page.getByRole('tabpanel', { name: 'Small plan', exact: true });
   await expect(panel.getByText('JSON · selected result fields', { exact: true })).toBeVisible();
   await expect(page.locator('a[download], a[href^="/downloads/"]')).toHaveCount(0);
@@ -90,6 +94,11 @@ test('examples offer readable source and JSON without download controls', async 
   await expect(source).toHaveAttribute('href', '/raw/examples/small/plan.md');
   await source.click();
   await expect(page.locator('body')).toContainText('# Search feedback');
+  // Settle the navigation to plain Markdown before the browser context is torn down.
+  await waitForPageAssets(page);
+  await page.evaluate(async () => {
+    await document.activeViewTransition?.finished;
+  });
 });
 
 test.describe('without JavaScript', () => {

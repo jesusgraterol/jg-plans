@@ -8,6 +8,8 @@ website/src/site.config.ts owns the eight canonical page records. The layout emi
 
 The protocol, getting-started, API, CLI, integration, and example guides render their canonical Markdown files. website/src/content/sources.ts explicitly registers the public inputs. It never discovers planning roots, old plans, instruction files, or history. The gallery computes observations through jg-plans at build time; no browser parser or service is introduced. Visual guides pair Markdown with selected JSON result fields before the complete references. Visitor-facing download controls are removed; sample links open readable Markdown. Legacy download endpoints still match original files byte-for-byte. Raw Markdown adds availability context without replacing the canonical content.
 
+Plain Markdown destinations do not opt into native page transitions. The base layout explicitly skips the outgoing transition for /raw/ links through pageswap, while HTML page transitions keep the shared UI behavior. Browsers without that optional event still navigate normally. See [cross-document transition controls](https://developer.chrome.com/docs/web-platform/view-transitions/cross-document).
+
 ## Availability is evidence
 
 Offline local builds show development preview. With JG_PLANS_PUBLISHED_VERSION, the build first requires the requested version to match the root source version, then compares the downloadable npm archive's complete paths/content hashes with a fresh pack of the built source. A match permits an exact-version install action. Missing/pending releases, differing contents, and unavailable registry evidence suppress it. A registry error never proves absence.
