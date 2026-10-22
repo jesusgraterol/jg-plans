@@ -4,11 +4,39 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { readResponseBytes, request } from 'jg-fetch';
 import { createShutdownSignal, isMainModule, parseStrictArgs } from 'jg-process';
 
-import { SiteReleaseSchema } from '../src/availability.ts';
+import { SiteReleaseSchema, type IAvailability } from '../src/availability.ts';
 import { SITE } from '../src/site.config.ts';
 import { readSiteFiles } from './verify-build.ts';
 
-/** Require the live HTTPS deployment to match the unchanged, locally retained checked artifact. */
+/** Accept exact bytes or the observed CDN consumption of the published homepage's single guard. */
+export const matchesServedFile = (
+  path: string,
+  expected: Buffer,
+  received: Buffer,
+  state: IAvailability['state'],
+): boolean => {
+  if (received.equals(expected)) return true;
+  if (path !== 'index.html' || state !== 'published') return false;
+  const opening = Buffer.from('<!--email_off-->');
+  const closing = Buffer.from('<!--/email_off-->');
+  const start = expected.indexOf(opening);
+  const end = expected.indexOf(closing);
+  if (
+    start < 0 ||
+    end < start + opening.length ||
+    expected.indexOf(opening, start + opening.length) !== -1 ||
+    expected.indexOf(closing, end + closing.length) !== -1
+  )
+    return false;
+  const served = Buffer.concat([
+    expected.subarray(0, start),
+    expected.subarray(start + opening.length, end),
+    expected.subarray(end + closing.length),
+  ]);
+  return received.equals(served);
+};
+
+/** Verify the unchanged checked artifact, allowing only explicit homepage CDN guard consumption. */
 export const verifyDeployment = async (
   directory = resolve(import.meta.dirname, '../dist'),
   signal?: AbortSignal,
@@ -48,9 +76,8 @@ export const verifyDeployment = async (
       path === '404.html' ? [200, 404].includes(observed.status) : observed.status === 200,
       `${route}: live file unavailable`,
     );
-    assert.deepEqual(
-      Buffer.from(received),
-      bytes,
+    assert.ok(
+      matchesServedFile(path, bytes, Buffer.from(received), expected.state),
       `${route}: live bytes differ from checked artifact`,
     );
   }
