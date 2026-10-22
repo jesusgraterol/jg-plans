@@ -12,38 +12,37 @@ import { loadExample } from '../content/examples.ts';
 
 const dashboard = await loadExample('milestones');
 const availability = readAvailability(import.meta.env.JG_PLANS_AVAILABILITY);
-const integration = `import { parsePlan, parseMilestones } from 'jg-plans';
+const integration = `import { inspectPlan, updatePlan } from 'jg-plans';
 
-const plan = parsePlan(planMarkdown);
-const progress = parseMilestones(milestonesMarkdown);
-
-// Use the observations in your own application.
-const card = {
-  id: plan.metadata.id,
-  status: plan.metadata.status,
-  milestones: progress.milestones,
-};`;
+const current = await inspectPlan('./coding-agent-planning/example');
+if (current.plan.state === 'readable') {
+  await updatePlan(current.directory, {
+    document: 'plan',
+    expectedSha256: current.plan.sha256,
+    set: { status: 'in progress' },
+  });
+}`;
 ---
 
 <BaseLayout page={PAGES[0]}>
   <section class="jg-container pt-12 pb-12 sm:pt-20 sm:pb-16" aria-labelledby="hero-title">
     <header class="mx-auto max-w-4xl text-center">
-      <p class="eyebrow mb-5 text-accent">The open planning format for people & coding agents</p>
+      <p class="eyebrow mb-5 text-accent">Shared documents + deterministic tools</p>
       <h1 id="hero-title" class="hero-title text-balance">
-        Plans in Markdown.
+        Plain Markdown.
         <br />
-        <span class="text-accent">Possibilities in JSON.</span>
+        <span class="text-accent">Precise tooling.</span>
       </h1>
       <p class="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-muted sm:text-xl">
-        Give your plans a shared format. Turn their metadata and optional milestones into structured
-        data for agent tools, dashboards, and your own workflows.
+        Give people and coding agents shared planning documents. Create, inspect and edit them with
+        a TypeScript library or local CLI. Your project chooses the workflow and approvals.
       </p>
       <div class="mt-7 flex flex-wrap justify-center gap-3">
-        <Button href="/docs/">
-          Start building <span aria-hidden="true">→</span>
+        <Button href="/examples/#lifecycle">
+          See a plan evolve <span aria-hidden="true">→</span>
         </Button>
-        <Button href="/protocol/0.1/" variant="outline">
-          Read the protocol
+        <Button href="#library-title" variant="outline">
+          Start locally
         </Button>
       </div>
       <p class="mt-5 font-mono text-xs text-muted">
@@ -123,15 +122,16 @@ const card = {
     aria-labelledby="library-title"
   >
     <div class="min-w-0">
-      <p class="eyebrow mb-4">A small API. A useful starting point.</p>
+      <p class="eyebrow mb-4">A public API. A local CLI.</p>
       <h2 id="library-title" class="section-title">
-        Bring your Markdown.
+        Read it. Inspect it.
         <br />
-        Get useful data.
+        Edit it precisely.
       </h2>
       <p class="mt-5 max-w-lg text-lg text-muted">
-        Parse strings in code, or inspect a selected directory with the CLI. Keep custom metadata
-        and status values. Add checks and targeted edits when you need them.
+        Parse strings or inspect one selected directory. Guard writes against the source you read,
+        keep custom metadata and edit only explicit fields. Revisions and approvals stay with your
+        project.
       </p>
       {availability.state === 'published' ? (
         <div class="mt-6">

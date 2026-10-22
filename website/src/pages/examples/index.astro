@@ -2,6 +2,7 @@
 import Prose from 'jg-personal-astro-ui/prose';
 import { Content } from '../../../../examples/README.md';
 import ExampleGallery from '../../components/example-gallery/example-gallery.astro';
+import PlanScene from '../../components/plan-scene/plan-scene.astro';
 import BaseLayout from '../../layouts/base-layout.astro';
 import { pageFor } from '../../site.config.ts';
 const page = pageFor('/examples/');
@@ -10,16 +11,22 @@ const page = pageFor('/examples/');
 <BaseLayout page={page}>
   <div class="jg-container py-8 sm:py-12">
     <header class="mb-8 max-w-3xl">
-      <p class="eyebrow mb-5">Markdown → JSON → your implementation</p>
+      <p class="eyebrow mb-5">Create → inspect → update → revise</p>
       <h1 class="text-4xl leading-tight font-semibold tracking-tight sm:text-5xl">
-        Examples: Markdown to JSON.
+        See a plan evolve.
       </h1>
       <p class="mt-4 text-lg leading-relaxed text-muted">
-        Switch between real documents and edge cases. Compare the Markdown with fields returned by
-        the reference parser.
+        Follow one plan through actual library operations. Then explore the document cases: a small
+        plan, optional milestones, custom metadata and partial deletion.
       </p>
     </header>
-    <ExampleGallery />
+    <PlanScene />
+    <section class="mt-14 border-t border-border pt-10" aria-labelledby="document-cases-title">
+      <h2 id="document-cases-title" class="mb-6 text-3xl font-semibold tracking-tight">
+        Explore the document cases.
+      </h2>
+      <ExampleGallery />
+    </section>
     <details class="mt-8 border-t border-border pt-5" aria-label="Canonical example guide">
       <summary class="min-h-10 cursor-pointer content-center text-lg font-semibold">
         About these examples and their expected results

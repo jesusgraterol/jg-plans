@@ -1,44 +1,112 @@
 ---
 import Tabs from 'jg-personal-astro-ui/tabs';
+import CodeBlock from 'jg-personal-astro-ui/code-block';
+import CodeDiff from 'jg-personal-astro-ui/code-diff';
+import { buildLifecycle } from '../../../scripts/lifecycle/index.ts';
 import { loadExample } from '../../content/examples.ts';
 import DocumentFlow from '../document-flow/document-flow.astro';
 
-const example = await loadExample('small');
-const withMilestones = await loadExample('milestones');
+const sample = await loadExample('milestones');
+const lifecycle = await buildLifecycle(sample.documents.plan!, sample.documents.milestones!);
 ---
 
-<div class="plan-scene" data-static-tabs>
+<section
+  id="lifecycle"
+  class="plan-scene scroll-mt-24"
+  data-static-tabs
+  aria-label="A plan through its lifecycle"
+>
   <Tabs
-    id="home-documents"
-    label="Markdown to JSON"
-    tabs={[
-      { id: 'plan', label: 'plan.md' },
-      { id: 'milestones', label: 'milestones.md · optional' },
-    ]}
+    class="[&_[role=tab]]:px-2 sm:[&_[role=tab]]:px-3"
+    id="plan-lifecycle"
+    label="Plan lifecycle"
+    tabs={lifecycle.stages.map(({ id, label }) => ({ id, label }))}
   >
-    <div slot="plan" class="pt-6">
-      <DocumentFlow
-        source={example.documents.plan!}
-        filename="plan.md"
-        call="parsePlan(source)"
-        result={{ metadata: example.plan!.metadata, body: example.plan!.body }}
-      />
-    </div>
-    <div slot="milestones" class="pt-6">
-      <DocumentFlow
-        source={withMilestones.documents.milestones!}
-        filename="milestones.md"
-        call="parseMilestones(source)"
-        result={{
-          milestones: withMilestones.milestones!.milestones.map(
-            ({ ordinal, title, status, id }) => ({ ordinal, title, status, id }),
-          ),
-        }}
-      />
-    </div>
+    {lifecycle.stages.map((stage) => (
+      <div slot={stage.id} class="pt-6">
+        <header class="mb-6 max-w-3xl">
+          <h2 class="text-2xl font-semibold tracking-tight sm:text-3xl">{stage.title}</h2>
+          <p class="mt-3 text-sm leading-7 text-muted">{stage.description}</p>
+        </header>
+        {stage.id === 'revise' ? (
+          <CodeDiff
+            before={{ code: lifecycle.before, title: 'Before · revision 1' }}
+            after={{ code: lifecycle.after, title: 'After · revision 2' }}
+            lang="text"
+          />
+        ) : (
+          <DocumentFlow
+            source={stage.source}
+            filename="plan.md"
+            call={
+              stage.id === 'create'
+                ? 'createPlan(options)'
+                : stage.id === 'inspect'
+                  ? 'inspectPlan(directory)'
+                  : stage.id === 'update'
+                    ? 'updatePlan(directory, patch)'
+                    : 'writePlanDocument(directory, input)'
+            }
+            result={stage.result}
+          />
+        )}
+        {stage.id === 'revise' && (
+          <div class="mt-6 grid min-w-0 gap-5 md:grid-cols-2">
+            <div class="rounded-xl border border-border bg-surface p-5">
+              <p class="font-mono text-xs text-muted">Milestones · exact original bytes</p>
+              <ul class="mt-4 space-y-4">
+                {lifecycle.retained.map((entry) => (
+                  <li>
+                    <p class="flex flex-wrap justify-between gap-2 font-semibold">
+                      {entry.title}
+                      <span class="font-mono text-xs text-accent">{entry.status}</span>
+                    </p>
+                    <p class="mt-1 font-mono text-xs wrap-anywhere text-muted">{entry.id}</p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div class="rounded-xl border border-accent/35 bg-surface p-5">
+              <p class="font-mono text-xs text-accent">Skills binding · stale after revision</p>
+              <p class="mt-4 text-sm leading-7 text-muted">
+                The completed marker and its ID remain. The changed plan needs a fresh breakdown
+                before skills execute it. HQ separately reconciles verified completion and approval.
+              </p>
+            </div>
+          </div>
+        )}
+        {stage.id === 'revise' && (
+          <details class="mt-5 rounded-lg border border-border px-4 py-2">
+            <summary class="min-h-10 cursor-pointer content-center text-sm font-semibold">
+              Actual revision observation
+            </summary>
+            <div class="my-4 min-w-0">
+              <CodeBlock
+                code={JSON.stringify(stage.result, null, 2)}
+                lang="json"
+                title="JSON · selected result fields"
+              />
+              <CodeBlock code={stage.source} lang="markdown" title="Complete revised plan.md" />
+            </div>
+          </details>
+        )}
+        <details class="mt-5 rounded-lg border border-border px-4 py-2">
+          <summary class="min-h-10 cursor-pointer content-center text-sm font-semibold">
+            Public API call · excerpt
+          </summary>
+          <div class="my-4 min-w-0">
+            <CodeBlock
+              code={stage.code}
+              lang="typescript"
+              title="Selected API call · inputs from this example"
+            />
+          </div>
+        </details>
+      </div>
+    ))}
   </Tabs>
-  <p class="mt-4 text-sm text-muted">
-    Actual output from the reference library. The full result also includes source locations and
-    diagnostics.
+  <p class="mt-5 text-xs leading-6 text-muted">
+    Actual reference-library output · selected fields. The example skills binding uses explicit
+    consumer rules; the protocol itself grants no execution approval.
   </p>
-</div>
+</section>

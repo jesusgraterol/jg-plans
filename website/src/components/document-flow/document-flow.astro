@@ -12,16 +12,16 @@ const { source, filename, call, result } = Astro.props;
 
 <div class="document-flow min-w-0 [&_pre]:h-92 [&_pre]:whitespace-pre-wrap [&_pre]:wrap-anywhere">
   <div class="grid min-w-0 gap-6 lg:grid-cols-2 lg:gap-4">
-    <div class="min-w-0">
+    <div class="order-last min-w-0 lg:order-first">
       <p class="mb-3 flex min-h-8 items-center gap-2 text-sm font-semibold">
-        <span class="text-accent">01</span> Write Markdown
+        <span class="text-accent">01</span> Markdown source
       </p>
       <CodeBlock code={source} lang="markdown" title={filename} />
     </div>
-    <div class="min-w-0">
+    <div class="order-first min-w-0 lg:order-last">
       <div class="mb-3 flex min-h-8 flex-wrap items-center justify-between gap-2">
         <p class="flex items-center gap-2 text-sm font-semibold">
-          <span class="text-accent">02</span> Use the JSON
+          <span class="text-accent">02</span> Structured observation
         </p>
         <code class="rounded-md bg-secondary px-2 py-1 font-mono text-xs text-muted">
           {call} <span aria-hidden="true">→</span>
