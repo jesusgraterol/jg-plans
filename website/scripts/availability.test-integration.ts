@@ -1,5 +1,5 @@
 import { createServer } from 'node:http';
-import { mkdir, mkdtemp, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { gzipSync, gunzipSync } from 'node:zlib';
 import { readBoundedFile } from 'jg-fs';
@@ -116,6 +116,18 @@ it(
         });
         expect(build.exitCode, build.stderr).toBe(0);
         await verifyBuild(directory);
+        if (availability.state === 'published') {
+          const homepage = join(directory, 'index.html');
+          const homepageBytes = await readBoundedFile(homepage, 1024 * 1024);
+          await writeFile(
+            homepage,
+            homepageBytes.toString('utf8').replaceAll(/<!--\/?email_off-->/g, ''),
+          );
+          await expect(verifyBuild(directory)).rejects.toThrow(
+            'The install command must be protected from email obfuscation',
+          );
+          await writeFile(homepage, homepageBytes);
+        }
         const raw = (
           await readBoundedFile(join(directory, 'raw/api/README.md'), 1024 * 1024)
         ).toString('utf8');

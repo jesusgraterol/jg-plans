@@ -48,6 +48,16 @@ export const verifyBuild = async (
   };
   const release = SiteReleaseSchema.parse(JSON.parse(content('release.json')));
   assert.equal(release.version, SITE.sourceVersion);
+  if (release.state === 'published') {
+    const protectedCommand = /<!--email_off-->([\s\S]*?)<!--\/email_off-->/.exec(
+      content('index.html'),
+    )?.[1];
+    assert.ok(
+      protectedCommand?.includes('id="install-command"') &&
+        protectedCommand.includes(`jg-plans@${release.version}`),
+      'The install command must be protected from email obfuscation',
+    );
+  }
   const expected = new Set([
     '404.html',
     'release.json',

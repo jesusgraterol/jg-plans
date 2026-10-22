@@ -68,6 +68,37 @@ for (const colorScheme of ['light', 'dark'] as const) {
   }
 }
 
+for (const colorScheme of ['light', 'dark'] as const) {
+  for (const width of [320, 1440]) {
+    test(`${colorScheme} at ${width}px: verified installation copies the exact command`, async ({
+      page,
+      context,
+      availability,
+    }) => {
+      await page.setViewportSize({ width, height: 1000 });
+      await page.emulateMedia({ colorScheme, reducedMotion: 'reduce' });
+      await page.goto('/');
+      const command = page.locator('#install-command');
+      if (availability.state !== 'published') {
+        await expect(command).toHaveCount(0);
+        return;
+      }
+      await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+      await expect(command).toHaveText(`npm install jg-plans@${availability.version}`);
+      const copy = page.locator('[data-copy-source="install-command"]');
+      await expect(copy).toHaveAccessibleName('Copy install command');
+      await copy.press('Enter');
+      await expect(copy).toBeFocused();
+      await expect(copy).toHaveCSS('outline-style', 'solid');
+      await expect(copy).toHaveAttribute('data-copy-state', 'success');
+      expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
+        `npm install jg-plans@${availability.version}`,
+      );
+      await expectNoHorizontalOverflow(page);
+    });
+  }
+}
+
 test('keyboard navigation, theme persistence, copy, and mobile menu', async ({ page, context }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await page.goto('/');
