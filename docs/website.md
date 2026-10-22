@@ -14,6 +14,8 @@ Offline local builds show development preview. With JG_PLANS_PUBLISHED_VERSION, 
 
 The build wrapper owns verification and overwrites the internal presentation input passed to Astro. No alternate registry is exposed through its command or environment. Integration tests exercise real bounded HTTP fixtures and disposable release/unknown builds; those artifacts are never deployed. release.json records the checked artifact's version, state, provisional protocol, and CI source commit.
 
+Cloudflare can mistake a versioned package specifier for an email address. The install component is enclosed in its documented email_off HTML comments, preserved through the production build, so the edge leaves the command intact. Artifact checks require this protection and live verification still compares every byte. See [Cloudflare's obfuscation exclusions](https://developers.cloudflare.com/waf/tools/scrape-shield/email-address-obfuscation/#prevent-cloudflare-from-obfuscating-email).
+
 ## Checked artifact to Pages
 
 Check verifies the package, six runtime combinations, and the website. The website job uploads the unchanged tested dist as qualified-site and, on main, as the Pages artifact. Deployment depends on package/runtime/website checks, with no dependency or condition on the publish job. A disabled, skipped, or failed npm publication does not cancel an otherwise eligible Pages deployment. Main deployments are not cancelled by later runs.

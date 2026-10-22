@@ -64,12 +64,14 @@ const availability = readAvailability(import.meta.env.JG_PLANS_AVAILABILITY);
       </div>
       {availability.state === 'published' ? (
         <div class="min-w-0">
+          <Fragment set:html="<!--email_off-->" />
           <InstallCommand
             id="install-command"
             command={`npm install jg-plans@${availability.version}`}
             context="install command"
             title={`Verified package · ${availability.version}`}
           />
+          <Fragment set:html="<!--/email_off-->" />
           <p class="mt-4 text-sm text-muted">
             Node.js 24.15.0 or newer. Protocol 0.1 remains provisional.
           </p>
