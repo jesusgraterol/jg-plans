@@ -2,32 +2,50 @@ import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { runProcess } from 'jg-process';
-import { afterEach, describe, expect, it } from 'vitest';
+import { describe, expect, it as baseIt } from 'vitest';
 
 import manifest from '../../package.json' with { type: 'json' };
 
 const executable = resolve(import.meta.dirname, '../../dist/cli/cli.js');
-const roots: string[] = [];
-const fixture = async (): Promise<string> => {
-  const directory = await mkdtemp(join(tmpdir(), 'jg-plans-cli-test-'));
-  roots.push(directory);
-  return directory;
-};
-const run = (args: string[], input?: string, cwd?: string) =>
-  runProcess({
-    command: process.execPath,
-    args: [executable, ...args],
-    timeoutSeconds: 10,
-    maxOutputBytes: 1024 * 1024,
-    ...(input === undefined ? {} : { input }),
-    ...(cwd === undefined ? {} : { cwd }),
+const it = baseIt.extend('cli', ({ signal }, { onCleanup }) => {
+  const roots: string[] = [];
+  const active: Promise<unknown>[] = [];
+  const cleanup = new AbortController();
+  const cancellation = AbortSignal.any([signal, cleanup.signal]);
+  onCleanup(async () => {
+    cleanup.abort();
+    await Promise.allSettled(active);
+    for (const root of roots) await rm(root, { recursive: true, force: true });
   });
-afterEach(async () => {
-  for (const root of roots.splice(0)) await rm(root, { recursive: true, force: true });
+  const fixture = async (): Promise<string> => {
+    const directory = await mkdtemp(join(tmpdir(), 'jg-plans-cli-test-'));
+    if (cancellation.aborted) {
+      await rm(directory, { recursive: true, force: true });
+      cancellation.throwIfAborted();
+    }
+    roots.push(directory);
+    return directory;
+  };
+  const run = (args: string[], input?: string, cwd?: string) => {
+    const result = runProcess({
+      command: process.execPath,
+      args: [executable, ...args],
+      signal: cancellation,
+      timeoutSeconds: 10,
+      maxOutputBytes: 1024 * 1024,
+      ...(input === undefined ? {} : { input }),
+      ...(cwd === undefined ? {} : { cwd }),
+    });
+    active.push(result);
+    return result;
+  };
+  return { fixture, run };
 });
 
 describe('compiled CLI read contract', () => {
-  it('has JSON-only stdout, retains partial observations, and includes bodies only by request', async () => {
+  it('has JSON-only stdout, retains partial observations, and includes bodies only by request', async ({
+    cli: { fixture, run },
+  }) => {
     const root = await fixture();
     await writeFile(join(root, 'plan.md'), '# SECRET_BODY_MARKER\nUseful legacy prose.');
     await writeFile(
@@ -59,7 +77,9 @@ describe('compiled CLI read contract', () => {
     expect(human.stderr).toContain('MISSING_FRONTMATTER');
   });
 
-  it('distinguishes passing checks, absence, format observations, and operational failures', async () => {
+  it('distinguishes passing checks, absence, format observations, and operational failures', async ({
+    cli: { fixture, run },
+  }) => {
     const root = await fixture();
     expect((await run(['inspect', '--directory', root, '--json'])).exitCode).toBe(0);
     expect((await run(['check', '--directory', root, '--json'])).exitCode).toBe(1);
@@ -78,7 +98,9 @@ describe('compiled CLI read contract', () => {
     });
   });
 
-  it('validates flags strictly and supports help/version without reading selected documents', async () => {
+  it('validates flags strictly and supports help/version without reading selected documents', async ({
+    cli: { fixture, run },
+  }) => {
     const root = await fixture();
     await mkdir(join(root, 'plan.md'));
     expect((await run(['--help', '--directory', root])).exitCode).toBe(0);
@@ -109,7 +131,9 @@ describe('compiled CLI read contract', () => {
     }
   });
 
-  it('honors exact byte limits and a larger explicit override', async () => {
+  it('honors exact byte limits and a larger explicit override', async ({
+    cli: { fixture, run },
+  }) => {
     const root = await fixture();
     await writeFile(join(root, 'plan.md'), '# Work');
     expect(
@@ -122,39 +146,46 @@ describe('compiled CLI read contract', () => {
 });
 
 describe('compiled CLI mutation contract', () => {
-  it('creates, inspects, updates, and checks with explicit JSON inputs', async () => {
-    const root = await fixture();
-    const created = await run(
-      ['create', '--slug', 'cli-task', '--root', root, '--input', '-', '--json'],
-      JSON.stringify({
-        body: '# PRIVATE_BODY',
-        metadata: { project: { label: 'invented' } },
-        milestones: '## Milestone 1: Work\n**Status:** pending',
-      }),
-    );
-    expect(created.exitCode).toBe(0);
-    expect(created.stderr).toBe('');
-    expect(created.stdout).not.toContain('PRIVATE_BODY');
-    const directory: string = JSON.parse(created.stdout).data.directory;
-    expect((await run(['inspect', '--directory', directory, '--json'])).exitCode).toBe(0);
-    const updated = await run(
-      ['update', '--directory', directory, '--input', '-', '--json'],
-      JSON.stringify({
-        document: 'milestones',
-        changes: [{ select: { ordinal: 1 }, set: { status: 'done' } }],
-      }),
-    );
-    expect(updated.exitCode).toBe(0);
-    expect(JSON.parse(updated.stdout)).toMatchObject({
-      schemaVersion: 1,
-      command: 'update',
-      data: { changed: true, document: 'milestones' },
-      error: null,
-    });
-    expect((await run(['check', '--directory', directory, '--json'])).exitCode).toBe(0);
-  });
+  // Four native steps each retain a ten-second deadline, including real fsync work.
+  it(
+    'creates, inspects, updates, and checks with explicit JSON inputs',
+    { timeout: 45_000 },
+    async ({ cli: { fixture, run } }) => {
+      const root = await fixture();
+      const created = await run(
+        ['create', '--slug', 'cli-task', '--root', root, '--input', '-', '--json'],
+        JSON.stringify({
+          body: '# PRIVATE_BODY',
+          metadata: { project: { label: 'invented' } },
+          milestones: '## Milestone 1: Work\n**Status:** pending',
+        }),
+      );
+      expect(created.exitCode).toBe(0);
+      expect(created.stderr).toBe('');
+      expect(created.stdout).not.toContain('PRIVATE_BODY');
+      const directory: string = JSON.parse(created.stdout).data.directory;
+      expect((await run(['inspect', '--directory', directory, '--json'])).exitCode).toBe(0);
+      const updated = await run(
+        ['update', '--directory', directory, '--input', '-', '--json'],
+        JSON.stringify({
+          document: 'milestones',
+          changes: [{ select: { ordinal: 1 }, set: { status: 'done' } }],
+        }),
+      );
+      expect(updated.exitCode).toBe(0);
+      expect(JSON.parse(updated.stdout)).toMatchObject({
+        schemaVersion: 1,
+        command: 'update',
+        data: { changed: true, document: 'milestones' },
+        error: null,
+      });
+      expect((await run(['check', '--directory', directory, '--json'])).exitCode).toBe(0);
+    },
+  );
 
-  it('uses the invocation directory for the default planning root and accepts input files', async () => {
+  it('uses the invocation directory for the default planning root and accepts input files', async ({
+    cli: { fixture, run },
+  }) => {
     const root = await fixture();
     const input = join(root, 'input.json');
     await writeFile(input, JSON.stringify({ body: '# Local default' }));
@@ -167,7 +198,9 @@ describe('compiled CLI mutation contract', () => {
     expect(JSON.parse(result.stdout).data.directory).toContain(join(root, 'jg-plans'));
   });
 
-  it('returns safe JSON errors for bad input, invalid encodings, unsupported patches, and missing targets', async () => {
+  it('returns safe JSON errors for bad input, invalid encodings, unsupported patches, and missing targets', async ({
+    cli: { fixture, run },
+  }) => {
     const root = await fixture();
     for (const [input, code] of [
       ['{ PRIVATE_SECRET_BODY', 'JG_PLANS_INVALID_INPUT'],
@@ -209,7 +242,9 @@ describe('compiled CLI mutation contract', () => {
     expect(JSON.parse(encoding.stdout).error.code).toBe('JG_PLANS_UNSUPPORTED_ENCODING');
   });
 
-  it('applies byte bounds to stdin and target documents, with an explicit larger override', async () => {
+  it('applies byte bounds to stdin and target documents, with an explicit larger override', async ({
+    cli: { fixture, run },
+  }) => {
     const root = await fixture();
     const input = JSON.stringify({ body: 'x'.repeat(1024 * 1024 + 1) });
     const limited = await run(

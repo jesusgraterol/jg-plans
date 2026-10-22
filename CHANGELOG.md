@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.1 — trusted publishing validation
+
+- Prepare the first automated release after the manual 0.1.0 bootstrap, using the qualified archive and registry/provenance verification workflow.
+- Keep protocol 0.1 and the reference API/CLI behavior from the initial preview.
+
 ## 0.1.0 — development preview
 
 - Introduce provisional protocol 0.1 for Markdown plans with optional milestones, extensible metadata, and ordinary user edits/deletion.
