@@ -6,6 +6,36 @@ const metadata =
   'id: invented\ncreated_at: 2026-10-21T20:00:00Z\nupdated_at: 2026-10-21T16:00:00-04:00\nrevision: 1\nstatus: waiting-for-feedback';
 
 describe('built plan parser', () => {
+  it('partitions the complete source into a preamble and unfenced heading/body spans', () => {
+    const source =
+      '\uFEFF---\r\nid: sample\r\nexample: |\r\n  ```\r\n  ## Not a section\r\n---\r\n# Intent 😀\r\n\r\n## Constraints\r\nKeep this.\r\n```md\r\n## Also not a section\r\n```\r\n## Requirements ##\r\nRetain the trailing text.\r\n';
+    const parsed = parsePlan(source);
+    expect(parsed.sections.map((section) => section.title)).toEqual([
+      'Constraints',
+      'Requirements',
+    ]);
+    expect(source.slice(parsed.preamble.start, parsed.preamble.end)).toBe(
+      '\uFEFF---\r\nid: sample\r\nexample: |\r\n  ```\r\n  ## Not a section\r\n---\r\n# Intent 😀\r\n\r\n',
+    );
+    expect(
+      parsed.sections.map((section) => source.slice(section.heading.start, section.heading.end)),
+    ).toEqual(['## Constraints\r\n', '## Requirements ##\r\n']);
+    expect(
+      parsed.sections.map((section) => source.slice(section.body.start, section.body.end)),
+    ).toEqual([
+      'Keep this.\r\n```md\r\n## Also not a section\r\n```\r\n',
+      'Retain the trailing text.\r\n',
+    ]);
+    const spans = [
+      parsed.preamble,
+      ...parsed.sections.flatMap((section) => [section.heading, section.body]),
+    ];
+    expect(spans.map((span) => source.slice(span.start, span.end)).join('')).toBe(source);
+    expect(spans.every((span, index) => index === 0 || spans[index - 1]!.end === span.start)).toBe(
+      true,
+    );
+  });
+
   it('retains BOM, CRLF, Unicode, unknown nested values, and exact body text', () => {
     const source = `\uFEFF---\r\n${metadata.replaceAll('\n', '\r\n')}\r\nproject:\r\n  label: café 😀\r\n  flags: [true, null, 3]\r\n---\r\n\r\n# A useful plan 😀`;
     const result = parsePlan(source);
@@ -41,7 +71,7 @@ describe('built plan parser', () => {
     expect(result.body).toBe('# Work');
   });
 
-  it.each(['', '# Legacy plan\n\nUseful prose.', '---\nstatus: [broken\n'])(
+  it.each(['', '# Metadata-free plan\n\nUseful prose.', '---\nstatus: [broken\n'])(
     'retains useful incomplete source: %j',
     (source) => {
       const result = parsePlan(source);
@@ -91,6 +121,23 @@ describe('built plan parser', () => {
     expect(result.diagnostics).toContainEqual(
       expect.objectContaining({ code: 'YAML_VALUE_UNAVAILABLE', severity: 'warning' }),
     );
+  });
+
+  it('does not fabricate string mapping keys from YAML collections, numbers, or aliases', () => {
+    for (const keys of [
+      '? [a, b]\n: value',
+      'project: {true: value}',
+      'project: {1: value}',
+      'base: &key name\n? *key\n: value',
+    ]) {
+      const source = `---\nid: retained\n${keys}\n---\n# Work`;
+      const result = parsePlan(source);
+      expect(result.rawMetadata).toBeNull();
+      expect(result.metadata.id).toBe('retained');
+      expect(result.source).toBe(source);
+      expect(result.body).toBe('# Work');
+      expect(result.diagnostics.map((item) => item.code)).toContain('YAML_VALUE_UNAVAILABLE');
+    }
   });
 
   it('rejects invalid operation arguments with the documented code', () => {

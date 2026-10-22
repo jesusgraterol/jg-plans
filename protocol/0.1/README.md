@@ -89,6 +89,12 @@ An optional Overview table with Milestone, Name, and Status columns is derived f
 
 Caller-supplied milestone source remains verbatim. A caller generating that source follows writer rules; nonconforming supplied source receives diagnostics rather than automatic normalization. Updating a recognizable misplaced marker may preserve its location with a diagnostic; it does not claim to have repaired conformance.
 
+## Source observations
+
+Optional milestone frontmatter is a project-owned mapping; it does not require the plan's five preferred fields. Readers preserve it and exclude it from Markdown heading/marker scanning. Both document kinds retain complete original source, including BOM and line endings. The reference library exposes preamble and heading/body ranges, milestone heading ends, and recognized Overview table ranges so consumers can retain requirements outside numbered milestone bodies.
+
+Exact-byte document hashes and optional structural fingerprints are library observations, not protocol approval fields. Structural fingerprints cover exact body text and raw metadata after explicitly requested top-level exclusions; the generic default excludes nothing. Unavailable structure is reported without discarding useful text or inferring authority. Consumer profiles choose their own policy.
+
 ## Revisions, history, and deletion
 
 For substantive agent revisions, recommend a short inline summary explaining actual scope changes and preserving known progress. Do not silently reset completed work to pending.

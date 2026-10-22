@@ -5,6 +5,7 @@ The executable is tested from the packed archive. Check the [website's availabil
 ```sh
 jg-plans inspect --directory ./jg-plans/example
 jg-plans inspect --directory ./custom-root/example --json
+jg-plans inspect --directory ./jg-plans/example --fingerprint-exclude '["created_at","updated_at","revision","status"]' --json
 jg-plans inspect --directory ./coding-agent-planning/example --include-body --json
 jg-plans check --directory ./jg-plans/example --json
 jg-plans --help
@@ -15,7 +16,9 @@ jg-plans --version
 
 Inspect reads only the selected plan.md and optional milestones.md. It reports readable, missing, or unreadable files, recognized metadata and progress, and useful partial observations. Unknown metadata and custom status strings remain visible. It does not read history, discover other plans, restore deleted files, or infer permission or completion from absence.
 
-Bodies and complete document sources are excluded by default. `--include-body` explicitly includes them for inspect. Metadata, titles, markers, and locations remain part of ordinary observations.
+Bodies and complete document sources are excluded by default. `--include-body` explicitly includes them for inspect, including the whole milestone document body. Raw metadata for both documents, titles, markers, locations, source ranges, and exact-byte SHA-256 values for readable files remain part of ordinary observations.
+
+`--fingerprint-exclude <JSON-array>` requests a structural plan fingerprint and supplies its explicit top-level metadata exclusions. Pass `[]` to cover every key. The array must contain strings; duplicate keys are applied once. This flag is accepted only by inspect. The result includes `data.fingerprint` with sha256, the unique applied keys, and diagnostics. Invalid framing/YAML or unavailable structure yields a null fingerprint without hiding useful observations. It is an observation, never permission or a conformance gate. See [structural fingerprints](../api/README.md#structural-fingerprints).
 
 ## Check
 

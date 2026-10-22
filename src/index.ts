@@ -1,4 +1,4 @@
-export { checkPlan, parseMilestones, parsePlan } from './documents/index.ts';
+export { checkPlan, parseMilestones, parsePlan, fingerprintPlan } from './documents/index.ts';
 export type {
   ICheckResult,
   IFrontmatter,
@@ -7,6 +7,9 @@ export type {
   IOverviewRow,
   IParsedMilestones,
   IParsedPlan,
+  ISourceSpan,
+  IHeadingSection,
+  IPlanFingerprint,
 } from './documents/index.ts';
 export { ERRORS } from './errors/index.ts';
 export { inspectPlan } from './files/index.ts';
@@ -19,6 +22,9 @@ export {
   PlanDocumentsSchema,
   PlanMetadataSchema,
   ReadOptionsSchema,
+  PlanFingerprintOptionsSchema,
+  PlanFingerprintSchema,
+  InspectPlanOptionsSchema,
   SourceLocationSchema,
 } from './protocol/index.ts';
 export type {
@@ -26,6 +32,8 @@ export type {
   IPlanDocuments,
   IPlanMetadata,
   IReadOptions,
+  IPlanFingerprintOptions,
+  IInspectPlanOptions,
   ISourceLocation,
 } from './protocol/index.ts';
 export {

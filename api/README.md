@@ -7,7 +7,7 @@ The ESM root exports compiled JavaScript and TypeScript declarations. Node.js 24
 ```ts
 import { PROTOCOL_VERSION, parsePlan, parseMilestones, checkPlan, inspectPlan } from 'jg-plans';
 
-const plan = parsePlan('# Useful legacy Markdown');
+const plan = parsePlan('# Useful Markdown');
 const milestones = parseMilestones('## Milestone 1: Work\n**Status:** pending');
 const check = checkPlan({ plan: plan.source, milestones: milestones.source });
 const observation = await inspectPlan('./jg-plans/example', { maxBytes: 1_048_576 });
@@ -17,17 +17,45 @@ const observation = await inspectPlan('./jg-plans/example', { maxBytes: 1_048_57
 
 `parsePlan(source)` retains the exact source and body. Its `metadata` contains independently validated core fields. `rawMetadata` retains the expanded YAML value, including unknown fields and invalid known values. Missing metadata, malformed YAML, unsupported expansion, and incompatible values receive structured diagnostics; they do not discard the body or authorize work.
 
-YAML uses maxAliasCount: 100 for expansion protection. Recursive aliases, unsafe integer expansions, and values JSON cannot represent receive a `YAML_VALUE_UNAVAILABLE` warning; rawMetadata is unavailable (`null`) and the original YAML remains in source. Raw observations use YAML's JavaScript conversion; source remains authoritative for original numeric spelling and presentation. Independently readable core fields are still observed. An unterminated frontmatter block retains the complete source as body because its boundary is unknown.
+YAML uses maxAliasCount: 100 for expansion protection. Recursive aliases, unsafe integer expansions, non-string or ambiguous YAML mapping keys, and values JSON cannot represent receive a `YAML_VALUE_UNAVAILABLE` warning; rawMetadata is unavailable (`null`) and the original YAML remains in source. Raw observations use YAML's JavaScript conversion; source remains authoritative for original numeric spelling and presentation. Independently readable core fields are still observed. An unterminated frontmatter block retains the complete source as body because its boundary is unknown.
 
 `parseMilestones(source)` returns source, recognizable milestones, optional overview rows, overviewPresent, and diagnostics. overviewPresent distinguishes an absent table from an explicitly empty derived table; an existing table that omits observed milestones receives discrepancies. Each entry contains ordinal, title, observed status/ID or null, location, end offset, body, and all recognized status/ID markers. Duplicate markers remain visible and are diagnosed; the first observed marker supplies the convenience status/ID value. Consumers must consider ambiguity diagnostics before acting on it. Fenced examples are ignored. Missing IDs and overview tables are allowed. Gaps are observations, with no reconstructed entries or inferred completion.
 
 `checkPlan({ plan?, milestones? })` checks explicitly supplied strings against preferred writer conformance. Omit absent or deleted documents. It returns `{ conforms, diagnostics }`; error diagnostics make conforms false. It never writes, restores data, or runs as a prerequisite to another operation.
 
+## Source ranges and milestone metadata
+
+Both parsers return a `preamble` span and ordered `sections` for every unfenced level-two heading. Each section has its observed title, a `heading` span including its line ending, and a `body` span extending to the next level-two heading or EOF. `ISourceSpan` has zero-based UTF-16 `start` and exclusive `end`; slice the returned original source with those offsets.
+
+The preamble starts at zero and includes everything before the first observed section, including any BOM, frontmatter, title, and introductory prose. Concatenating the preamble and every heading/body span reproduces the complete original source. Sections keep shared, intervening, and trailing requirements visible even when they are not milestone entries. A milestone's `headingEnd` is the first offset after its heading line; its existing `end` and `body` still stop at the next level-two heading.
+
+Milestones may begin with an optional frontmatter mapping. `frontmatter`, `rawMetadata`, and exact `body` are observed through the same YAML reader as plans, without requiring the five plan fields. Frontmatter is excluded from heading and marker scanning; Markdown-looking YAML never becomes work. Unterminated frontmatter remains ambiguous and retains the whole source as body. `overviewTables` contains only recognized table spans, from header through separator and consecutive rows; adjacent prose and fenced examples are excluded.
+
+## Structural fingerprints
+
+```ts
+import { fingerprintPlan, inspectPlan } from 'jg-plans';
+
+const exclusions = ['created_at', 'updated_at', 'revision', 'status'];
+const fingerprint = fingerprintPlan('# Work', { excludeMetadataKeys: exclusions });
+const inspection = await inspectPlan('./jg-plans/example', {
+  fingerprint: { excludeMetadataKeys: exclusions },
+});
+```
+
+`fingerprintPlan(source, options?)` returns `{ sha256, excludeMetadataKeys, diagnostics }`. It hashes strict deterministic JSON of `{ body, metadata }`, where body is exact parsed body text and metadata is raw top-level metadata after removing only explicitly named keys. The default exclusion list is empty; duplicate requested keys are reported once, in first-occurrence order. There are no implicit administrative exclusions. Unknown metadata, plan identity, nested values, and key/value distinctions remain covered. Nested fields with an excluded key name remain covered.
+
+Metadata key order, YAML quoting, and YAML comments alone do not change this structural digest. Exact body text, including its whitespace and line endings, does. Metadata-free source uses an empty mapping and remains fingerprintable without preferred-field conformance. Unterminated or ambiguous framing, invalid YAML, nonmapping frontmatter, unresolved YAML warnings, or unavailable/non-JSON-safe values return `sha256: null` with safe diagnostics while ordinary inspection remains useful. The implementation uses `jg-utilities` strict deterministic serialization and `jg-crypto` SHA-256.
+
+A structural fingerprint is distinct from an exact file hash and from an application's approval digest. Consumers choose exclusion policy and decide freshness, authorization, and scope coverage. It never grants approval or completion.
+
 ## Selected-directory inspection
 
-`inspectPlan(directory, { maxBytes? }?)` reads only plan.md and milestones.md from that exact directory, concurrently and with a default 1 MiB limit per file. Explicit custom paths and coding-agent-planning/ work as supplied; there is no repository/root/history discovery.
+`inspectPlan(directory, { maxBytes?, fingerprint? }?)` reads only plan.md and milestones.md from that exact directory, concurrently and with a default 1 MiB limit per file. Explicit custom paths and coding-agent-planning/ work as supplied; there is no repository/root/history discovery.
 
-The result includes the resolved directory, each document's path and readable/missing/unreadable state, useful parsed data for readable files, and aggregated diagnostics. A readable empty file differs from a missing file. Orphan milestones remain observable when the plan has been deleted. No predecessor is required or restored.
+The result includes the resolved directory, each document's path and readable/missing/unreadable state, useful parsed data for readable files, and aggregated diagnostics. Every readable document also has lowercase `sha256` computed from the exact original bytes, including BOM and line endings. A readable empty file differs from a missing file. Orphan milestones remain observable when the plan has been deleted. No predecessor is required or restored.
+
+Supplying `fingerprint: { excludeMetadataKeys? }` adds a top-level `fingerprint` result, reusing the already-read and parsed plan. Missing/unreadable plans return an unavailable requested fingerprint rather than fabricated content. Omitting the option omits that result.
 
 Bytes must decode strictly as UTF-8. An existing BOM is retained in source. Invalid bytes receive INVALID_ENCODING, and another readable document still contributes observations. File-size failures and nonregular/unreadable targets receive operational diagnostics. Final-component file symlinks are not followed; the selected directory's ancestors are caller-chosen. The library does not silently transcode content.
 
@@ -35,9 +63,9 @@ Bytes must decode strictly as UTF-8. An existing BOM is retained in source. Inva
 
 Creation and update contracts are described below. A [runnable library example](../examples/library.mjs) exercises creation, sequential updates, inspection, and checking in an owned temporary directory.
 
-Named public types are IPlanMetadata, IDiagnostic, ISourceLocation, IReadOptions, IPlanDocuments, IParsedPlan, IFrontmatter, IMarker, IMilestone, IOverviewRow, IParsedMilestones, ICheckResult, IDocumentRead, IPlanInspection, ICreatePlanOptions, IPlanCreation, IPlanUpdate, and IPlanUpdateResult.
+Named public types are IPlanMetadata, IDiagnostic, ISourceLocation, ISourceSpan, IHeadingSection, IReadOptions, IPlanFingerprintOptions, IInspectPlanOptions, IPlanFingerprint, IPlanDocuments, IParsedPlan, IFrontmatter, IMarker, IMilestone, IOverviewRow, IParsedMilestones, ICheckResult, IDocumentRead, IPlanInspection, ICreatePlanOptions, IPlanCreation, IPlanUpdate, and IPlanUpdateResult.
 
-PlanMetadataSchema defines preferred complete metadata and allows project extensions. DiagnosticSchema, SourceLocationSchema, ReadOptionsSchema, and PlanDocumentsSchema own the corresponding boundary contracts. Known fields are validated independently during tolerant reads. PROTOCOL_VERSION is `0.1`; it is independent of the npm package version.
+PlanMetadataSchema defines preferred complete metadata and allows project extensions. DiagnosticSchema, SourceLocationSchema, ReadOptionsSchema, PlanFingerprintOptionsSchema, PlanFingerprintSchema, InspectPlanOptionsSchema, and PlanDocumentsSchema own the corresponding boundary contracts. Fingerprint results and inspection/fingerprint options are closed schemas; only explicit supported keys are accepted. Known metadata fields are validated independently during tolerant reads. PROTOCOL_VERSION is `0.1`; it is independent of the npm package version.
 
 Source offsets count JavaScript UTF-16 code units. Lines and columns start at one. Marker value spans exclude surrounding whitespace and line endings. Entries and overview rows retain ordinalText; ordinal is null for nonpositive or unsafe integer text, avoiding rounded identities. These are observations, not general-purpose rewrite permission.
 

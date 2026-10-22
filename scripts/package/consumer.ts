@@ -146,8 +146,9 @@ export const verifyPackedConsumer = async (
       import { createRequire } from 'node:module';
       import * as plans from 'jg-plans';
       assert.equal(plans.PROTOCOL_VERSION, '0.1');
-      assert.deepEqual(Object.keys(plans).sort(), ['CreatePlanOptionsSchema','DiagnosticSchema','ERRORS','MilestoneSelectorSchema','MilestoneSetSchema','PROTOCOL_VERSION','PlanDocumentsSchema','PlanMetadataSchema','PlanSetSchema','PlanUpdateSchema','ReadOptionsSchema','SourceLocationSchema','checkPlan','createPlan','inspectPlan','parseMilestones','parsePlan','updatePlan'].sort());
-      assert.equal(plans.parsePlan('# Legacy document').body, '# Legacy document');
+      assert.deepEqual(Object.keys(plans).sort(), ['CreatePlanOptionsSchema','DiagnosticSchema','ERRORS','InspectPlanOptionsSchema','MilestoneSelectorSchema','MilestoneSetSchema','PROTOCOL_VERSION','PlanDocumentsSchema','PlanFingerprintOptionsSchema','PlanFingerprintSchema','PlanMetadataSchema','PlanSetSchema','PlanUpdateSchema','ReadOptionsSchema','SourceLocationSchema','checkPlan','createPlan','fingerprintPlan','inspectPlan','parseMilestones','parsePlan','updatePlan'].sort());
+      assert.equal(plans.parsePlan('# Useful document').body, '# Useful document');
+      assert.match(plans.fingerprintPlan('# Work').sha256, /^[a-f0-9]{64}$/);
       assert.equal(plans.parseMilestones('## Milestone 1: Work\\n**Status:** custom').milestones[0].status, 'custom');
       assert.equal(plans.checkPlan({}).conforms, false);
       const result = await plans.inspectPlan('missing-directory');
@@ -158,6 +159,10 @@ export const verifyPackedConsumer = async (
       assert.throws(() => require('jg-plans/dist/documents/plan.js'), {code: 'ERR_PACKAGE_PATH_NOT_EXPORTED'});
       const created = await plans.createPlan({root: 'library-sample', slug: 'typed', body: '# Work'});
       assert.equal((await plans.updatePlan(created.directory, {document: 'plan', set: {revision: 2}})).changed, true);
+      const observed = await plans.inspectPlan(created.directory, {fingerprint: {excludeMetadataKeys: ['status']}});
+      assert.equal(observed.plan.state, 'readable');
+      assert.match(observed.plan.sha256, /^[a-f0-9]{64}$/);
+      assert.match(observed.fingerprint.sha256, /^[a-f0-9]{64}$/);
     `,
       ],
       cwd: directory,
@@ -171,14 +176,19 @@ export const verifyPackedConsumer = async (
 
     await writeFile(
       join(directory, 'types.mts'),
-      `import { parsePlan, inspectPlan, createPlan, updatePlan, type IPlanUpdate, type IPlanCreation, type IParsedPlan, type IPlanInspection, type IDiagnostic } from 'jg-plans';
+      `import { parsePlan, inspectPlan, createPlan, updatePlan, fingerprintPlan, type IPlanUpdate, type IPlanCreation, type IParsedPlan, type IPlanInspection, type IDiagnostic, type ISourceSpan, type IHeadingSection, type IPlanFingerprint, type IInspectPlanOptions, type IPlanFingerprintOptions } from 'jg-plans';
 const plan: IParsedPlan = parsePlan('# Work');
 const inspection: IPlanInspection = await inspectPlan('.');
 const diagnostics: IDiagnostic[] = plan.diagnostics;
 const created: IPlanCreation = await createPlan({slug: 'typed-example', body: '# Work'});
 const patch: IPlanUpdate = {document: 'plan', set: {revision: 2}};
 const changed: boolean = (await updatePlan(created.directory, patch)).changed;
-void [inspection, diagnostics, changed];\n`,
+const fingerprintOptions: IPlanFingerprintOptions = {excludeMetadataKeys: ['status']};
+const inspectOptions: IInspectPlanOptions = {fingerprint: fingerprintOptions};
+const fingerprint: IPlanFingerprint = fingerprintPlan(plan.source, fingerprintOptions);
+const preamble: ISourceSpan = plan.preamble;
+const sections: IHeadingSection[] = plan.sections;
+void [inspection, diagnostics, changed, fingerprint, preamble, sections, inspectOptions];\n`,
     );
     const require = createRequire(import.meta.url);
     const typecheck = await runProcess({

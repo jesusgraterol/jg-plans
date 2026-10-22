@@ -1,8 +1,9 @@
 import { mkdtemp, mkdir, readFile, rm, symlink, writeFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { expectToRejectCode } from 'jg-exception/testing';
-import { ERRORS, inspectPlan } from 'jg-plans';
+import { ERRORS, inspectPlan, fingerprintPlan } from 'jg-plans';
 import { afterEach, describe, expect, it } from 'vitest';
 
 const roots: string[] = [];
@@ -17,6 +18,57 @@ afterEach(async () => {
 });
 
 describe('built selected-directory inspection', () => {
+  it('returns exact byte hashes and an optional fingerprint while retaining milestone metadata', async () => {
+    const root = await fixture();
+    const plan =
+      '\uFEFF---\r\nid: observation\r\nrevision: 2\r\nstatus: custom\r\nproject: {owner: example}\r\n---\r\n# Work 😀\r\n';
+    const milestones =
+      '---\njg_skills: {plan_revision: 2}\n---\n## Milestone 1: Work\n**Status:** custom\n';
+    await writeFile(join(root, 'plan.md'), plan);
+    await writeFile(join(root, 'milestones.md'), milestones);
+    const result = await inspectPlan(root, {
+      fingerprint: { excludeMetadataKeys: ['revision', 'status'] },
+    });
+    expect(result.plan).toMatchObject({
+      state: 'readable',
+      sha256: createHash('sha256').update(Buffer.from(plan)).digest('hex'),
+    });
+    expect(result.milestones).toMatchObject({
+      state: 'readable',
+      sha256: createHash('sha256').update(Buffer.from(milestones)).digest('hex'),
+      value: { rawMetadata: { jg_skills: { plan_revision: 2 } } },
+    });
+    expect(result.fingerprint).toEqual(
+      fingerprintPlan(plan, { excludeMetadataKeys: ['revision', 'status'] }),
+    );
+    expect((await inspectPlan(root)).fingerprint).toBeUndefined();
+    expect(await readFile(join(root, 'plan.md'), 'utf8')).toBe(plan);
+    expect(await readFile(join(root, 'milestones.md'), 'utf8')).toBe(milestones);
+  });
+
+  it('reports an unavailable requested fingerprint without losing partial observations', async () => {
+    const root = await fixture();
+    const missing = await inspectPlan(root, { fingerprint: {} });
+    expect(missing.plan.state).toBe('missing');
+    expect(missing.fingerprint).toMatchObject({ sha256: null, excludeMetadataKeys: [] });
+    await writeFile(join(root, 'plan.md'), '---\nid: readable\nextension: .inf\n---\n# Work');
+    const partial = await inspectPlan(root, { fingerprint: {} });
+    expect(partial.plan).toMatchObject({
+      state: 'readable',
+      value: { metadata: { id: 'readable' }, body: '# Work' },
+    });
+    expect(partial.fingerprint?.sha256).toBeNull();
+    expect(
+      partial.diagnostics.filter((item) => item.code === 'YAML_VALUE_UNAVAILABLE'),
+    ).toHaveLength(1);
+    await writeFile(join(root, 'plan.md'), Buffer.from([0xff]));
+    expect((await inspectPlan(root, { fingerprint: {} })).fingerprint?.sha256).toBeNull();
+    await expectToRejectCode(
+      inspectPlan(root, { fingerprint: { excludeMetadataKeys: [4] } } as never),
+      ERRORS.INVALID_INPUT,
+    );
+  });
+
   it('matches independent public-example observations', async () => {
     const root = resolve(import.meta.dirname, '../../examples');
     const small = await inspectPlan(join(root, 'small'));
@@ -50,7 +102,7 @@ describe('built selected-directory inspection', () => {
     expect(orphan.diagnostics.map((item) => item.code)).toContain('ORPHAN_MILESTONES');
   });
 
-  it('reports deletion, custom/legacy paths, and empty documents without traversing history', async () => {
+  it('reports deletion, custom paths, and empty documents without traversing history', async () => {
     const root = await fixture();
     for (const name of ['custom', 'coding-agent-planning']) {
       const path = join(root, name);

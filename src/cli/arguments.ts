@@ -1,7 +1,11 @@
 import { parseStrictArgs } from 'jg-process';
 
 import { planErrors } from '../errors/index.ts';
-import { ReadOptionsSchema } from '../protocol/index.ts';
+import {
+  PlanFingerprintOptionsSchema,
+  ReadOptionsSchema,
+  type IPlanFingerprintOptions,
+} from '../protocol/index.ts';
 
 import type { IArguments } from './types.ts';
 
@@ -22,6 +26,7 @@ export const parseArguments = (args: string[]): IArguments => {
       root: { type: 'string' },
       'max-bytes': { type: 'string' },
       'include-body': { type: 'boolean' },
+      'fingerprint-exclude': { type: 'string' },
       json: { type: 'boolean' },
       help: { type: 'boolean', short: 'h' },
       version: { type: 'boolean', short: 'v' },
@@ -36,6 +41,17 @@ export const parseArguments = (args: string[]): IArguments => {
   if (flags.version) return { command: 'version', json: flags.json, includeBody: false };
   if (first !== 'inspect' && first !== 'check' && first !== 'create' && first !== 'update')
     throw planErrors.create('invalidInput');
+  let fingerprint: IPlanFingerprintOptions | undefined;
+  if (flags['fingerprint-exclude'] !== undefined) {
+    if (first !== 'inspect') throw planErrors.create('invalidInput');
+    try {
+      fingerprint = PlanFingerprintOptionsSchema.parse({
+        excludeMetadataKeys: JSON.parse(flags['fingerprint-exclude']) as unknown,
+      });
+    } catch {
+      throw planErrors.create('invalidInput');
+    }
+  }
   if (first === 'create') {
     if (!flags.slug || !flags.input || flags.directory || flags['include-body'])
       throw planErrors.create('invalidInput');
@@ -59,6 +75,7 @@ export const parseArguments = (args: string[]): IArguments => {
     ...(flags.slug ? { slug: flags.slug } : {}),
     ...(flags.root ? { root: flags.root } : {}),
     includeBody: flags['include-body'],
+    ...(fingerprint ? { fingerprint } : {}),
     json: flags.json,
     ...(maxBytes === undefined ? {} : { maxBytes }),
   };

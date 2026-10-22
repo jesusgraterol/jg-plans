@@ -1,6 +1,6 @@
 {
   "name": "jg-plans",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "A compact planning protocol for people and coding agents.",
   "type": "module",
   "sideEffects": false,
@@ -63,7 +63,6 @@
     "@eslint/js": "10.0.1",
     "@types/node": "24.10.1",
     "eslint": "10.12.0",
-    "jg-crypto": "0.3.0",
     "jg-fetch": "0.5.0",
     "prettier": "3.8.3",
     "prettier-plugin-astro": "1.1.1",
@@ -85,9 +84,11 @@
     "tailwindStylesheet": "./website/src/styles/global.css"
   },
   "dependencies": {
+    "jg-crypto": "0.3.0",
     "jg-exception": "1.7.0",
-    "jg-fs": "1.6.0",
+    "jg-fs": "1.7.0",
     "jg-process": "1.6.1",
+    "jg-utilities": "1.7.0",
     "yaml": "2.9.1",
     "zod": "4.6.7"
   }

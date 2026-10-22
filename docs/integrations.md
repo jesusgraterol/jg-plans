@@ -8,6 +8,14 @@ Unknown metadata and custom status strings belong to the document's author/proje
 
 For example, [the extension example](../examples/extensions/plan.md) contains project.owner and labels. A generic reader preserves them. The example's waiting-for-feedback status does not require every consumer to implement that workflow.
 
+## Document identity and complete requirements
+
+Use exact-byte hashes from `inspectPlan` when comparing a selected document with the bytes observed earlier. Use `fingerprintPlan` or inspection's optional fingerprint for structural identity; explicitly choose excluded metadata keys. The generic library excludes none by default and never interprets a digest as approval.
+
+The planned skills/HQ profile excludes exactly created_at, updated_at, revision, and status while retaining plan id and every unknown contractual field. A caller can use a different policy, but an unavailable fingerprint is not a fresh binding or proof of completion. Keep application approval digests and execution identities separate.
+
+Use the ordered preamble/heading/body source ranges to retain all shared, intervening, and trailing requirements. Milestone bodies deliberately stop at the next level-two heading; requirements under other headings remain in sections rather than disappearing. Optional milestone frontmatter supplies raw project metadata without requiring the plan's fields. Keep byte hashes, source ranges, generic structural fingerprints, and application policy distinct; no second Markdown parser is needed to recover omitted requirements.
+
 ## Roots and deletion
 
 Honor an explicit planning root. Otherwise preserve an established coding-agent-planning/ or custom root and use jg-plans/ for a new default. The reference CLI uses explicit paths; root discovery and publication exclusions belong to integrations. Do not move existing plans automatically.

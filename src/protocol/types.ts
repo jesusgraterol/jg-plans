@@ -47,6 +47,34 @@ export const ReadOptionsSchema = z.strictObject({
 
 export type IReadOptions = z.infer<typeof ReadOptionsSchema>;
 
+/** Exclusions are caller policy; no metadata key is excluded implicitly. */
+export const PlanFingerprintOptionsSchema = z.strictObject({
+  excludeMetadataKeys: z.array(z.string()).optional(),
+});
+
+export type IPlanFingerprintOptions = z.infer<typeof PlanFingerprintOptionsSchema>;
+
+/** Closed JSON result for library and CLI consumers; unavailable identity has diagnostics. */
+export const PlanFingerprintSchema = z
+  .strictObject({
+    sha256: z
+      .string()
+      .regex(/^[a-f0-9]{64}$/)
+      .nullable(),
+    excludeMetadataKeys: z.array(z.string()).refine((keys) => new Set(keys).size === keys.length),
+    diagnostics: z.array(DiagnosticSchema),
+  })
+  .refine((value) => value.sha256 !== null || value.diagnostics.length > 0);
+
+export type IPlanFingerprint = z.infer<typeof PlanFingerprintSchema>;
+
+/** Request a structural fingerprint without another document read or parse. */
+export const InspectPlanOptionsSchema = ReadOptionsSchema.extend({
+  fingerprint: PlanFingerprintOptionsSchema.optional(),
+});
+
+export type IInspectPlanOptions = z.infer<typeof InspectPlanOptionsSchema>;
+
 /** Creation accepts JSON metadata, including project extensions and nonconforming known values. */
 export const CreatePlanOptionsSchema = z.strictObject({
   slug: z

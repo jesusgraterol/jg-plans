@@ -7,5 +7,7 @@ export type IArguments = {
   slug?: string;
   root?: string;
   includeBody: boolean;
+  fingerprint?: IPlanFingerprintOptions;
   json: boolean;
 };
+import type { IPlanFingerprintOptions } from '../protocol/index.ts';

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.0 — document observations and tooling
+
+- Add complete UTF-16 source ranges for unfenced level-two sections, document preambles, milestone headings, and recognized Overview tables without dropping shared or trailing requirements.
+- Share optional frontmatter parsing between plans and milestones; expose exact milestone body and raw extension metadata without requiring plan metadata fields.
+- Return exact-byte SHA-256 values for readable documents. Add pure `fingerprintPlan` and optional inspection/CLI structural fingerprints using explicit caller-selected metadata exclusions and strict deterministic JSON.
+- Use `jg-crypto` and `jg-utilities` as direct runtime dependencies. Protocol 0.1 remains provisional; fingerprints and observations grant no execution authority.
+
 ## 0.1.2 — documentation and examples
 
 - Complete the canonical documentation and consumer integration recipes alongside the visual example explorer, original-source downloads, and verified package availability presentation.

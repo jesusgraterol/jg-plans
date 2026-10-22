@@ -20,7 +20,7 @@ import { parseArguments } from './arguments.ts';
 const HELP = `jg-plans — inspect Markdown plans without enforcing a workflow
 
 Commands:
-  inspect --directory <path> [--include-body] [--json] [--max-bytes <bytes>]
+  inspect --directory <path> [--fingerprint-exclude <JSON-array>] [--include-body] [--json] [--max-bytes <bytes>]
   check   --directory <path> [--json] [--max-bytes <bytes>]
   create  --slug <slug> --input <file-or-dash> [--root <path>] [--json] [--max-bytes <bytes>]
   update  --directory <path> --input <file-or-dash> [--json] [--max-bytes <bytes>]
@@ -40,14 +40,18 @@ const projectInspection = (inspection: IPlanInspection, includeBody: boolean): o
   const milestoneValue = milestones.state === 'readable' ? milestones.value : undefined;
   return {
     directory: inspection.directory,
+    ...(inspection.fingerprint ? { fingerprint: inspection.fingerprint } : {}),
     plan: {
       state: plan.state,
       path: plan.path,
       ...(planValue
         ? {
             metadata: planValue.metadata,
+            sha256: plan.state === 'readable' ? plan.sha256 : undefined,
             rawMetadata: planValue.rawMetadata,
             frontmatter: planValue.frontmatter,
+            preamble: planValue.preamble,
+            sections: planValue.sections,
             ...(includeBody ? { source: planValue.source, body: planValue.body } : {}),
           }
         : {}),
@@ -58,12 +62,18 @@ const projectInspection = (inspection: IPlanInspection, includeBody: boolean): o
       ...(milestoneValue
         ? {
             overview: milestoneValue.overview,
+            sha256: milestones.state === 'readable' ? milestones.sha256 : undefined,
+            rawMetadata: milestoneValue.rawMetadata,
+            frontmatter: milestoneValue.frontmatter,
+            preamble: milestoneValue.preamble,
+            sections: milestoneValue.sections,
+            overviewTables: milestoneValue.overviewTables,
             overviewPresent: milestoneValue.overviewPresent,
             milestones: milestoneValue.milestones.map(({ body, ...entry }) => ({
               ...entry,
               ...(includeBody ? { body } : {}),
             })),
-            ...(includeBody ? { source: milestoneValue.source } : {}),
+            ...(includeBody ? { source: milestoneValue.source, body: milestoneValue.body } : {}),
           }
         : {}),
     },
@@ -149,10 +159,10 @@ export const runCli = async (args: string[]): Promise<number> => {
       diagnostics = result.diagnostics;
       data = { directory: result.directory, document: result.document, changed: result.changed };
     } else {
-      const inspection = await inspectPlan(
-        options.directory!,
-        options.maxBytes === undefined ? {} : { maxBytes: options.maxBytes },
-      );
+      const inspection = await inspectPlan(options.directory!, {
+        ...(options.maxBytes === undefined ? {} : { maxBytes: options.maxBytes }),
+        ...(options.fingerprint ? { fingerprint: options.fingerprint } : {}),
+      });
       diagnostics = inspection.diagnostics;
       const operationalFailure = diagnostics.some(
         (item) => item.code === 'UNREADABLE_DOCUMENT' || item.code === 'FILE_TOO_LARGE',
