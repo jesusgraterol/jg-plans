@@ -30,13 +30,26 @@ for (const colorScheme of ['light', 'dark'] as const) {
           true,
         );
         await expect(
-          page.getByText(
-            availability.state === 'published'
-              ? `v${availability.version} available`
-              : 'Development preview',
-            { exact: true },
-          ),
-        ).toBeVisible();
+          page.getByText(`v${availability.version} available`, { exact: true }),
+        ).toHaveCount(0);
+        if (route.path.startsWith('/docs/')) {
+          if (availability.state === 'published') {
+            await expect(
+              page.getByRole('link', { name: `npm ${availability.version}`, exact: true }),
+            ).toBeVisible();
+          } else {
+            await expect(
+              page.getByText(
+                `Package ${availability.version} · ${
+                  availability.state === 'unknown'
+                    ? 'availability unverified'
+                    : 'development preview'
+                }`,
+                { exact: true },
+              ),
+            ).toBeVisible();
+          }
+        }
         await expectNoHorizontalOverflow(page);
         expect(
           (

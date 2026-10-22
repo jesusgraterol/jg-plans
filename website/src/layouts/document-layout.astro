@@ -1,6 +1,7 @@
 ---
 import Prose from 'jg-personal-astro-ui/prose';
 import LinkCard from 'jg-personal-astro-ui/link-card';
+import { readAvailability } from '../availability.ts';
 import BaseLayout from './base-layout.astro';
 import { PAGES, type IPage } from '../site.config.ts';
 
@@ -9,6 +10,7 @@ interface Props {
   headings?: readonly { depth: number; slug: string; text: string }[];
 }
 const { page, headings = [] } = Astro.props;
+const availability = readAvailability(import.meta.env.JG_PLANS_AVAILABILITY);
 const next = PAGES[(PAGES.findIndex((entry) => entry.path === page.path) + 1) % PAGES.length]!;
 ---
 
@@ -79,6 +81,22 @@ const next = PAGES[(PAGES.findIndex((entry) => entry.path === page.path) + 1) % 
         <p class="mt-5 max-w-2xl text-lg leading-relaxed text-muted">{page.description}</p>
         <div class="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-muted">
           <span class="font-mono">Protocol 0.1 · provisional</span>
+          {page.path.startsWith('/docs/') &&
+            (availability.state === 'published' ? (
+              <a
+                href={`https://www.npmjs.com/package/jg-plans/v/${availability.version}`}
+                class="inline-flex min-h-8 items-center font-mono underline underline-offset-4"
+              >
+                npm {availability.version}
+              </a>
+            ) : (
+              <span>
+                Package {availability.version} ·{' '}
+                {availability.state === 'unknown'
+                  ? 'availability unverified'
+                  : 'development preview'}
+              </span>
+            ))}
           {page.source && (
             <a
               href={`/raw/${page.source}`}

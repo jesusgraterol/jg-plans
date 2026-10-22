@@ -27,10 +27,6 @@
     letter-spacing: -0.055em;
     line-height: 1.08;
   }
-  .preview-label {
-    border-left: 2px solid var(--jg-accent);
-    padding-left: 0.65rem;
-  }
   .document-layout .jg-prose {
     overflow-wrap: anywhere;
   }
