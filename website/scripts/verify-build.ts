@@ -195,10 +195,19 @@ export const verifyBuild = async (
       assert.ok(JSON.stringify(data).includes(canonical));
       assert.equal(types.includes('WebSite'), registry.path === '/');
       if (registry.path !== '/') assert.ok(types.includes('WebPage'));
-      if (release.state === 'published')
-        assert.ok(document.text.includes(`v${release.version} available`));
-      else {
-        assert.ok(document.text.includes('Development preview'));
+      assert.ok(!document.text.includes(`v${release.version} available`));
+      if (registry.path.startsWith('/docs/')) {
+        assert.ok(
+          document.text.includes(
+            release.state === 'published'
+              ? `npm ${release.version}`
+              : `Package ${release.version} · ${
+                  release.state === 'unknown' ? 'availability unverified' : 'development preview'
+                }`,
+          ),
+        );
+      }
+      if (release.state !== 'published') {
         assert.ok(!document.text.includes('npm install jg-plans'));
         assert.ok(
           !document.links.some((href) => href.startsWith('https://www.npmjs.com/package/jg-plans')),

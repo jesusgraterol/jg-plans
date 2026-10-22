@@ -25,6 +25,8 @@ The eight canonical pages share one registry for navigation, metadata, sitemap, 
 
 Code windows use the shared copy behavior with a small CSS adaptation for icon-only controls, since jg-personal-astro-ui 0.4.0 has no icon-only variant. Accessible labels, state icons, live feedback, and manual-copy guidance remain supplied by the package.
 
+Package versions appear with installation instructions and in documentation metadata. There is no global release-status banner. Documentation links to a verified npm version, or identifies an unverified preview; protocol maturity is shown separately.
+
 Local builds default to an offline development preview. Set JG_PLANS_PUBLISHED_VERSION only when asking the build to verify that matching source version against npm. The wrapper packs the already built package in an owned temporary directory and compares complete registry payload paths/bytes. Only a match enables release labels and an exact-version install command. Missing, pending, mismatching, or unavailable evidence keeps preview presentation; registry errors are distinguished from absence. There is no alternate-registry build flag.
 
 `assets:generate` renders the sharing image with local fonts and pinned Chromium. Inspect public/social.png, then commit it with assets/manifest.json. `assets:check` rejects stale inputs or altered output. See [the asset sources](assets/README.md) and [website ownership/delivery](../docs/website.md).
