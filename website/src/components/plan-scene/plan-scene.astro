@@ -1,9 +1,10 @@
 ---
 import CodeBlock from 'jg-personal-astro-ui/code-block';
 
-import { loadSource } from '../../content/index.ts';
+import { loadExample } from '../../content/examples.ts';
 
-const source = await loadSource('smallPlan');
+const example = await loadExample('small');
+const source = example.documents.plan!;
 ---
 
 <div class="plan-scene">
@@ -12,6 +13,23 @@ const source = await loadSource('smallPlan');
     <span>Yours to change.</span>
   </div>
   <CodeBlock code={source} lang="markdown" title="plan.md" />
+  <dl
+    class="mt-5 grid grid-cols-3 gap-4 border-b border-border pb-5 text-xs"
+    aria-label="Library observations of this plan"
+  >
+    <div>
+      <dt class="text-muted">Status</dt>
+      <dd class="mt-2 font-mono font-semibold">{example.plan?.metadata.status}</dd>
+    </div>
+    <div>
+      <dt class="text-muted">Revision</dt>
+      <dd class="mt-2 font-mono font-semibold">{example.plan?.metadata.revision}</dd>
+    </div>
+    <div>
+      <dt class="text-muted">Milestones</dt>
+      <dd class="mt-2 font-mono font-semibold">Optional</dd>
+    </div>
+  </dl>
   <div class="scene-notes grid gap-4 pt-5 sm:grid-cols-2">
     <div class="border-l-2 border-accent pl-3">
       <p class="font-semibold">A little structure</p>

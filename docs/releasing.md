@@ -74,6 +74,10 @@ Do this only after both retained main artifacts have passed qualification: the m
 
 The bootstrap has no CI provenance. The automated follow-up establishes it. Final delivery additionally requires the version declared by final main and the live site's verified release presentation to agree; the bootstrap alone is insufficient.
 
+## Refreshing website availability
+
+After verifying the package version declared by main, run Check on main with the optional published_version input set to that same version. The website wrapper independently verifies the actual registry contents before rendering release presentation. Local builds and runs without the input remain preview builds. The checked site artifact is deployed unchanged, independently of the npm publish job. See [website delivery](website.md) for ownership and live verification.
+
 ## Failures and recovery
 
 - **Readiness disabled:** the publish step reports state disabled and changes nothing. Complete the owner steps, set the variable, and explicitly dispatch main.

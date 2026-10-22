@@ -1,0 +1,9 @@
+---
+import { Content } from '../../../../../api/README.md';
+import DocumentLayout from '../../../layouts/document-layout.astro';
+import { pageFor } from '../../../site.config.ts';
+---
+
+<DocumentLayout page={pageFor('/docs/api/')}>
+  <Content />
+</DocumentLayout>

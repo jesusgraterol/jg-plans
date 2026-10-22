@@ -1,6 +1,6 @@
-import { expect, test } from '@playwright/test';
+import AxeBuilder from '@axe-core/playwright';
 import { expectNoHorizontalOverflow, inspectMotion, waitForPageAssets } from 'jg-playwright';
-import { expectNoAxeViolations } from 'jg-playwright/axe';
+import { expect, test } from '../../testing/index.ts';
 
 import { PAGES, SITE } from '../site.config.ts';
 
@@ -8,7 +8,9 @@ for (const colorScheme of ['light', 'dark'] as const) {
   for (const width of [320, 768, 1440]) {
     test(`${colorScheme} at ${width}px: readable, accessible production pages`, async ({
       page,
+      availability,
     }, testInfo) => {
+      testInfo.setTimeout(90_000);
       await page.setViewportSize({ width, height: 1000 });
       await page.emulateMedia({ colorScheme, reducedMotion: 'reduce' });
       for (const route of PAGES) {
@@ -26,9 +28,22 @@ for (const colorScheme of ['light', 'dark'] as const) {
         expect(await brand.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(
           true,
         );
-        await expect(page.getByText('Development preview', { exact: true })).toBeVisible();
+        await expect(
+          page.getByText(
+            availability.state === 'published'
+              ? `v${availability.version} available`
+              : 'Development preview',
+            { exact: true },
+          ),
+        ).toBeVisible();
         await expectNoHorizontalOverflow(page);
-        await expectNoAxeViolations(page);
+        expect(
+          (
+            await new AxeBuilder({ page })
+              .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+              .analyze()
+          ).violations,
+        ).toEqual([]);
         expect((await inspectMotion(page)).movingAnimations).toEqual([]);
         const localLinks = await page
           .locator('a[href^="#"]')
@@ -39,11 +54,14 @@ for (const colorScheme of ['light', 'dark'] as const) {
             `${route.path}${href}`,
           ).toBe(1);
         }
-        if (route.path === '/') {
+        if (route.path === '/' && testInfo.repeatEachIndex === 0) {
           await page.screenshot({
             path: testInfo.outputPath(`home-${colorScheme}-${width}.png`),
             fullPage: true,
           });
+        }
+        if (route.path === '/docs/api/' && width !== 768 && testInfo.repeatEachIndex === 0) {
+          await page.screenshot({ path: testInfo.outputPath(`api-${colorScheme}-${width}.png`) });
         }
       }
     });
@@ -55,6 +73,14 @@ test('keyboard navigation, theme persistence, copy, and mobile menu', async ({ p
   await page.goto('/');
   await page.keyboard.press('Tab');
   await expect(page.getByRole('link', { name: 'Skip to main content' })).toBeFocused();
+  await expect(page.getByRole('link', { name: 'Skip to main content' })).toHaveCSS(
+    'outline-style',
+    'solid',
+  );
+  await expect(page.getByRole('link', { name: 'Skip to main content' })).toHaveCSS(
+    'outline-width',
+    '2px',
+  );
   await page.keyboard.press('Enter');
   await expect(page.locator('main')).toBeFocused();
   const initial = await page.locator('html').getAttribute('data-resolved-theme');
@@ -107,15 +133,14 @@ test('clipboard denial provides manual-copy feedback', async ({ page }) => {
   await expect(page.locator('[data-copy-hint]:visible')).toContainText(/select|manually|copy/i);
 });
 
-test('documents and narrow navigation work without JavaScript', async ({ browser }) => {
-  const context = await browser.newContext({
+test.describe('without JavaScript', () => {
+  test.use({
     javaScriptEnabled: false,
     viewport: { width: 320, height: 900 },
     colorScheme: 'dark',
   });
-  try {
-    const page = await context.newPage();
-    await page.goto('http://127.0.0.1:4322/protocol/');
+  test('documents and narrow navigation remain useful', async ({ page }) => {
+    await page.goto('/protocol/');
     await expect(
       page.getByRole('heading', { level: 1, name: 'The jg-plans protocol' }),
     ).toBeVisible();
@@ -124,9 +149,7 @@ test('documents and narrow navigation work without JavaScript', async ({ browser
     await page.locator('article').getByRole('link', { name: 'Protocol 0.1' }).click();
     await expect(page.locator('h1')).toHaveText('jg-plans protocol 0.1');
     await expectNoHorizontalOverflow(page);
-  } finally {
-    await context.close();
-  }
+  });
 });
 
 test('documents remain readable at the 200-percent desktop equivalent', async ({ page }) => {

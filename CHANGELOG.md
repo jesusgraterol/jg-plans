@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.2 — documentation and examples
+
+- Complete the canonical documentation and consumer integration recipes alongside the visual example explorer, original-source downloads, and verified package availability presentation.
+- Keep protocol 0.1 provisional and the reference library/CLI behavior unchanged.
+
 ## 0.1.1 — trusted publishing validation
 
 - Prepare the first automated release after the manual 0.1.0 bootstrap, using the qualified archive and registry/provenance verification workflow.

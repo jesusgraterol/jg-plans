@@ -1,7 +1,9 @@
 ---
 import Button from 'jg-personal-astro-ui/button';
 import CodeBlock from 'jg-personal-astro-ui/code-block';
+import InstallCommand from 'jg-personal-astro-ui/install-command';
 
+import { readAvailability } from '../availability.ts';
 import PlanScene from '../components/plan-scene/plan-scene.astro';
 import ProtocolMap from '../components/protocol-map/protocol-map.astro';
 import { loadSource } from '../content/index.ts';
@@ -9,6 +11,7 @@ import BaseLayout from '../layouts/base-layout.astro';
 import { PAGES } from '../site.config.ts';
 
 const milestoneSource = await loadSource('milestones');
+const availability = readAvailability(import.meta.env.JG_PLANS_AVAILABILITY);
 ---
 
 <BaseLayout page={PAGES[0]}>
@@ -31,8 +34,8 @@ const milestoneSource = await loadSource('milestones');
         <Button href="/protocol/0.1/">
           Read the protocol <span aria-hidden="true">↗</span>
         </Button>
-        <Button href="#milestones" variant="outline">
-          See the shape <span aria-hidden="true">↓</span>
+        <Button href="/examples/" variant="outline">
+          Explore examples <span aria-hidden="true">→</span>
         </Button>
       </div>
       <p class="mt-7 font-mono text-xs text-muted">
@@ -40,6 +43,53 @@ const milestoneSource = await loadSource('milestones');
       </p>
     </div>
     <PlanScene />
+  </section>
+  <section class="jg-container border-t border-border py-12 sm:py-16" aria-labelledby="build-title">
+    <div class="grid items-center gap-8 lg:grid-cols-2 lg:gap-16">
+      <div>
+        <p class="eyebrow mb-4">A foundation for your tools</p>
+        <h2 id="build-title" class="section-title">
+          Build on a shared language.
+        </h2>
+        <p class="mt-5 max-w-xl text-lg text-muted">
+          Use the reference library and thin CLI for useful observations and deliberate edits. Keep
+          your project's decisions in your project.
+        </p>
+        <div class="mt-6 flex flex-wrap gap-3">
+          <Button href="/docs/">Get started</Button>
+          <Button href="/docs/integrations/" variant="outline">
+            Integration guide
+          </Button>
+        </div>
+      </div>
+      {availability.state === 'published' ? (
+        <div class="min-w-0">
+          <InstallCommand
+            id="install-command"
+            command={`npm install jg-plans@${availability.version}`}
+            context="install command"
+            title={`Verified package · ${availability.version}`}
+          />
+          <p class="mt-4 text-sm text-muted">
+            Node.js 24.15.0 or newer. Protocol 0.1 remains provisional.
+          </p>
+        </div>
+      ) : (
+        <div class="border-l-2 border-accent py-2 pl-6">
+          <p class="text-xl font-semibold">Start with the document.</p>
+          <p class="mt-3 max-w-lg text-muted">
+            The protocol and examples work on their own. Reference tools can be built from the
+            source while public package availability is unverified.
+          </p>
+          <a
+            href="/docs/"
+            class="mt-4 inline-flex min-h-8 items-center text-sm underline underline-offset-4"
+          >
+            Use a development checkout
+          </a>
+        </div>
+      )}
+    </div>
   </section>
   <div class="jg-container grid gap-6 border-t border-border py-8 sm:grid-cols-3">
     {[

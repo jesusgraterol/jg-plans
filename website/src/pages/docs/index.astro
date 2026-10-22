@@ -1,0 +1,9 @@
+---
+import { Content } from '../../../../docs/getting-started.md';
+import DocumentLayout from '../../layouts/document-layout.astro';
+import { pageFor } from '../../site.config.ts';
+---
+
+<DocumentLayout page={pageFor('/docs/')}>
+  <Content />
+</DocumentLayout>

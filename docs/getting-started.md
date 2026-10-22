@@ -1,6 +1,6 @@
 # Getting started
 
-**Development preview.** The protocol and examples are usable directly. The reference APIs and CLI are implemented; a public npm release has not been verified.
+The protocol and examples are usable directly. The reference library and CLI are optional; the [website's availability label](https://jg-plans.jesusgraterol.dev/docs/) identifies a verified published version. The checkout commands below work independently of npm publication.
 
 Start with an ordinary [small plan](../examples/small/plan.md). It contains five core metadata fields and a short Markdown body. Add [milestones](../examples/with-milestones/milestones.md) only when separate units help review the work. Users can edit, move, or delete these files.
 
@@ -33,4 +33,4 @@ Serialize each document's complete read/edit/write operation. Unsupported YAML/a
 
 ## Contributing
 
-The [development guide](https://github.com/jesusgraterol/jg-plans/blob/development/docs/development.md) owns checks and package/site boundaries. Tests exercise built root exports and an isolated installation of the actual tarball. The protocol remains provisional until separately approved skill and HQ integrations exercise it.
+The [development guide](https://github.com/jesusgraterol/jg-plans/blob/main/docs/development.md) owns checks and package/site boundaries. Tests exercise built root exports and an isolated installation of the actual tarball. The protocol remains provisional until separately approved skill and HQ integrations exercise it.

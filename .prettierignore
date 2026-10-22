@@ -14,6 +14,10 @@ pnpm-lock.yaml
 **/fixtures/**
 examples/**/plan.md
 examples/**/milestones.md
+# Exact licensed brand asset copied from the public UI export.
+website/assets/jg-mark.svg
+# Generated rendering receipt; assets:generate owns its serialization.
+website/assets/manifest.json
 **/_archive/**
 **/_archives/**
 **/_backup/**
