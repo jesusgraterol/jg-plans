@@ -1,6 +1,6 @@
 # Library API
 
-**Development preview.** Protocol 0.1 is provisional. These operations describe the implemented library; npm availability has not been verified.
+Protocol 0.1 is provisional. These operations describe the implemented reference library. Check the [website's availability label](https://jg-plans.jesusgraterol.dev/docs/api/) before choosing a published package version.
 
 The ESM root exports compiled JavaScript and TypeScript declarations. Node.js 24.15.0 is the runtime floor. Importing jg-plans does not inspect files, log output, or start a process. The only public import path is `jg-plans`.
 

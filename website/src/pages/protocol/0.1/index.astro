@@ -1,32 +1,24 @@
 ---
-import Prose from 'jg-personal-astro-ui/prose';
-
 import { Content, getHeadings } from '../../../../../protocol/0.1/README.md';
 import { loadSource } from '../../../content/index.ts';
-import BaseLayout from '../../../layouts/base-layout.astro';
+import DocumentLayout from '../../../layouts/document-layout.astro';
 import { PAGES } from '../../../site.config.ts';
 
 await loadSource('specification');
 const headings = getHeadings().filter((heading) => heading.depth === 2);
 ---
 
-<BaseLayout page={PAGES[2]}>
-  <div class="document-layout jg-container grid gap-10 py-12 sm:py-16 lg:grid-cols-[13rem_minmax(0,1fr)] lg:gap-16">
-    <aside aria-label="On this page">
-      <p class="eyebrow mb-4">Protocol 0.1</p>
-      <a href="/protocol/" class="mb-6 inline-block text-sm text-muted">
-        ← All versions
-      </a>
-      <nav class="grid gap-3 text-sm">
-        {headings.map((heading) => (
-          <a href={`#${heading.slug}`}>{heading.text}</a>
-        ))}
-      </nav>
-    </aside>
-    <article class="min-w-0 max-w-3xl">
-      <Prose>
-        <Content />
-      </Prose>
-    </article>
-  </div>
-</BaseLayout>
+<DocumentLayout page={PAGES[2]}>
+  <Fragment slot="navigation">
+    <p class="eyebrow mb-4">Protocol 0.1</p>
+    <a href={PAGES[1].path} class="mb-6 inline-block min-h-8 text-sm text-muted">
+      ← All versions
+    </a>
+    <nav aria-label="On this page" class="grid gap-3 text-sm">
+      {headings.map((heading) => (
+        <a href={`#${heading.slug}`}>{heading.text}</a>
+      ))}
+    </nav>
+  </Fragment>
+  <Content />
+</DocumentLayout>

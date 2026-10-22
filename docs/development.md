@@ -17,9 +17,11 @@ pnpm release:pack
 pnpm --dir website dev
 pnpm --dir website exec playwright install chromium
 pnpm --dir website check
+pnpm --dir website assets:check
+pnpm --dir website verify:deployment
 ```
 
-Use pnpm format to format editable source/docs. Protected instruction files, planning records, generated lockfiles, and byte-sensitive example/fixture documents are excluded from the formatter.
+Use pnpm format to format editable source/docs. Protected instruction files, planning records, generated lockfiles, byte-sensitive example/fixture documents, and the unchanged licensed JG mark are excluded from the formatter. Regenerate the sharing-image receipt after changing its formatted source.
 
 The [website guide](../website/README.md) describes the production pages, canonical content, browser checks, and retained screenshots. Website checks build once and test that artifact.
 
@@ -27,7 +29,7 @@ Root `test` builds before running unit and integration categories. Public-librar
 
 Archive inspection uses tar as a development-only parser, with no extraction: at most 8 MiB compressed, 16 MiB expanded, 1 MiB per file, and 4096 file entries. Unsafe paths, links, duplicate entries, and nested compression fail verification. Package-manager-generated binary wrappers are tested by invocation and are distinct from the archive payload. Public error, getting-started, and integration references ship with the API/CLI documentation; the consumer check also verifies their relative document links. Development, release, and website source guides remain repository-only.
 
-`check:package` composes those tests with type, lint, and format checks. Root `check` runs that package boundary followed by the website's production checks, in an explicit order; the root public package and private website share a pnpm workspace/lockfile. `release:pack` builds, writes a local archive under ignored .release/, and verifies that exact retained archive through the installed consumer; it does not publish. Build and archive scripts bound child processes and forward shutdown signals. Linux is verified locally; the planned release-readiness matrix owns Windows/macOS and additional Node runtime evidence.
+`check:package` composes those tests with type, lint, and format checks. Root `check` runs that package boundary followed by the website's production checks, in an explicit order; the root public package and private website share a pnpm workspace/lockfile. The website declares jg-plans through workspace:\* and builds the root before reading its exports. `release:pack` builds, writes a local archive under ignored .release/, and verifies that exact retained archive through the installed consumer; it does not publish. Build and archive scripts bound child processes and forward shutdown signals. Check qualifies Node 24.15.0 and 24.22.1 across Linux, macOS, and Windows; website/browser checks run once on Linux at 24.22.1.
 
 The installed executable performs create → inspect → update → check against its real bin shim, and the shipped examples/library.mjs is run from the installed archive. Creation failures exercise actual prefix writes and cleanup; conflict tests control only the external write boundary before invoking the real atomic comparison. Byte-preservation expectations are independent literal buffers, not parser-generated expected output.
 

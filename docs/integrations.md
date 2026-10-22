@@ -1,6 +1,6 @@
 # Consumer integration
 
-Use [protocol 0.1](../protocol/0.1/README.md) as the compact shared format. A project can read Markdown itself or use the implemented reference library/CLI; public npm availability is not yet verified. The protocol is usable without installing a tool or calling a website.
+Use [protocol 0.1](../protocol/0.1/README.md) as the compact shared format. A project can read Markdown itself or use the reference library/CLI. The [website](https://jg-plans.jesusgraterol.dev) identifies verified package availability. The protocol is usable without installing a tool or calling a website.
 
 ## Keep policy with the consumer
 
@@ -24,4 +24,26 @@ The selected directory and ancestors are trusted caller choices. The library rej
 
 ## Adoption boundary
 
-Adopting this protocol in jg-skills or an HQ project is separately scoped work. Existing progress and supported public consumer contracts need evidence before migration. Integration recipes and the final development-time conformance guidance are completed alongside the tested reference package and website; no downstream adoption is claimed here.
+Adopting this protocol in jg-skills or an HQ project is separately scoped work. Protocol 0.1 stays provisional until jg-skills and at least one HQ consumer have exercised it. Those integrations are not prerequisites for using this project, and no downstream adoption is claimed here.
+
+## Skills: one shared section, distinct responsibilities
+
+Keep installed skills self-contained. Copy the compact writer/reader rules into one identically maintained section stamped **jg-plans protocol 0.1**. During the skills build, compare that section across every generated skill that includes it and fail on drift. Do not make loading or using a skill depend on the website, a network request, or running the jg-plans CLI.
+
+Keep role-specific instructions outside that common section:
+
+- **jg-plan:** write identity, creation/update timestamps, revision, and status; explain the intent and revision summary in Markdown. Revising a plan preserves existing milestones and progress unless the user asks to change or remove them. Avoid creating redundant companion files for a small task.
+- **jg-breakdown:** add optional milestones when they help. Place status immediately after the milestone heading; place an optional UUID ID on the next line. Preserve established identities and progress while revising the breakdown. Treat any overview as derived information.
+- **jg-execute:** read the selected documents and the user's actual authorization. Existing status markers describe progress; missing metadata, removed files, and checker findings do not create or revoke permission.
+- **jg-review and jg-review-session:** assess the relevant work against available evidence and the selected plan. Name missing evidence without inventing history or treating a deleted document as completion. The status line remains authoritative over an overview row.
+- **Publication/discovery skills:** recognize both coding-agent-planning/ and jg-plans/, as well as explicitly configured roots. Exclude planning files from broad publication unless the user deliberately includes them. Report a selected planning directory that is not ignored; do not silently change ignore rules or move documents.
+
+For root selection, honor an explicit path first. Otherwise keep the project's configured or established root, including an existing coding-agent-planning/ directory, before introducing jg-plans/ as a new default. When multiple roots are present, resolve the intended scope through the integration's configuration or the user's selection. A root name never grants permission to read unrelated old plans.
+
+Use the CLI only during development to validate documents produced by skill behavior evaluations. Include small plans, custom metadata/statuses, revisions with existing done milestones, edited marker placement, deleted metadata, and deleted companion files. Verify that skills preserve existing progress and obey their role, beyond checking preferred writer conformance. A development evaluation failure is feedback for the skill author; runtime document inspection and user edits remain available.
+
+## HQ consumers: depend on the reference implementation
+
+Use jg-plans for generic parsing and explicit document operations rather than maintaining another interpretation. Preserve a supported public consumer API with the smallest necessary wrapper, or make a documented breaking release when moving to the new dependency changes its contract. Test against that consumer's established documents and public API before migration.
+
+Keep approval digests, authorization, strict project frontmatter, resource schemas, execution, coordination, serialization, and reconciliation inside HQ. A stricter local profile may reject a document for a project-specific action; that does not make the document unreadable under the protocol. Avoid automatic repair, restoration of deleted plans, or silent rewriting to satisfy a closed project schema.

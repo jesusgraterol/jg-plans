@@ -21,7 +21,13 @@ The preview server used by Playwright belongs to the test runner and is stopped 
 
 src/site.config.ts explicitly registers existing routes. The protocol pages render the canonical Markdown in the repository's protocol/ directory. The home page loads the actual public examples through a named source allowlist with a 1 MiB read bound. No planning directory is discovered or loaded. Source-link routing keeps the Markdown useful on GitHub and on the website without maintaining two specifications.
 
-The current site is a development preview. It makes no available-package claim and builds offline. Package-backed observations, all documentation routes, release verification, sharing assets, and Pages delivery are owned by later milestones.
+The eight canonical pages share one registry for navigation, metadata, sitemap, and agent-facing links. Docs render the owning Markdown files; the example gallery calls the public jg-plans parser at build time. It uses the shared Tabs and CodeBlock components, with a no-JavaScript view that leaves all five examples readable. Original downloads retain source bytes. Raw Markdown adds an availability disclosure and preserves the canonical content.
+
+Local builds default to an offline development preview. Set JG_PLANS_PUBLISHED_VERSION only when asking the build to verify that matching source version against npm. The wrapper packs the already built package in an owned temporary directory and compares complete registry payload paths/bytes. Only a match enables release labels and an exact-version install command. Missing, pending, mismatching, or unavailable evidence keeps preview presentation; registry errors are distinguished from absence. There is no alternate-registry build flag.
+
+`assets:generate` renders the sharing image with local fonts and pinned Chromium. Inspect public/social.png, then commit it with assets/manifest.json. `assets:check` rejects stale inputs or altered output. See [the asset sources](assets/README.md) and [website ownership/delivery](../docs/website.md).
+
+After deployment, `verify:deployment` compares live HTTPS files with the retained checked artifact and tests the real custom 404. CI downloads qualified-site into dist and verifies it without rebuilding. From a development machine, download that main run's qualified-site artifact into an empty owned `.release/checked-site/` directory, then run `pnpm --dir website verify:deployment --from ../.release/checked-site`. A local preview build is not a substitute for the CI artifact's source-commit receipt.
 
 Check both themes at 320px, tablet, and desktop, keyboard access, native navigation without JavaScript, reduced motion, and copy success/failure. Browser tests use jg-playwright and axe; screenshots require human visual inspection as well.
 

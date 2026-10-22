@@ -1,0 +1,54 @@
+---
+import Prose from 'jg-personal-astro-ui/prose';
+
+import BaseLayout from './base-layout.astro';
+import { PAGES, type IPage } from '../site.config.ts';
+
+interface Props {
+  page: IPage;
+}
+const { page } = Astro.props;
+---
+
+<BaseLayout page={page}>
+  <div class="document-layout jg-container grid gap-6 py-8 sm:gap-10 sm:py-16 lg:grid-cols-[13rem_minmax(0,1fr)] lg:gap-16">
+    <aside aria-label="Documentation navigation">
+      <slot name="navigation">
+        <p class="eyebrow mb-4">Build with jg-plans</p>
+        <nav class="flex flex-wrap gap-x-5 gap-y-1 text-sm lg:grid lg:gap-2">
+          {PAGES.slice(1).map((entry) => (
+            <a
+              href={entry.path}
+              aria-current={entry.path === page.path ? 'page' : undefined}
+              class="inline-flex min-h-8 items-center"
+            >
+              {entry.label}
+            </a>
+          ))}
+        </nav>
+      </slot>
+    </aside>
+    <article class="min-w-0 max-w-3xl">
+      {page.source && (
+        <div class="mb-4 flex flex-wrap gap-x-5 gap-y-2 font-mono text-xs text-muted sm:mb-7">
+          <a
+            href={`/raw/${page.source}`}
+            class="inline-flex min-h-8 items-center underline underline-offset-4"
+          >
+            Read as Markdown
+          </a>
+          <a
+            href={`/downloads/${page.source}`}
+            download
+            class="inline-flex min-h-8 items-center underline underline-offset-4"
+          >
+            Download source
+          </a>
+        </div>
+      )}
+      <Prose>
+        <slot />
+      </Prose>
+    </article>
+  </div>
+</BaseLayout>

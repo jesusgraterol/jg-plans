@@ -10,30 +10,39 @@ import ThemeControl from 'jg-personal-astro-ui/theme-control';
 import ThemeInitScript from 'jg-personal-astro-ui/theme-init-script';
 import { buildStructuredData } from 'jg-site';
 
-import { SITE, type IPage } from '../site.config.ts';
+import { availabilityMessage, readAvailability } from '../availability.ts';
+import { PAGES, SITE, type IPage } from '../site.config.ts';
 import '../styles/global.css';
 
 interface Props {
   page: IPage;
+  noIndex?: boolean;
 }
-const { page } = Astro.props;
+const { page, noIndex = false } = Astro.props;
+const availability = readAvailability(import.meta.env.JG_PLANS_AVAILABILITY);
 const navigation = [
-  { href: '/protocol/', label: 'Protocol', match: 'prefix' as const },
+  ...PAGES.flatMap((entry) =>
+    'navigationLabel' in entry
+      ? [{ href: entry.path, label: entry.navigationLabel, match: 'prefix' as const }]
+      : [],
+  ),
   { href: SITE.repository, label: 'GitHub', external: true },
 ];
 const canonicalUrl = new URL(page.path, SITE.url).href;
-const structuredData = buildStructuredData({
-  canonicalUrl,
-  title: page.title,
-  description: page.description,
-  type: page.path === '/' ? 'website' : 'webpage',
-  site: {
-    name: SITE.name,
-    url: SITE.url,
-    language: 'en',
-    author: { name: 'Jesus Graterol', url: 'https://jesusgraterol.dev' },
-  },
-});
+const structuredData = noIndex
+  ? undefined
+  : buildStructuredData({
+      canonicalUrl,
+      title: page.title,
+      description: page.description,
+      type: page.path === '/' ? 'website' : 'webpage',
+      site: {
+        name: SITE.name,
+        url: SITE.url,
+        language: 'en',
+        author: { name: 'Jesus Graterol', url: 'https://jesusgraterol.dev' },
+      },
+    });
 ---
 
 <!doctype html>
@@ -43,13 +52,38 @@ const structuredData = buildStructuredData({
       title={page.title}
       description={page.description}
       siteName={SITE.name}
-      canonicalUrl={canonicalUrl}
+      canonicalUrl={noIndex ? undefined : canonicalUrl}
+      noIndex={noIndex}
+      alternate={
+        noIndex
+          ? undefined
+          : {
+              href: new URL(`/raw/${page.source ?? 'index.md'}`, SITE.url).href,
+              type: 'text/markdown',
+              title: 'Read as Markdown',
+            }
+      }
+      llmsTextUrl={new URL('/llms.txt', SITE.url).href}
+      openGraphImage={{
+        url: new URL(SITE.image, SITE.url).href,
+        width: 1200,
+        height: 630,
+        type: 'image/png',
+        alt: SITE.imageAlt,
+      }}
       icons={[{ href: favicon, rel: 'icon', type: 'image/svg+xml' }]}
       structuredData={structuredData}
     />
     <ThemeInitScript storageKey={SITE.themeKey} />
   </head>
   <body>
+    <noscript>
+      <style is:inline>
+        [data-copy-button] {
+          display: none;
+        }
+      </style>
+    </noscript>
     <SkipLink />
     <SiteHeader currentPath={page.path} homeLabel="jg-plans home" items={navigation}>
       <BrandLogo slot="brand" name="jg-plans">
@@ -60,10 +94,12 @@ const structuredData = buildStructuredData({
     </SiteHeader>
     <div class="border-b border-border bg-secondary/60">
       <div class="jg-container flex flex-wrap items-center gap-x-3 gap-y-1 py-2.5 text-xs">
-        <span class="preview-label font-mono font-semibold">Development preview</span>
-        <span class="text-muted">
-          Protocol 0.1 is provisional. The npm release is being prepared.
+        <span class="preview-label font-mono font-semibold">
+          {availability.state === 'published'
+            ? `v${availability.version} available`
+            : 'Development preview'}
         </span>
+        <span class="text-muted">{availabilityMessage(availability)}</span>
       </div>
     </div>
     <main id="main-content" tabindex="-1">
@@ -72,11 +108,17 @@ const structuredData = buildStructuredData({
     <SiteFooter
       columns={[
         {
+          title: 'Build on the protocol',
+          links: PAGES.filter(
+            (entry) => entry.path.startsWith('/docs/') || entry.path === '/examples/',
+          ).map((entry) => ({ href: entry.path, label: entry.label })),
+        },
+        {
           title: 'Read the protocol',
-          links: [
-            { href: '/protocol/', label: 'Overview' },
-            { href: '/protocol/0.1/', label: 'Specification 0.1' },
-          ],
+          links: PAGES.filter((entry) => entry.path.startsWith('/protocol/')).map((entry) => ({
+            href: entry.path,
+            label: entry.label,
+          })),
         },
         {
           title: 'Build with us',
@@ -84,7 +126,7 @@ const structuredData = buildStructuredData({
             { href: SITE.repository, label: 'Source on GitHub', external: true },
             { href: `${SITE.repository}/issues`, label: 'Feedback & ideas', external: true },
             {
-              href: `${SITE.repository}/blob/development/LICENSE`,
+              href: `${SITE.repository}/blob/main/LICENSE`,
               label: 'MIT license',
               external: true,
             },

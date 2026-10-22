@@ -6,18 +6,33 @@ export const SITE = {
   repository: 'https://github.com/jesusgraterol/jg-plans',
   sourceVersion: manifest.version,
   themeKey: 'jg-plans-theme',
+  image: '/social.png',
+  imageAlt:
+    'jg-plans. Good plans. Plain Markdown. An open protocol for plans and optional milestones.',
 };
 
-// Only existing, rendered pages belong here. Source files are shared with the package.
+export interface IPage {
+  path: string;
+  label: string;
+  title: string;
+  description: string;
+  source?: string;
+  navigationLabel?: string;
+}
+
+// One registry owns rendered pages, navigation, canonical URLs, and discovery output.
 export const PAGES = [
   {
     path: '/',
+    label: 'Home',
     title: 'jg-plans — Good plans. Plain Markdown.',
     description:
       'A compact, open protocol for plans and optional milestones. Built for people, coding agents, and the tools around them.',
   },
   {
     path: '/protocol/',
+    navigationLabel: 'Protocol',
+    label: 'Protocol overview',
     title: 'The protocol · jg-plans',
     description:
       'Start with the jg-plans protocol: ordinary Markdown, optional milestones, tolerant readers, and project-owned policies.',
@@ -25,11 +40,58 @@ export const PAGES = [
   },
   {
     path: '/protocol/0.1/',
+    label: 'Specification 0.1',
     title: 'Protocol 0.1 · jg-plans',
     description:
       'The provisional jg-plans 0.1 specification: metadata, optional milestones, revisions, deletion, and source-preserving edits.',
     source: 'protocol/0.1/README.md',
   },
-] as const;
+  {
+    path: '/docs/',
+    navigationLabel: 'Docs',
+    label: 'Getting started',
+    title: 'Getting started · jg-plans',
+    description:
+      'Read a small plan, add optional milestones, and use the reference library or CLI when they help your work.',
+    source: 'docs/getting-started.md',
+  },
+  {
+    path: '/docs/cli/',
+    label: 'CLI reference',
+    title: 'CLI reference · jg-plans',
+    description:
+      'Inspect, check, create, and update planning documents with explicit paths, bounded inputs, and structured JSON output.',
+    source: 'cli/README.md',
+  },
+  {
+    path: '/docs/api/',
+    label: 'Library API',
+    title: 'Library API · jg-plans',
+    description:
+      'Build on tolerant parsing, optional conformance checks, selected-directory reads, and source-preserving metadata edits.',
+    source: 'api/README.md',
+  },
+  {
+    path: '/docs/integrations/',
+    label: 'Integrations',
+    title: 'Consumer integrations · jg-plans',
+    description:
+      'Integrate the shared protocol with skills and applications while keeping authorization, coordination, and retention in your project.',
+    source: 'docs/integrations.md',
+  },
+  {
+    path: '/examples/',
+    navigationLabel: 'Examples',
+    label: 'Examples',
+    title: 'Examples · jg-plans',
+    description:
+      'Explore real Markdown sources beside library observations: small plans, optional milestones, extensions, and partly deleted documents.',
+    source: 'examples/README.md',
+  },
+] as const satisfies readonly IPage[];
 
-export type IPage = (typeof PAGES)[number];
+export const pageFor = (path: string): IPage => {
+  const page = PAGES.find((entry) => entry.path === path);
+  if (!page) throw new Error('Unregistered page');
+  return page;
+};

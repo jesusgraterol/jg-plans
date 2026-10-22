@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "playwright": "1.64.1",
+  "chromium": "156.0.8078.4",
+  "width": 1200,
+  "height": 630,
+  "inputs": {
+    "assets/render.ts": "6cb4fe4c7fd05430e3e3b59824482389319c3ffc0e1f2ae438f5a07f6a72dffb",
+    "assets/social.html": "a1c5b1d6c6f2a18a875e334825e6cfd776c8c26aadf88c261a242b1486eac9a3",
+    "assets/jg-mark.svg": "379081558b541828f051e4c301b98bbe432a0d031088ada391abf344cdbea3b4",
+    "assets/fonts/ubuntu-sans-latin-wght-normal.woff2": "8f34f6aeb6d02bae33e841c33848bfa689216f4323149d8471dc19c55ec8f2be",
+    "assets/fonts/ubuntu-sans-mono-latin-wght-normal.woff2": "de9cdc82c4c08e4e5c1776b773b18b0cc3d38497127f557e06fd0d535e477fce"
+  },
+  "output": "5d27bbc4ab1b7f97ea4ac64f37487c1017c008a8e38a299c7d47908f121ca648"
+}

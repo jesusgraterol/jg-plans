@@ -1,0 +1,123 @@
+---
+import CodeBlock from 'jg-personal-astro-ui/code-block';
+
+import { loadExample } from '../../content/examples.ts';
+import { EXAMPLES } from '../../content/sources.ts';
+
+interface Props {
+  id: (typeof EXAMPLES)[number]['id'];
+}
+const example = await loadExample(Astro.props.id);
+---
+
+<section class="py-8 sm:py-10" aria-labelledby={`example-${example.id}`}>
+  <header class="mb-8 max-w-2xl">
+    <h2 id={`example-${example.id}`} class="section-title">
+      {example.label}
+    </h2>
+    <p class="mt-4 text-lg text-muted">{example.description}</p>
+  </header>
+  <div class="grid min-w-0 items-start gap-8 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,0.75fr)] lg:gap-12">
+    <div class="grid min-w-0 gap-6">
+      {example.sources.map((source) => (
+        <div class="min-w-0">
+          <CodeBlock
+            code={
+              source.endsWith('/plan.md') ? example.documents.plan! : example.documents.milestones!
+            }
+            lang="markdown"
+            title={source.replace('examples/', '')}
+          />
+          <a
+            href={`/downloads/${source}`}
+            download={source.split('/').at(-1)}
+            class="mt-3 inline-flex min-h-8 items-center text-sm underline underline-offset-4"
+          >
+            Download {source.split('/').at(-1)}
+          </a>
+        </div>
+      ))}
+      {example.plan === null && (
+        <p class="border-l-2 border-border-strong pl-4 text-sm text-muted">
+          plan.md is deliberately absent. No file is restored.
+        </p>
+      )}
+    </div>
+    <aside
+      class="min-w-0 border-t border-border pt-6 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-8"
+      aria-label={`${example.label} observations`}
+    >
+      <p class="eyebrow mb-5">Observed by jg-plans</p>
+      <dl class="grid gap-4 text-sm">
+        <div>
+          <dt class="text-muted">Plan document</dt>
+          <dd class="mt-1 font-semibold">{example.plan ? 'Readable' : 'Missing'}</dd>
+        </div>
+        <div>
+          <dt class="text-muted">Status</dt>
+          <dd class="mt-1 font-mono wrap-anywhere">
+            {example.plan?.metadata.status ?? 'Not recorded'}
+          </dd>
+        </div>
+        <div>
+          <dt class="text-muted">Revision</dt>
+          <dd class="mt-1 font-mono">{example.plan?.metadata.revision ?? 'Not recorded'}</dd>
+        </div>
+        <div>
+          <dt class="text-muted">Optional milestones</dt>
+          <dd class="mt-1 font-semibold">
+            {example.milestones ? example.milestones.milestones.length : 'Not included'}
+          </dd>
+        </div>
+      </dl>
+      {example.milestones && (
+        <ol class="mt-6 grid gap-4" aria-label="Observed milestone progress">
+          {example.milestones.milestones.map((milestone) => (
+            <li class="border-l-2 border-accent pl-4">
+              <p class="font-semibold">
+                {milestone.ordinalText}. {milestone.title}
+              </p>
+              <p class="mt-1 font-mono text-xs text-muted">
+                Status: {milestone.status ?? 'Not recorded'}
+              </p>
+            </li>
+          ))}
+        </ol>
+      )}
+      <div class="mt-8 border-t border-border pt-5">
+        <p class="font-semibold">
+          {example.check.conforms
+            ? 'Preferred writer format'
+            : 'Useful observations, with findings'}
+        </p>
+        <p class="mt-2 text-sm text-muted">
+          A check describes the document. Your project decides what happens next.
+        </p>
+        {example.check.diagnostics.length > 0 && (
+          <ul class="mt-4 grid gap-3 text-sm">
+            {example.check.diagnostics.map((diagnostic) => (
+              <li>
+                <span class="font-mono text-xs wrap-anywhere">{diagnostic.code}</span>
+                <p class="mt-1 text-muted">{diagnostic.message}</p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+      {example.plan?.rawMetadata && (
+        <details class="mt-6">
+          <summary class="min-h-8 cursor-pointer text-sm font-semibold">
+            All observed metadata
+          </summary>
+          <div class="mt-3 min-w-0">
+            <CodeBlock
+              code={JSON.stringify(example.plan.rawMetadata, null, 2)}
+              lang="json"
+              title="Expanded metadata"
+            />
+          </div>
+        </details>
+      )}
+    </aside>
+  </div>
+</section>

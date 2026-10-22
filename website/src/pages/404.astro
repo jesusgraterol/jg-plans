@@ -1,0 +1,28 @@
+---
+import Button from 'jg-personal-astro-ui/button';
+import BaseLayout from '../layouts/base-layout.astro';
+---
+
+<BaseLayout
+  noIndex
+  page={{
+    path: '/404/',
+    label: 'Not found',
+    title: 'Page not found · jg-plans',
+    description: 'This page is not here. Explore the protocol, documentation, or examples.',
+  }}
+>
+  <div class="jg-container py-20 sm:py-32">
+    <p class="eyebrow mb-5">404 / Page not found</p>
+    <h1 class="display-title">Page not found.</h1>
+    <p class="lede mt-6">
+      This page is not here. The protocol, docs, and examples are a good place to start.
+    </p>
+    <div class="mt-8 flex flex-wrap gap-3">
+      <Button href="/">Go home</Button>
+      <Button href="/docs/" variant="outline">
+        Read the docs
+      </Button>
+    </div>
+  </div>
+</BaseLayout>

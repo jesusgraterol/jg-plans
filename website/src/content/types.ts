@@ -5,5 +5,6 @@ export type IHastElement = {
 };
 
 export type IHastContext<TNode> = {
+  readonly fileURL?: URL | undefined;
   setProperty(node: TNode, key: string, value: unknown): void;
 };

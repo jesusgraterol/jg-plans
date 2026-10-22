@@ -1,6 +1,6 @@
 # CLI
 
-**Development preview.** The executable is implemented and tested from the packed archive. A public npm release is not yet advertised.
+The executable is tested from the packed archive. Check the [website's availability label](https://jg-plans.jesusgraterol.dev/docs/cli/) for published-package availability, or run the built executable from a checkout.
 
 ```sh
 jg-plans inspect --directory ./jg-plans/example
