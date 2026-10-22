@@ -1,0 +1,17 @@
+packages:
+  - website
+
+minimumReleaseAge: 1440
+minimumReleaseAgeExclude:
+  # Approved pinned website baseline, published 2026-10-21.
+  - astro@7.4.2
+  # The Markdown processor required by the pinned Astro baseline.
+  - '@astrojs/markdown-satteri@0.4.5'
+  # Required by the pinned Astro Markdown dependency graph.
+  - '@astrojs/prism@4.1.1'
+  # Required by the pinned Astro baseline.
+  - '@astrojs/telemetry@3.4.1'
+  # Approved pinned CLI primitive, published 2026-10-21.
+  - jg-process@1.6.1
+strictDepBuilds: true
+allowBuilds: {}

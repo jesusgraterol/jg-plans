@@ -1,0 +1,94 @@
+{
+  "name": "jg-plans",
+  "version": "0.1.0",
+  "description": "A compact planning protocol for people and coding agents.",
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "bin": {
+    "jg-plans": "./dist/cli/cli.js"
+  },
+  "license": "MIT",
+  "author": "Jesus Graterol",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jesusgraterol/jg-plans.git"
+  },
+  "homepage": "https://jg-plans.jesusgraterol.dev",
+  "bugs": {
+    "url": "https://github.com/jesusgraterol/jg-plans/issues"
+  },
+  "engines": {
+    "node": ">=24.15.0"
+  },
+  "packageManager": "pnpm@12.14.0",
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist",
+    "protocol",
+    "api",
+    "cli",
+    "errors",
+    "docs/getting-started.md",
+    "docs/integrations.md",
+    "examples",
+    "CHANGELOG.md",
+    "README.md",
+    "LICENSE",
+    "NOTICE"
+  ],
+  "scripts": {
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "build": "node scripts/package/build.ts",
+    "test": "pnpm build && pnpm test:unit && pnpm test:integration",
+    "test:unit": "vitest run --project unit",
+    "test:integration": "vitest run --project integration",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src scripts vitest.config.ts eslint.config.js",
+    "check:package": "pnpm test && pnpm typecheck && pnpm lint && pnpm format:check",
+    "check": "pnpm check:package && pnpm --dir website check",
+    "release:pack": "pnpm build && node scripts/package/pack.ts"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/node": "24.10.1",
+    "eslint": "10.12.0",
+    "jg-crypto": "0.3.0",
+    "jg-fetch": "0.5.0",
+    "prettier": "3.8.3",
+    "prettier-plugin-astro": "1.1.1",
+    "prettier-plugin-tailwindcss": "0.8.1",
+    "tar": "7.5.22",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.72.0",
+    "vitest": "5.0.5"
+  },
+  "prettier": {
+    "singleQuote": true,
+    "trailingComma": "all",
+    "printWidth": 100,
+    "proseWrap": "preserve",
+    "plugins": [
+      "prettier-plugin-astro",
+      "prettier-plugin-tailwindcss"
+    ],
+    "tailwindStylesheet": "./website/src/styles/global.css"
+  },
+  "dependencies": {
+    "jg-exception": "1.7.0",
+    "jg-fs": "1.6.0",
+    "jg-process": "1.6.1",
+    "yaml": "2.9.1",
+    "zod": "4.6.7"
+  }
+}

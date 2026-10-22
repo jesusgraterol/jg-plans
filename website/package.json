@@ -1,0 +1,38 @@
+{
+  "name": "jg-plans-website",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24.15.0"
+  },
+  "scripts": {
+    "dev": "astro dev --host 127.0.0.1",
+    "build": "astro build",
+    "preview": "astro preview --host 127.0.0.1",
+    "typecheck": "astro check",
+    "test": "pnpm test:unit && pnpm test:integration && pnpm test:e2e",
+    "test:unit": "vitest run --project unit",
+    "test:integration": "vitest run --project integration",
+    "test:e2e": "playwright test",
+    "check": "pnpm build && pnpm typecheck && pnpm test && node scripts/verify-build.ts"
+  },
+  "dependencies": {
+    "@astrojs/markdown-satteri": "0.4.5",
+    "@tailwindcss/vite": "4.3.3",
+    "astro": "7.4.2",
+    "jg-personal-astro-ui": "0.4.0",
+    "jg-site": "0.1.0",
+    "tailwindcss": "4.3.3"
+  },
+  "devDependencies": {
+    "@astrojs/check": "0.9.10",
+    "@axe-core/playwright": "4.14.0",
+    "@playwright/test": "1.64.1",
+    "@types/node": "24.10.1",
+    "jg-fs": "1.6.0",
+    "jg-playwright": "0.1.0",
+    "typescript": "6.0.3",
+    "vitest": "5.0.5"
+  }
+}
