@@ -137,6 +137,7 @@ if (current.plan.state === 'readable') {
         <div class="mt-6">
           <Fragment set:html="<!--email_off-->" />
           <InstallCommand
+            copyDisplay="icon"
             id="install-command"
             command={`npm install jg-plans@${availability.version}`}
             context="install command"
@@ -164,7 +165,12 @@ if (current.plan.state === 'readable') {
       </div>
     </div>
     <div class="min-w-0">
-      <CodeBlock code={integration} lang="typescript" title="your-application.ts" />
+      <CodeBlock
+        copyDisplay="icon"
+        code={integration}
+        lang="typescript"
+        title="your-application.ts"
+      />
     </div>
   </section>
 

@@ -56,7 +56,8 @@ const metadata = example.slice(0, example.indexOf('\n---', 4) + 4);
       </div>
       <div class="min-w-0">
         <CodeBlock
-          class="[&_pre]:whitespace-pre-wrap [&_pre]:wrap-anywhere"
+          copyDisplay="icon"
+          overflow="wrap"
           code={metadata}
           lang="yaml"
           title="plan.md · frontmatter"
@@ -74,7 +75,8 @@ const metadata = example.slice(0, example.indexOf('\n---', 4) + 4);
         Add milestones only when useful.
       </h2>
       <CodeBlock
-        class="[&_pre]:whitespace-pre-wrap [&_pre]:wrap-anywhere"
+        copyDisplay="icon"
+        overflow="wrap"
         code={
           '## Milestone 1: Explain empty search results\n**Status:** pending\n**Milestone ID:** 5a148c73-7d38-4a2f-9c0f-903d93b9b764\n\nDescribe the work and how to review it.'
         }

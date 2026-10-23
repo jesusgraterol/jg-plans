@@ -39,6 +39,7 @@ import { pageFor } from '../../../site.config.ts';
         Build a view from explicit observations
       </h2>
       <CodeBlock
+        copyDisplay="icon"
         code={`import { inspectPlan } from 'jg-plans';\n\nconst observation = await inspectPlan(selectedDirectory);\n\n// Keep missing, unreadable, and readable states distinct.\nconst view = {\n  plan: observation.plan,\n  milestones: observation.milestones,\n  diagnostics: observation.diagnostics,\n};\n\n// Your application owns rendering and action authorization.`}
         lang="typescript"
         title="Your integration boundary"

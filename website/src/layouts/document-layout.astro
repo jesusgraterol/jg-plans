@@ -1,6 +1,8 @@
 ---
 import Prose from 'jg-personal-astro-ui/prose';
-import LinkCard from 'jg-personal-astro-ui/link-card';
+import DocumentationShell from 'jg-personal-astro-ui/documentation-shell';
+import DocumentationOutline from 'jg-personal-astro-ui/documentation-outline';
+import PageNavigation from 'jg-personal-astro-ui/page-navigation';
 import { readAvailability } from '../availability.ts';
 import BaseLayout from './base-layout.astro';
 import { PAGES, type IPage } from '../site.config.ts';
@@ -15,67 +17,27 @@ const next = PAGES[(PAGES.findIndex((entry) => entry.path === page.path) + 1) % 
 ---
 
 <BaseLayout page={page}>
-  <div class="document-layout jg-container grid gap-8 py-8 sm:py-12 lg:grid-cols-[12rem_minmax(0,1fr)] lg:gap-12">
-    <aside class="min-w-0" aria-label="Documentation navigation">
-      <div class="lg:sticky lg:top-24">
-        <p class="eyebrow mb-3 hidden lg:block">Explore jg-plans</p>
-        <nav aria-label="Documentation" class="hidden gap-1 text-sm lg:grid">
-          {PAGES.slice(1).map((entry) => (
-            <a
-              href={entry.path}
-              aria-current={entry.path === page.path ? 'page' : undefined}
-              class="inline-flex min-h-10 shrink-0 items-center rounded-md px-3 text-muted hover:bg-secondary hover:text-foreground aria-[current=page]:bg-secondary aria-[current=page]:font-semibold aria-[current=page]:text-accent"
-            >
-              {entry.label}
-            </a>
-          ))}
-        </nav>
-        <details class="rounded-lg border border-border lg:hidden">
-          <summary class="min-h-11 cursor-pointer content-center px-4 text-sm font-semibold">
-            Browse documentation
-          </summary>
-          <nav aria-label="Documentation" class="grid gap-1 border-t border-border p-2 text-sm">
-            {PAGES.slice(1).map((entry) => (
-              <a
-                href={entry.path}
-                aria-current={entry.path === page.path ? 'page' : undefined}
-                class="flex min-h-11 items-center rounded-md px-3 text-muted hover:bg-secondary hover:text-foreground aria-[current=page]:bg-secondary aria-[current=page]:font-semibold aria-[current=page]:text-accent"
-              >
-                {entry.label}
-              </a>
-            ))}
-          </nav>
-        </details>
-        {headings.length > 0 && (
-          <nav
-            aria-label="On this page"
-            class="mt-8 hidden border-t border-border pt-5 text-xs lg:block"
-          >
-            <p class="eyebrow mb-3">On this page</p>
-            <ul class="grid gap-1">
-              {headings
-                .filter((heading) => heading.depth === 2)
-                .map((heading) => (
-                  <li>
-                    <a
-                      class="block rounded-md px-3 py-2 text-muted hover:bg-secondary hover:text-foreground"
-                      href={`#${heading.slug}`}
-                    >
-                      {heading.text}
-                    </a>
-                  </li>
-                ))}
-            </ul>
-          </nav>
-        )}
-      </div>
-    </aside>
+  <DocumentationShell
+    currentPath={page.path}
+    navigation={[
+      {
+        label: 'Explore jg-plans',
+        items: PAGES.slice(1).map((entry) => ({ href: entry.path, label: entry.label })),
+      },
+    ]}
+  >
+    <DocumentationOutline
+      slot="outline"
+      items={headings
+        .filter((heading) => heading.depth === 2)
+        .map((heading) => ({ href: `#${heading.slug}`, label: heading.text }))}
+    />
     <article class="min-w-0" aria-labelledby="document-title">
       <header class="mb-8 border-b border-border pb-8 sm:mb-10 sm:pb-10">
         <p class="eyebrow mb-4 text-accent">
           {page.path.startsWith('/protocol/') ? 'The shared format' : 'Build with jg-plans'}
         </p>
-        <h1 id="document-title" class="display-title">
+        <h1 id="document-title" class="jg-document-title">
           {page.label}
         </h1>
         <p class="mt-5 max-w-2xl text-lg leading-relaxed text-muted">{page.description}</p>
@@ -122,18 +84,17 @@ const next = PAGES[(PAGES.findIndex((entry) => entry.path === page.path) + 1) % 
         aria-label="Complete reference"
       >
         <p class="eyebrow mb-6 text-muted">Complete reference</p>
-        <Prose>
+        <Prose titleVariant="document" class="wrap-anywhere">
           <slot />
         </Prose>
       </section>
-      <nav aria-label="Continue reading" class="mt-12 border-t border-border pt-6">
-        <LinkCard href={next.path} title={next.label} headingLevel={2}>
-          <span slot="kicker" class="mb-2 block text-xs text-muted">
-            Continue exploring
-          </span>
-          {next.description}
-        </LinkCard>
-      </nav>
+      <div class="mt-12 border-t border-border pt-6">
+        <p class="mb-4 text-xs text-muted">Continue exploring</p>
+        <PageNavigation
+          label="Continue reading"
+          next={{ href: next.path, label: next.label, description: next.description }}
+        />
+      </div>
     </article>
-  </div>
+  </DocumentationShell>
 </BaseLayout>

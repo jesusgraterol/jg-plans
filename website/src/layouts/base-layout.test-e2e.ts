@@ -18,11 +18,18 @@ for (const colorScheme of ['light', 'dark'] as const) {
         await waitForPageAssets(page);
         await expect(page.locator('h1')).toHaveCount(1);
         await expect(page.locator('a[download], a[href^="/downloads/"]')).toHaveCount(0);
-        expect(
-          await page
-            .locator('h1')
-            .evaluate((heading) => parseFloat(getComputedStyle(heading).fontSize)),
-        ).toBeGreaterThan(32);
+        const titleSize = await page
+          .getByRole('heading', { level: 1 })
+          .evaluate((heading) => parseFloat(getComputedStyle(heading).fontSize));
+        if (route.path.startsWith('/docs/') || route.path.startsWith('/protocol/')) {
+          // document titles deliberately use the shared compact scale
+          expect(titleSize).toBeGreaterThanOrEqual(28);
+        } else {
+          expect(titleSize).toBeGreaterThan(32);
+        }
+        await expect(
+          page.locator('.jg-code-window [data-copy-button]:not([data-copy-display="icon"])'),
+        ).toHaveCount(0);
         const brand = page
           .getByRole('link', { name: 'jg-plans home' })
           .getByText('jg-plans', { exact: true });
@@ -201,9 +208,9 @@ test.describe('without JavaScript', () => {
   test('documents and narrow navigation remain useful', async ({ page }) => {
     await page.goto('/protocol/');
     await expect(page.getByRole('heading', { level: 1, name: 'Protocol overview' })).toBeVisible();
-    const browse = page.getByText('Browse documentation', { exact: true });
-    await browse.click();
     const documentation = page.getByRole('navigation', { name: 'Documentation', exact: true });
+    const browse = documentation.locator('summary');
+    await browse.click();
     await expect(
       documentation.getByRole('link', { name: 'Library API', exact: true }),
     ).toBeVisible();
@@ -211,7 +218,9 @@ test.describe('without JavaScript', () => {
       documentation.getByRole('link', { name: 'Protocol overview', exact: true }),
     ).toHaveAttribute('aria-current', 'page');
     await browse.click();
-    await expect(documentation).toBeHidden();
+    await expect(
+      documentation.getByRole('link', { name: 'Library API', exact: true }),
+    ).toBeHidden();
     await page.locator('[data-site-menu] summary').click();
     await expect(page.getByRole('navigation', { name: 'Mobile navigation' })).toBeVisible();
     await page
