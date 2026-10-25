@@ -1,6 +1,6 @@
 {
   "name": "jg-plans",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "A compact planning protocol for people and coding agents.",
   "type": "module",
   "sideEffects": false,

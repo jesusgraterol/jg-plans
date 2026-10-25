@@ -63,6 +63,8 @@ const projectInspection = (inspection: IPlanInspection, includeBody: boolean): o
             frontmatter: planValue.frontmatter,
             preamble: planValue.preamble,
             sections: planValue.sections,
+            protocol: planValue.protocol,
+            criteria: planValue.criteria,
             ...(includeBody ? { source: planValue.source, body: planValue.body } : {}),
           }
         : {}),
@@ -88,6 +90,10 @@ const projectInspection = (inspection: IPlanInspection, includeBody: boolean): o
           }
         : {}),
     },
+    // the envelope already carries the criteria diagnostics
+    criteria: inspection.criteria
+      ? { protocol: inspection.criteria.protocol, criteria: inspection.criteria.criteria }
+      : null,
   };
 };
 

@@ -36,6 +36,13 @@ export const EXAMPLES = [
     description: 'Observe the milestones that remain without recreating a plan.',
     milestones: 'examples/orphan/milestones.md',
   },
+  {
+    id: 'criteria',
+    label: 'Acceptance criteria',
+    description: 'Requirements with stable IDs, the milestones that deliver them, and progress.',
+    plan: 'examples/criteria/plan.md',
+    milestones: 'examples/criteria/milestones.md',
+  },
 ] as const;
 
 export const PUBLIC_SOURCES: readonly string[] = [

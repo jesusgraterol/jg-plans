@@ -4,6 +4,7 @@ import { hashValue } from 'jg-crypto';
 import { readBoundedFile } from 'jg-fs';
 import { z } from 'zod';
 
+import { observeCriteria } from '../criteria/index.ts';
 import { parseMilestones, parsePlan } from '../documents/index.ts';
 import { fingerprintObservation } from '../documents/fingerprints.ts';
 import { decodeSource } from '../edits/index.ts';
@@ -102,7 +103,8 @@ export const inspectPlan = async (
     ['plan', plan],
     ['milestones', milestones],
   ] as const) {
-    if (document.state === 'readable') diagnostics.push(...document.value.diagnostics);
+    if (document.state === 'readable')
+      for (const item of document.value.diagnostics) diagnostics.push(item);
     else if (document.state === 'unreadable') diagnostics.push(...document.diagnostics);
     else
       diagnostics.push({
@@ -120,6 +122,12 @@ export const inspectPlan = async (
       severity: 'warning',
       message: 'Milestones remain without a plan; no plan is restored.',
     });
+  // an unreadable milestones.md could hold coverage, so it never reads as absent
+  const criteria =
+    plan.state === 'readable' && milestones.state !== 'unreadable'
+      ? observeCriteria(plan.value, milestones.state === 'readable' ? milestones.value : undefined)
+      : null;
+  if (criteria) for (const item of criteria.diagnostics) diagnostics.push(item);
   const fingerprint =
     input.fingerprint === undefined
       ? undefined
@@ -132,6 +140,7 @@ export const inspectPlan = async (
     directory: selected,
     plan,
     milestones,
+    criteria,
     diagnostics,
     ...(fingerprint ? { fingerprint } : {}),
   };

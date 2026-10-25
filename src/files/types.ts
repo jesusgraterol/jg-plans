@@ -1,3 +1,4 @@
+import type { ICriteriaObservation } from '../criteria/index.ts';
 import type { IParsedMilestones, IParsedPlan, IPlanFingerprint } from '../documents/index.ts';
 import type { IPreparedPlanEdit } from '../edits/index.ts';
 import type { IDiagnostic } from '../protocol/index.ts';
@@ -12,6 +13,8 @@ export type IPlanInspection = {
   directory: string;
   plan: IDocumentRead<IParsedPlan>;
   milestones: IDocumentRead<IParsedMilestones>;
+  // null unless plan.md is readable and milestones.md is readable or missing
+  criteria: ICriteriaObservation | null;
   fingerprint?: IPlanFingerprint;
   diagnostics: IDiagnostic[];
 };

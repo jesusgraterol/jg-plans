@@ -37,6 +37,12 @@ const tabs = [
             metadata: example.plan.metadata,
             rawMetadata: example.plan.rawMetadata,
             body: example.plan.body,
+            ...(example.plan.protocol === '0.2'
+              ? {
+                  protocol: example.plan.protocol,
+                  criteria: example.plan.criteria.map(({ id, text }) => ({ id, text })),
+                }
+              : {}),
             diagnostics: example.plan.diagnostics,
           }}
         />
@@ -49,12 +55,15 @@ const tabs = [
           filename="milestones.md"
           call="parseMilestones(source)"
           result={{
-            milestones: example.milestones.milestones.map(({ ordinal, title, status, id }) => ({
-              ordinal,
-              title,
-              status,
-              id,
-            })),
+            milestones: example.milestones.milestones.map(
+              ({ ordinal, title, status, id, criteria }) => ({
+                ordinal,
+                title,
+                status,
+                id,
+                ...(criteria ? { criteria } : {}),
+              }),
+            ),
             diagnostics: example.milestones.diagnostics,
           }}
         />
@@ -100,6 +109,26 @@ const tabs = [
               </p>
               <p class="mt-1 font-mono text-xs text-muted">
                 Status: {milestone.status ?? 'Not recorded'}
+              </p>
+            </div>
+          </li>
+        ))}
+      </ol>
+    )}
+    {example.criteria?.protocol === '0.2' && (
+      <ol class="mt-5 grid gap-3" aria-label="Observed criterion progress">
+        {example.criteria.criteria.map((criterion) => (
+          <li class="flex items-start gap-3 rounded-lg bg-secondary/50 p-4">
+            <span class="mt-0.5 font-mono text-accent" aria-hidden="true">
+              {criterion.progress === 'done' ? '✓' : '○'}
+            </span>
+            <div class="min-w-0">
+              <p class="font-semibold">
+                <span class="font-mono">{criterion.id}</span> {criterion.text}
+              </p>
+              <p class="mt-1 font-mono text-xs text-muted">
+                Progress: {criterion.progress ?? 'Not derived'} · Milestones:{' '}
+                {criterion.milestones.map((milestone) => milestone.ordinal).join(', ') || 'none'}
               </p>
             </div>
           </li>

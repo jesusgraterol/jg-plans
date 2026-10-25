@@ -125,7 +125,7 @@ test.describe('without JavaScript', () => {
   });
   for (const colorScheme of ['light', 'dark'] as const) {
     test(
-      colorScheme + ' all five documents and their observations remain readable',
+      colorScheme + ' all six documents and their observations remain readable',
       async ({ page }, testInfo) => {
         await page.emulateMedia({ colorScheme, reducedMotion: 'reduce' });
         await page.goto('/examples/');
@@ -135,11 +135,20 @@ test.describe('without JavaScript', () => {
           'Project extensions',
           'Partly deleted',
           'Plan removed',
+          'Acceptance criteria',
         ])
           await expect(page.getByRole('heading', { level: 2, name, exact: true })).toBeVisible();
         await expect(
           page.getByText('plan.md is deliberately absent. No file is restored.', { exact: true }),
         ).toBeVisible();
+        const criteria = page.getByRole('list', { name: 'Observed criterion progress' });
+        await expect(criteria.getByRole('listitem')).toHaveCount(3);
+        await expect(criteria.getByRole('listitem').first()).toContainText(
+          'Progress: done · Milestones: 1',
+        );
+        await expect(criteria.getByRole('listitem').last()).toContainText(
+          'Progress: in progress · Milestones: 2',
+        );
         await expectNoHorizontalOverflow(page);
         await expect(page.getByRole('button', { name: 'Copy code', exact: true })).toHaveCount(0);
         if (testInfo.repeatEachIndex === 0) {

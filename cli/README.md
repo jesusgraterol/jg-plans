@@ -18,11 +18,15 @@ Inspect reads only the selected plan.md and optional milestones.md. It reports r
 
 Bodies and complete document sources are excluded by default. `--include-body` explicitly includes them for inspect, including the whole milestone document body. Raw metadata for both documents, titles, markers, locations, source ranges, and exact-byte SHA-256 values for readable files remain part of ordinary observations.
 
+Acceptance criteria are ordinary observations too. `data.plan.protocol` is `0.2` or `0.1`, and `data.plan.criteria` lists every criterion definition with its ID, text, and location. Each milestone entry has `criteria` and `criteriaMarkers` from its coverage line. `data.criteria` holds each valid criterion's covering milestones and derived progress, or null when plan.md is unreadable or missing, or milestones.md is unreadable. See [criteria and progress](../api/README.md#criteria-and-progress).
+
 `--fingerprint-exclude <JSON-array>` requests a structural plan fingerprint and supplies its explicit top-level metadata exclusions. Pass `[]` to cover every key. The array must contain strings; duplicate keys are applied once. This flag is accepted only by inspect. The result includes `data.fingerprint` with sha256, the unique applied keys, and diagnostics. Invalid framing/YAML or unavailable structure yields a null fingerprint without hiding useful observations. It is an observation, never permission or a conformance gate. See [structural fingerprints](../api/README.md#structural-fingerprints).
 
 ## Check
 
 Check is an optional assessment against the preferred protocol writer format. Missing required metadata, malformed structures, duplicate markers, and overview discrepancies produce findings. Milestone IDs and overview tables remain optional. A missing milestone file is valid for a plan-only task. A checker result is never an execution approval or a restriction on manual editing.
+
+For a plan that declares `protocol: "0.2"`, check also reports missing, invalid, duplicate, or empty criteria, statuses other than pending, in progress, or done, malformed or misplaced coverage lines, unknown IDs, and criteria no milestone covers. Plans without that marker get exactly the 0.1 findings. Inspect reports the same criteria findings without failing.
 
 ## Create and update
 
@@ -90,7 +94,7 @@ Human output uses stdout for data and stderr for diagnostics. `--json` emits exa
 }
 ```
 
-Inspect data includes the resolved directory and per-document observations; check also includes conforms. Mutation results are described above. Diagnostics have stable codes, severity, document, message, and an optional source location. Error is null or a safe code/message pair with optional data for a reason, affected core field, or cleanupFailedPaths. Causes are not emitted. Operational inspection failure can retain partial data. Source locations use UTF-16 character offsets and one-based lines/columns. The JSON contract is versioned independently of the protocol.
+Inspect data includes the resolved directory, per-document observations, and criteria; check also includes conforms. Mutation results are described above. Diagnostics have stable codes, severity, document, message, and an optional source location. Error is null or a safe code/message pair with optional data for a reason, affected core field, or cleanupFailedPaths. Causes are not emitted. Operational inspection failure can retain partial data. Source locations use UTF-16 character offsets and one-based lines/columns. The JSON contract is versioned independently of the protocol.
 
 | Exit | Meaning                                                                                                                       |
 | ---- | ----------------------------------------------------------------------------------------------------------------------------- |

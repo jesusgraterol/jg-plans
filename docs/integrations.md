@@ -2,6 +2,8 @@
 
 Protocol 0.2 provides ordinary documents and deterministic operations. Consumers decide scope, authority, approval, progress semantics, retention, and reconciliation. A hash or checker result grants no permission.
 
+Applications that show plans read acceptance criteria, their covering milestones, and their progress through `observeCriteria` or the `criteria` observation of inspect, instead of parsing Markdown themselves. The shipped criteria examples state their expected results in expected.json, so an integration can test that it reads them the same way.
+
 ## Skills: explicit runtime and freshness policy
 
 Persisted planning workflows use the separately installed supported CLI, with explicit selected paths and structured JSON. Preflight the package version and envelope; never install it automatically. New skill plans use jg-plans/; an explicitly supplied custom path remains valid. Readers do not discover old roots or reconstruct deleted documents.

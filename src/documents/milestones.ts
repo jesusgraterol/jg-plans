@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { COVERAGE_MARKER, coverageIds } from '../criteria/index.ts';
 import { planErrors } from '../errors/index.ts';
 
 import type {
@@ -139,6 +140,10 @@ export const parseMilestones = (source: string): IParsedMilestones => {
     const identities = observedLines
       .map((line) => markerFrom(line, '**Milestone ID:**'))
       .filter((marker): marker is IMarker => marker !== null);
+    // coverage lines are only observed here; their rules depend on the plan's protocol
+    const coverage = observedLines
+      .map((line) => markerFrom(line, COVERAGE_MARKER))
+      .filter((marker): marker is IMarker => marker !== null);
     const entry: IMilestone = {
       ordinal,
       ordinalText: match[1]!,
@@ -151,6 +156,8 @@ export const parseMilestones = (source: string): IParsedMilestones => {
       body: source.slice(heading.fullEnd, end),
       statusMarkers: statuses,
       idMarkers: identities,
+      criteria: coverage[0] ? coverageIds(coverage[0]) : null,
+      criteriaMarkers: coverage,
     };
     result.milestones.push(entry);
     const add = (code: string, message: string, marker?: IMarker): void => {
