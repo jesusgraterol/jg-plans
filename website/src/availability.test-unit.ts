@@ -20,7 +20,7 @@ it('reserves release presentation for verified evidence and keeps unknown distin
   expect(
     SiteReleaseSchema.safeParse({
       schemaVersion: 1,
-      protocol: '0.1',
+      protocol: '0.2',
       state: 'published',
       version: '0.1.2',
       reason: 'verified',

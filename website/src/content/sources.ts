@@ -45,6 +45,11 @@ export const PUBLIC_SOURCES: readonly string[] = [
       ...('plan' in example ? [example.plan] : []),
       ...('milestones' in example ? [example.milestones] : []),
     ]),
+    // protocol 0.2 conformance examples, including ones the gallery doesn't show
+    'examples/criteria/plan.md',
+    'examples/criteria/milestones.md',
+    'examples/criteria-invalid/plan.md',
+    'examples/criteria-invalid/milestones.md',
     'examples/library.mjs',
     'errors/README.md',
   ]),

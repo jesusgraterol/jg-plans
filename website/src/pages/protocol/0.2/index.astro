@@ -1,0 +1,100 @@
+---
+import CodeBlock from 'jg-personal-astro-ui/code-block';
+import { Content, getHeadings } from '../../../../../protocol/0.2/README.md';
+import { loadSource } from '../../../content/index.ts';
+import DocumentLayout from '../../../layouts/document-layout.astro';
+import { pageFor } from '../../../site.config.ts';
+await loadSource('specification');
+const plan = await loadSource('criteriaPlan');
+const milestones = await loadSource('criteriaMilestones');
+// the registered example's frontmatter and criteria, without its reviewer notes
+const criteria = plan.slice(0, plan.indexOf('\n## Notes for reviewers') + 1);
+// its first milestone, which carries one coverage line
+const milestone = milestones.slice(0, milestones.indexOf('\n## Milestone 2') + 1);
+---
+
+<DocumentLayout page={pageFor('/protocol/0.2/')} headings={getHeadings()}>
+  <div slot="overview">
+    <div class="mb-6 flex flex-wrap gap-2 font-mono text-xs">
+      <a
+        href="#acceptance-criteria"
+        class="rounded-full border border-border px-3 py-2 hover:bg-secondary"
+      >
+        acceptance criteria ↓
+      </a>
+      <a
+        href="#milestone-coverage"
+        class="rounded-full border border-border px-3 py-2 hover:bg-secondary"
+      >
+        milestone coverage ↓
+      </a>
+      <a
+        href="#criterion-progress"
+        class="rounded-full border border-border px-3 py-2 hover:bg-secondary"
+      >
+        criterion progress ↓
+      </a>
+    </div>
+    <section class="grid min-w-0 gap-6 xl:grid-cols-2" aria-labelledby="spec-criteria-glance">
+      <div>
+        <h2 id="spec-criteria-glance" class="text-2xl font-semibold tracking-tight">
+          Say what done means.
+        </h2>
+        <p class="mt-3 text-muted">
+          A 0.2 plan names its requirements once, with IDs that people, skills, and apps share.
+        </p>
+        <dl class="mt-5 grid gap-3 text-sm">
+          {[
+            ['protocol: "0.2"', 'Opts the plan in; plans without it keep the 0.1 rules'],
+            ['- AC-01: …', 'One testable requirement with a stable ID'],
+            ['**Acceptance criteria:**', 'The criteria a milestone delivers'],
+            ['pending / in progress / done', 'The shared progress vocabulary'],
+          ].map(([name, text]) => (
+            <div class="border-t border-border pt-3">
+              <dt class="font-mono font-semibold wrap-anywhere">{name}</dt>
+              <dd class="mt-1 text-muted">{text}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+      <div class="min-w-0">
+        <CodeBlock
+          copyDisplay="icon"
+          overflow="wrap"
+          code={criteria}
+          lang="markdown"
+          title="plan.md · criteria under any heading"
+        />
+      </div>
+    </section>
+    <section class="mt-8 min-w-0 border-t border-border pt-6" aria-labelledby="spec-coverage">
+      <h2 id="spec-coverage" class="mb-4 text-xl font-semibold">
+        Milestones say which criteria they deliver.
+      </h2>
+      <CodeBlock
+        copyDisplay="icon"
+        overflow="wrap"
+        code={milestone}
+        lang="markdown"
+        title="milestones.md · one coverage line"
+      />
+      <dl class="mt-5 grid gap-3 text-sm sm:grid-cols-3">
+        {[
+          ['done', 'Every milestone that covers the criterion is done.'],
+          ['in progress', 'At least one of them has started.'],
+          ['pending', 'None of them has started.'],
+        ].map(([name, text]) => (
+          <div class="border-t border-border pt-3">
+            <dt class="font-mono font-semibold">{name}</dt>
+            <dd class="mt-1 text-muted">{text}</dd>
+          </div>
+        ))}
+      </dl>
+      <p class="mt-3 text-sm text-muted">
+        Progress follows the milestones. It shows how far the work is, not proof that a criterion is
+        met. The complete rules are below.
+      </p>
+    </section>
+  </div>
+  <Content />
+</DocumentLayout>

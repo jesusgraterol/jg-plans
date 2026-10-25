@@ -1,12 +1,12 @@
 # Consumer integrations
 
-Protocol 0.1 provides ordinary documents and deterministic operations. Consumers decide scope, authority, approval, progress semantics, retention, and reconciliation. A hash or checker result grants no permission.
+Protocol 0.2 provides ordinary documents and deterministic operations. Consumers decide scope, authority, approval, progress semantics, retention, and reconciliation. A hash or checker result grants no permission.
 
 ## Skills: explicit runtime and freshness policy
 
 Persisted planning workflows use the separately installed supported CLI, with explicit selected paths and structured JSON. Preflight the package version and envelope; never install it automatically. New skill plans use jg-plans/; an explicitly supplied custom path remains valid. Readers do not discover old roots or reconstruct deleted documents.
 
-Keep one identical compact **jg-plans protocol 0.1** section in the seven planning reader/writer skills. Role-specific rules stay outside it. jg-plan owns substantive revisions and explicit updated_at/revision changes; jg-breakdown owns semantic coverage and sequence binding; jg-execute owns authorized work and progress. Reviews/challenges remain read-only. No missing/custom status is coerced into permission or completion.
+Keep one identical compact **jg-plans protocol 0.2** section in the seven planning reader/writer skills. Role-specific rules stay outside it. jg-plan owns substantive revisions and explicit updated_at/revision changes; jg-breakdown owns semantic coverage and sequence binding; jg-execute owns authorized work and progress. Reviews/challenges remain read-only. No missing/custom status is coerced into permission or completion.
 
 Inspect before each mutation and supply the observed expectedSha256. Use write for plan-body/core-metadata changes or complete milestone source, update for narrow markers/core fields, and authorized guarded removal for an unnecessary sequence. Request missing UUIDs explicitly. Preserve existing identities and valid completion evidence; tools do not infer correspondence.
 

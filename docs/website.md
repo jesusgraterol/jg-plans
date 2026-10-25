@@ -4,7 +4,7 @@ The website is a private pnpm workspace. The root publishes the library/CLI; the
 
 ## One content owner
 
-website/src/site.config.ts owns the eight canonical page records. The layout emits metadata through jg-personal-astro-ui's DocumentHead and jg-site. Sitemap, robots.txt, llms.txt, navigation, and Markdown alternatives derive from those records. The real 404 is noindex and omitted from discovery.
+website/src/site.config.ts owns the nine canonical page records. The layout emits metadata through jg-personal-astro-ui's DocumentHead and jg-site. Sitemap, robots.txt, llms.txt, navigation, and Markdown alternatives derive from those records. The real 404 is noindex and omitted from discovery.
 
 The protocol, getting-started, API, CLI, integration, and example guides render their canonical Markdown files. website/src/content/sources.ts explicitly registers the public inputs. It never discovers planning roots, private plans, instruction files, or history. The gallery computes observations through jg-plans at build time; no browser parser or service is introduced. Visual guides pair Markdown with selected JSON result fields before the complete references. The shared documentation shell, outline and page navigation retain the registered routes and source actions, while the document-title scale preserves the existing title and reference IDs. CodeBlock owns the wrapped 23rem document-flow bodies and icon-only copy controls; the Markdown plugin uses the same display option. Shared tab enhancement replaces the local no-JavaScript fallback without changing raw-page navigation. Sample links open readable Markdown. Direct download endpoints match the source files byte-for-byte. Raw Markdown adds availability context without replacing the canonical content.
 

@@ -34,6 +34,12 @@ const plan = await loadSource('smallPlan');
             </dd>
           </div>
           <div class="border-l-2 border-border-strong pl-4">
+            <dt class="font-semibold">Acceptance criteria</dt>
+            <dd class="mt-2 text-sm text-muted">
+              Testable requirements with stable IDs, such as AC-01, under any heading.
+            </dd>
+          </div>
+          <div class="border-l-2 border-border-strong pl-4">
             <dt class="font-semibold">Optional milestones</dt>
             <dd class="mt-2 text-sm text-muted">
               A companion file for work that benefits from separate reviewable units.
@@ -63,13 +69,20 @@ const plan = await loadSource('smallPlan');
         </div>
       ))}
     </div>
-    <div class="mt-8">
-      <LinkCard href="/protocol/0.1/" title="Protocol 0.1" headingLevel={2}>
+    <div class="mt-8 grid gap-5 lg:grid-cols-2">
+      <LinkCard href="/protocol/0.2/" title="Protocol 0.2" headingLevel={2}>
         <span slot="kicker" class="mb-2 block font-mono text-xs text-muted">
           CURRENT / PROVISIONAL DRAFT
         </span>
-        Read the full specification for metadata, milestone markers, reader tolerance, and project
-        extensions.
+        Read the full specification for acceptance criteria, milestone coverage, shared progress,
+        and everything 0.1 defines.
+      </LinkCard>
+      <LinkCard href="/protocol/0.1/" title="Protocol 0.1" headingLevel={2}>
+        <span slot="kicker" class="mb-2 block font-mono text-xs text-muted">
+          SUPERSEDED / STILL READ
+        </span>
+        The rules for plans without the 0.2 marker: metadata, milestone markers, reader tolerance,
+        and project extensions.
       </LinkCard>
     </div>
   </div>

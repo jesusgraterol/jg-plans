@@ -19,7 +19,7 @@ export type IAvailability = z.infer<typeof AvailabilitySchema>;
 
 export const SiteReleaseSchema = AvailabilitySchema.safeExtend({
   schemaVersion: z.literal(1),
-  protocol: z.literal('0.1'),
+  protocol: z.literal('0.2'),
   sourceCommit: z
     .string()
     .regex(/^[a-f0-9]{40}$/)
@@ -31,7 +31,7 @@ export const readAvailability = (input: string): IAvailability =>
 
 export const availabilityMessage = (availability: IAvailability): string =>
   availability.state === 'published'
-    ? `Package ${availability.version} is available. Protocol 0.1 remains provisional.`
+    ? `Package ${availability.version} is available. Protocol 0.2 remains provisional.`
     : availability.state === 'unknown'
-      ? `Package ${availability.version} availability could not be verified. Protocol 0.1 and source examples remain usable.`
-      : `Package ${availability.version} documentation is a development preview. Protocol 0.1 and source examples remain usable.`;
+      ? `Package ${availability.version} availability could not be verified. Protocol 0.2 and source examples remain usable.`
+      : `Package ${availability.version} documentation is a development preview. Protocol 0.2 and source examples remain usable.`;

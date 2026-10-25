@@ -2,9 +2,9 @@
 
 A compact planning protocol for people and coding agents. Keep the plan in Markdown, add milestones when they help, and let projects choose their workflows.
 
-Protocol 0.1 is provisional. The [website](https://jg-plans.jesusgraterol.dev) presents the specification, documentation, and examples, with package availability verified independently of the protocol draft.
+Protocol 0.2 is provisional. The [website](https://jg-plans.jesusgraterol.dev) presents the specification, documentation, and examples, with package availability verified independently of the protocol draft.
 
-- [Protocol 0.1](protocol/0.1/README.md)
+- [Protocol 0.2](protocol/0.2/README.md)
 - [Examples](examples/README.md)
 - [Getting started](docs/getting-started.md)
 - [Library API](api/README.md) and [CLI](cli/README.md)

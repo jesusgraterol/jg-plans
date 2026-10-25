@@ -52,7 +52,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
             ).toBeVisible();
           }
         }
-        await expect(page.getByText('Protocol 0.1 · provisional', { exact: true })).toBeVisible();
+        await expect(page.getByText('Protocol 0.2 · provisional', { exact: true })).toBeVisible();
         await page.getByRole('link', { name: 'Jump to reference ↓', exact: true }).click();
         await expect(page).toHaveURL(record.path + '#reference');
         await expect(
@@ -79,12 +79,12 @@ test.describe('documentation without JavaScript', () => {
       page,
     }) => {
       await page.emulateMedia({ colorScheme });
-      await page.goto('/protocol/0.1/');
+      await page.goto('/protocol/0.2/');
       const navigation = page.getByRole('navigation', { name: 'Documentation', exact: true });
       await navigation.locator('summary').focus();
       await page.keyboard.press('Enter');
       await expect(
-        navigation.getByRole('link', { name: 'Specification 0.1', exact: true }),
+        navigation.getByRole('link', { name: 'Specification 0.2', exact: true }),
       ).toHaveAttribute('aria-current', 'page');
       const outline = page.getByRole('navigation', { name: 'On this page', exact: true });
       await outline.locator('summary').focus();
@@ -97,7 +97,7 @@ test.describe('documentation without JavaScript', () => {
       ).toBeInViewport();
       await expect(
         page.getByRole('link', { name: 'Read as Markdown', exact: true }),
-      ).toHaveAttribute('href', '/raw/protocol/0.1/README.md');
+      ).toHaveAttribute('href', '/raw/protocol/0.2/README.md');
       await expectNoHorizontalOverflow(page);
     });
   }

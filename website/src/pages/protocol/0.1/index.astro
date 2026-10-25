@@ -3,13 +3,13 @@ import CodeBlock from 'jg-personal-astro-ui/code-block';
 import { Content, getHeadings } from '../../../../../protocol/0.1/README.md';
 import { loadSource } from '../../../content/index.ts';
 import DocumentLayout from '../../../layouts/document-layout.astro';
-import { PAGES } from '../../../site.config.ts';
-await loadSource('specification');
+import { pageFor } from '../../../site.config.ts';
+await loadSource('previousSpecification');
 const example = await loadSource('smallPlan');
 const metadata = example.slice(0, example.indexOf('\n---', 4) + 4);
 ---
 
-<DocumentLayout page={PAGES[2]} headings={getHeadings()}>
+<DocumentLayout page={pageFor('/protocol/0.1/')} headings={getHeadings()}>
   <div slot="overview">
     <div class="mb-6 flex flex-wrap gap-2 font-mono text-xs">
       <a

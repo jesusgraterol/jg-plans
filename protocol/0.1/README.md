@@ -2,6 +2,8 @@
 
 **Status:** provisional draft
 
+**Superseded by [protocol 0.2](../0.2/README.md).** Plans that don't declare `protocol: "0.2"` keep these rules, so 0.1 documents remain readable and usable.
+
 A compact Markdown protocol for plans and optional milestones. People own their files and can edit, move, shorten, or delete them. The protocol describes documents and observations; projects decide how to approve and execute work.
 
 ## Writers and readers
