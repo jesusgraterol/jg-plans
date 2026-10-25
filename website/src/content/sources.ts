@@ -45,6 +45,12 @@ export const EXAMPLES = [
   },
 ] as const;
 
+// the nonconforming protocol 0.2 example the homepage checks; the gallery doesn't show it
+export const CHECK_EXAMPLE = {
+  plan: 'examples/criteria-invalid/plan.md',
+  milestones: 'examples/criteria-invalid/milestones.md',
+} as const;
+
 export const PUBLIC_SOURCES: readonly string[] = [
   ...new Set([
     ...PAGES.flatMap((page) => ('source' in page ? [page.source] : [])),
@@ -55,8 +61,8 @@ export const PUBLIC_SOURCES: readonly string[] = [
     // protocol 0.2 conformance examples, including ones the gallery doesn't show
     'examples/criteria/plan.md',
     'examples/criteria/milestones.md',
-    'examples/criteria-invalid/plan.md',
-    'examples/criteria-invalid/milestones.md',
+    CHECK_EXAMPLE.plan,
+    CHECK_EXAMPLE.milestones,
     'examples/library.mjs',
     'errors/README.md',
   ]),

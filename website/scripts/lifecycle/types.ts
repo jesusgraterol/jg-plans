@@ -1,3 +1,5 @@
+import type { IProgress } from 'jg-plans';
+
 export interface ILifecycleStage {
   id: string;
   label: string;
@@ -8,6 +10,13 @@ export interface ILifecycleStage {
   result: unknown;
 }
 
+// one criterion, the milestone ordinals that deliver it and its derived progress
+export interface ILifecycleCriterion {
+  id: string;
+  milestones: (number | null)[];
+  progress: IProgress | null;
+}
+
 export interface ILifecycle {
   stages: ILifecycleStage[];
   before: string;
@@ -15,4 +24,7 @@ export interface ILifecycle {
   unchangedMilestones: string;
   retained: { id: string | null; title: string; status: string | null }[];
   binding: { before: string; after: string };
+  progress: ILifecycleCriterion[];
+  finding: { code: string; criterion: string; line: number };
+  staleWrite: { expectedSha256: string; currentSha256: string; code: string };
 }

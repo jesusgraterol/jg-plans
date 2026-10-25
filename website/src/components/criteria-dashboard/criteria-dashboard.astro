@@ -1,0 +1,77 @@
+---
+import Badge from 'jg-personal-astro-ui/badge';
+import Card from 'jg-personal-astro-ui/card';
+import { PROGRESS_VALUES, type IProgress } from 'jg-plans';
+import { loadExample } from '../../content/examples.ts';
+import CriterionProgress from '../criterion-progress/criterion-progress.astro';
+
+const example = await loadExample('criteria');
+const plan = example.plan!;
+const milestones = example.milestones!.milestones;
+const criteria = example.criteria!.criteria;
+// the plan's own first-level heading names the example view
+const title = /^# (.+)$/mu.exec(plan.body)?.[1] ?? plan.metadata.id;
+const planStatus = plan.metadata.status ?? null;
+const isProgress = (status: string | null): status is IProgress =>
+  (PROGRESS_VALUES as readonly (string | null)[]).includes(status);
+---
+
+<Card as="section" class="criteria-dashboard min-w-0" aria-labelledby="dashboard-title">
+  <div class="flex flex-wrap items-start justify-between gap-3">
+    <div class="min-w-0">
+      <p class="font-mono text-xs text-muted">YOUR DASHBOARD / EXAMPLE VIEW</p>
+      <h3 id="dashboard-title" class="mt-2 text-xl font-semibold">
+        {title}
+      </h3>
+    </div>
+    {isProgress(planStatus) ? (
+      <CriterionProgress progress={planStatus} />
+    ) : (
+      <Badge variant="outline">{planStatus ?? 'no status'}</Badge>
+    )}
+  </div>
+  <div class="mt-6 grid min-w-0 gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:gap-8">
+    <section class="min-w-0" aria-labelledby="dashboard-milestones">
+      <h4 id="dashboard-milestones" class="font-mono text-xs text-muted">
+        Milestones
+      </h4>
+      <ol class="mt-3 grid gap-2">
+        {milestones.map((milestone) => (
+          <li class="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-border p-3">
+            <span class="font-mono text-xs text-muted">{milestone.ordinal}</span>
+            <span class="min-w-0 flex-1 text-sm font-semibold">{milestone.title}</span>
+            {isProgress(milestone.status) ? (
+              <CriterionProgress progress={milestone.status} />
+            ) : (
+              <Badge variant="outline">{milestone.status ?? 'no status'}</Badge>
+            )}
+          </li>
+        ))}
+      </ol>
+    </section>
+    <section class="min-w-0" aria-labelledby="dashboard-criteria">
+      <h4 id="dashboard-criteria" class="font-mono text-xs text-muted">
+        Acceptance criteria
+      </h4>
+      <ul class="mt-3 grid gap-2">
+        {criteria.map((criterion) => (
+          <li class="grid min-w-0 gap-2 rounded-lg border border-border p-3">
+            <p class="flex flex-wrap items-center gap-2">
+              <Badge variant="neutral">{criterion.id}</Badge>
+              <CriterionProgress progress={criterion.progress} />
+            </p>
+            <p class="text-sm">{criterion.text}</p>
+            <p class="font-mono text-xs text-muted">
+              {criterion.milestones.length === 0
+                ? 'No milestone delivers it yet'
+                : `Delivered by milestone ${criterion.milestones.map(({ ordinal }) => ordinal).join(', ')}`}
+            </p>
+          </li>
+        ))}
+      </ul>
+    </section>
+  </div>
+  <p class="mt-5 border-t border-border pt-3 text-xs text-muted">
+    Parsed from the published criteria example at build time.
+  </p>
+</Card>

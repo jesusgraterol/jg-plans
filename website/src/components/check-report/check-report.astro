@@ -1,0 +1,71 @@
+---
+import Badge from 'jg-personal-astro-ui/badge';
+import FilePreview from 'jg-personal-astro-ui/file-preview';
+import InlineCode from 'jg-personal-astro-ui/inline-code';
+import { loadCheckExample } from '../../content/examples.ts';
+
+const { documents, check } = await loadCheckExample();
+// each document's lines, with the codes check reports on each one
+const files = (['plan', 'milestones'] as const).map((document) => {
+  const codes = new Map<number, string[]>();
+  for (const { code, location } of check.diagnostics.filter((entry) => entry.document === document))
+    if (location) codes.set(location.line, [...(codes.get(location.line) ?? []), code]);
+  const findings = [...codes.values()].flat().length;
+  return {
+    path: `${document}.md`,
+    label: `${findings} ${findings === 1 ? 'finding' : 'findings'}`,
+    lines: documents[document].replace(/\n$/u, '').split('\n'),
+    codes,
+  };
+});
+---
+
+<section class="jg-container py-14 sm:py-20" aria-labelledby="check-title">
+  <header class="mb-8 max-w-2xl">
+    <p class="eyebrow mb-4">Checked before work starts</p>
+    <h2 id="check-title" class="section-title">
+      Catch mistakes on their line.
+    </h2>
+    <p class="mt-5 text-lg text-muted">
+      <InlineCode code="check" /> names every protocol mistake in a plan and its milestones.
+    </p>
+  </header>
+  <div class="grid min-w-0 gap-5 lg:grid-cols-2 lg:items-start" data-check-report>
+    {files.map((file) => (
+      <FilePreview path={file.path} label={file.label}>
+        <ol class="grid min-w-0 font-mono text-xs leading-6" aria-label={`${file.path} lines`}>
+          {file.lines.map((text, index) => {
+            const codes = file.codes.get(index + 1);
+            return (
+              <li
+                class:list={[
+                  'grid min-w-0 grid-cols-[2rem_minmax(0,1fr)] gap-x-3 rounded-md px-1',
+                  codes && 'bg-danger/10 py-1',
+                ]}
+                data-flagged={codes ? '' : undefined}
+              >
+                <span class="text-right text-muted">{index + 1}</span>
+                <span class="min-w-0 whitespace-pre-wrap wrap-anywhere">{text}</span>
+                {codes && (
+                  <span class="col-start-2 flex min-w-0 flex-wrap gap-1 pt-1">
+                    {/* a solid surface keeps the badge's contrast on the tinted line */}
+                    {codes.map((code) => (
+                      <span class="rounded-full bg-surface">
+                        <Badge variant="danger" dot>
+                          {code}
+                        </Badge>
+                      </span>
+                    ))}
+                  </span>
+                )}
+              </li>
+            );
+          })}
+        </ol>
+      </FilePreview>
+    ))}
+  </div>
+  <p class="mt-4 text-xs text-muted">
+    Actual check output for the published criteria-invalid example.
+  </p>
+</section>

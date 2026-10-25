@@ -1,13 +1,13 @@
 ---
+import Badge from 'jg-personal-astro-ui/badge';
 import Tabs from 'jg-personal-astro-ui/tabs';
 import CodeBlock from 'jg-personal-astro-ui/code-block';
 import CodeDiff from 'jg-personal-astro-ui/code-diff';
-import { buildLifecycle } from '../../../scripts/lifecycle/index.ts';
-import { loadExample } from '../../content/examples.ts';
+import { loadLifecycle } from '../../content/examples.ts';
+import CriterionProgress from '../criterion-progress/criterion-progress.astro';
 import DocumentFlow from '../document-flow/document-flow.astro';
 
-const sample = await loadExample('milestones');
-const lifecycle = await buildLifecycle(sample.documents.plan!, sample.documents.milestones!);
+const lifecycle = await loadLifecycle();
 ---
 
 <section id="lifecycle" class="plan-scene scroll-mt-24" aria-label="A plan through its lifecycle">
@@ -44,8 +44,32 @@ const lifecycle = await buildLifecycle(sample.documents.plan!, sample.documents.
             result={stage.result}
           />
         )}
+        {stage.id === 'update' && (
+          <ul class="mt-5 flex flex-wrap gap-2" aria-label="Criterion progress">
+            {lifecycle.progress.map((criterion) => (
+              <li class="flex min-h-10 items-center gap-2 rounded-lg border border-border bg-surface px-3">
+                <span class="font-mono text-xs font-semibold">{criterion.id}</span>
+                <CriterionProgress progress={criterion.progress} />
+              </li>
+            ))}
+          </ul>
+        )}
         {stage.id === 'revise' && (
           <div class="mt-6 grid min-w-0 gap-5 md:grid-cols-2">
+            <div class="rounded-xl border border-danger/35 bg-surface p-5 md:col-span-2">
+              <p class="font-mono text-xs text-muted">
+                check · plan.md line {lifecycle.finding.line}
+              </p>
+              <p class="mt-3 flex flex-wrap items-center gap-2">
+                <Badge variant="danger" dot>
+                  {lifecycle.finding.code}
+                </Badge>
+                <span class="font-mono text-sm font-semibold">{lifecycle.finding.criterion}</span>
+              </p>
+              <p class="mt-3 text-sm text-muted">
+                No milestone delivers {lifecycle.finding.criterion} until the next breakdown.
+              </p>
+            </div>
             <div class="rounded-xl border border-border bg-surface p-5">
               <p class="font-mono text-xs text-muted">Milestones · exact original bytes</p>
               <ul class="mt-4 space-y-4">
@@ -63,8 +87,7 @@ const lifecycle = await buildLifecycle(sample.documents.plan!, sample.documents.
             <div class="rounded-xl border border-accent/35 bg-surface p-5">
               <p class="font-mono text-xs text-accent">Skills binding · stale after revision</p>
               <p class="mt-4 text-sm leading-7 text-muted">
-                The completed marker and its ID remain. The changed plan needs a fresh breakdown
-                before skills execute it. HQ separately reconciles verified completion and approval.
+                Done markers stay; skills wait for a fresh breakdown before executing.
               </p>
             </div>
           </div>
@@ -107,7 +130,6 @@ const lifecycle = await buildLifecycle(sample.documents.plan!, sample.documents.
     ))}
   </Tabs>
   <p class="mt-5 text-xs leading-6 text-muted">
-    Actual reference-library output · selected fields. The example skills binding uses explicit
-    consumer rules; the protocol itself grants no execution approval.
+    Actual reference-library output · the skills binding is example consumer policy.
   </p>
 </section>

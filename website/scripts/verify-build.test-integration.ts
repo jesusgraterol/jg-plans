@@ -19,11 +19,13 @@ it('ships the real canonical protocol and original example in the production art
       1024 * 1024,
     )
   ).toString('utf8');
-  expect(homepage).toContain('1792612860_example-gallery');
-  expect(homepage).toContain('Make public examples easy to explore.');
+  expect(homepage).toContain('1792612920_search-feedback-criteria');
+  expect(homepage).toContain('Explain empty search results and give people a useful next action.');
   expect(homepage).toContain('Skills binding · stale after revision');
-  expect(homepage).toContain('Group the examples by workflow.');
-  expect(homepage).toContain('5a148c73-7d38-4a2f-9c0f-903d93b9b764');
+  expect(homepage).toContain('AC-04: Search suggests spelling corrections.');
+  expect(homepage).toContain('UNASSIGNED_CRITERION');
+  expect(homepage).toContain('JG_PLANS_SOURCE_CHANGED');
+  expect(homepage).toContain('3c7a2f1e-9b4d-4e8a-a6f2-1d5c7e9b0a34');
   expect(specification).toContain(
     'Library and CLI filesystem mutations share short local document locks',
   );
