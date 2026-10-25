@@ -36,6 +36,13 @@ export const EXAMPLES = [
     description: 'Observe the milestones that remain without recreating a plan.',
     milestones: 'examples/orphan/milestones.md',
   },
+  {
+    id: 'criteria',
+    label: 'Acceptance criteria',
+    description: 'Requirements with stable IDs, the milestones that deliver them, and progress.',
+    plan: 'examples/criteria/plan.md',
+    milestones: 'examples/criteria/milestones.md',
+  },
 ] as const;
 
 export const PUBLIC_SOURCES: readonly string[] = [
@@ -45,6 +52,11 @@ export const PUBLIC_SOURCES: readonly string[] = [
       ...('plan' in example ? [example.plan] : []),
       ...('milestones' in example ? [example.milestones] : []),
     ]),
+    // protocol 0.2 conformance examples, including ones the gallery doesn't show
+    'examples/criteria/plan.md',
+    'examples/criteria/milestones.md',
+    'examples/criteria-invalid/plan.md',
+    'examples/criteria-invalid/milestones.md',
     'examples/library.mjs',
     'errors/README.md',
   ]),

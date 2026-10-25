@@ -5,9 +5,12 @@ import type { IHastContext, IHastElement } from './types.ts';
 
 const SOURCES = {
   protocol: 'protocol/README.md',
-  specification: 'protocol/0.1/README.md',
+  specification: 'protocol/0.2/README.md',
+  previousSpecification: 'protocol/0.1/README.md',
   smallPlan: 'examples/small/plan.md',
   milestones: 'examples/with-milestones/milestones.md',
+  criteriaPlan: 'examples/criteria/plan.md',
+  criteriaMilestones: 'examples/criteria/milestones.md',
 } as const;
 
 /** Load only a named public source, bounded to 1 MiB. No local-plan discovery. */
@@ -15,8 +18,16 @@ export const loadSource = async (name: keyof typeof SOURCES): Promise<string> =>
   return (await readPublicBytes(SOURCES[name])).toString('utf8');
 };
 
+// shipped JSON and scripts have no rendered page, so they link to the repository source
+const isRepositoryExample = (path: string): boolean =>
+  path.endsWith('.mjs') || path.endsWith('.json');
+
 const SOURCE_LINKS: Record<string, string> = {
+  '0.2/README.md': '/protocol/0.2/',
+  '../0.2/README.md': '/protocol/0.2/',
+  '../protocol/0.2/README.md': '/protocol/0.2/',
   '0.1/README.md': '/protocol/0.1/',
+  '../0.1/README.md': '/protocol/0.1/',
   '../protocol/0.1/README.md': '/protocol/0.1/',
   '../api/README.md': '/docs/api/',
   '../../api/README.md': '/docs/api/',
@@ -35,17 +46,23 @@ const SOURCE_LINKS: Record<string, string> = {
       'extensions/plan.md',
       'incomplete/plan.md',
       'orphan/milestones.md',
+      'criteria/plan.md',
+      'criteria/milestones.md',
+      'criteria/expected.json',
+      'criteria-invalid/plan.md',
+      'criteria-invalid/milestones.md',
+      'criteria-invalid/expected.json',
       'library.mjs',
     ].flatMap((path) => [
       [
         path,
-        path.endsWith('.mjs')
+        isRepositoryExample(path)
           ? `${SITE.repository}/blob/main/examples/${path}`
           : `/raw/examples/${path}`,
       ],
       [
         `../examples/${path}`,
-        path.endsWith('.mjs')
+        isRepositoryExample(path)
           ? `${SITE.repository}/blob/main/examples/${path}`
           : `/raw/examples/${path}`,
       ],

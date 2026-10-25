@@ -27,6 +27,23 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await expect(
         progress.getByRole('list', { name: 'Observed milestone progress' }),
       ).toContainText('Status: pending');
+      const documents = progress.getByRole('tablist', {
+        name: 'With milestones documents',
+        exact: true,
+      });
+      await documents.getByRole('tab', { name: 'plan.md', exact: true }).focus();
+      await page.keyboard.press('ArrowRight');
+      await expect(
+        documents.getByRole('tab', { name: 'milestones.md', exact: true }),
+      ).toBeFocused();
+      const milestonesSource = progress.getByRole('tabpanel', {
+        name: 'milestones.md',
+        exact: true,
+      });
+      await expect(milestonesSource).toContainText('5a148c73-7d38-4a2f-9c0f-903d93b9b764');
+      await expect(progress.getByRole('tabpanel', { name: 'plan.md', exact: true })).toBeHidden();
+      await milestones.focus();
+
       await page.keyboard.press('ArrowRight');
       const extensions = page.getByRole('tabpanel', { name: 'Project extensions', exact: true });
       await expect(
@@ -105,28 +122,42 @@ test.describe('without JavaScript', () => {
   test.use({
     javaScriptEnabled: false,
     viewport: { width: 320, height: 900 },
-    colorScheme: 'dark',
   });
-  test('all five documents and their observations remain readable', async ({ page }, testInfo) => {
-    await page.goto('/examples/');
-    for (const name of [
-      'Small plan',
-      'With milestones',
-      'Project extensions',
-      'Partly deleted',
-      'Plan removed',
-    ])
-      await expect(page.getByRole('heading', { level: 2, name, exact: true })).toBeVisible();
-    await expect(
-      page.getByText('plan.md is deliberately absent. No file is restored.', { exact: true }),
-    ).toBeVisible();
-    await expectNoHorizontalOverflow(page);
-    await expect(page.getByRole('button', { name: 'Copy code', exact: true })).toHaveCount(0);
-    if (testInfo.repeatEachIndex === 0) {
-      await page
-        .getByRole('heading', { level: 2, name: 'Small plan', exact: true })
-        .scrollIntoViewIfNeeded();
-      await page.screenshot({ path: testInfo.outputPath('examples-no-js-dark-320.png') });
-    }
-  });
+  for (const colorScheme of ['light', 'dark'] as const) {
+    test(
+      colorScheme + ' all six documents and their observations remain readable',
+      async ({ page }, testInfo) => {
+        await page.emulateMedia({ colorScheme, reducedMotion: 'reduce' });
+        await page.goto('/examples/');
+        for (const name of [
+          'Small plan',
+          'With milestones',
+          'Project extensions',
+          'Partly deleted',
+          'Plan removed',
+          'Acceptance criteria',
+        ])
+          await expect(page.getByRole('heading', { level: 2, name, exact: true })).toBeVisible();
+        await expect(
+          page.getByText('plan.md is deliberately absent. No file is restored.', { exact: true }),
+        ).toBeVisible();
+        const criteria = page.getByRole('list', { name: 'Observed criterion progress' });
+        await expect(criteria.getByRole('listitem')).toHaveCount(3);
+        await expect(criteria.getByRole('listitem').first()).toContainText(
+          'Progress: done · Milestones: 1',
+        );
+        await expect(criteria.getByRole('listitem').last()).toContainText(
+          'Progress: in progress · Milestones: 2',
+        );
+        await expectNoHorizontalOverflow(page);
+        await expect(page.getByRole('button', { name: 'Copy code', exact: true })).toHaveCount(0);
+        if (testInfo.repeatEachIndex === 0) {
+          await page
+            .getByRole('heading', { level: 2, name: 'Small plan', exact: true })
+            .scrollIntoViewIfNeeded();
+          await page.screenshot({ path: testInfo.outputPath('examples-no-js-dark-320.png') });
+        }
+      },
+    );
+  }
 });

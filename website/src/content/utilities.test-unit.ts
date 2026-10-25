@@ -15,6 +15,20 @@ describe('canonical Markdown links', () => {
     expect(resolveSourceLink('../examples/small/plan.md')).toBe('/raw/examples/small/plan.md');
   });
 
+  it('routes both protocol versions and the criteria examples', () => {
+    expect(resolveSourceLink('0.2/README.md')).toBe('/protocol/0.2/');
+    expect(resolveSourceLink('../0.2/README.md')).toBe('/protocol/0.2/');
+    expect(resolveSourceLink('../0.1/README.md')).toBe('/protocol/0.1/');
+    expect(resolveSourceLink('../protocol/0.2/README.md')).toBe('/protocol/0.2/');
+    expect(resolveSourceLink('criteria/plan.md')).toBe('/raw/examples/criteria/plan.md');
+    expect(resolveSourceLink('../examples/criteria-invalid/milestones.md')).toBe(
+      '/raw/examples/criteria-invalid/milestones.md',
+    );
+    expect(resolveSourceLink('criteria/expected.json')).toBe(
+      'https://github.com/jesusgraterol/jg-plans/blob/main/examples/criteria/expected.json',
+    );
+  });
+
   it('preserves fragments, absolute links, and unrelated document content', () => {
     for (const href of ['#plan-metadata', 'https://example.com/a', 'other.md']) {
       expect(resolveSourceLink(href)).toBe(href);

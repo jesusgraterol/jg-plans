@@ -57,6 +57,7 @@ const example = await loadExample('small');
         Use the result in your own application
       </h2>
       <CodeBlock
+        copyDisplay="icon"
         code={`import { parsePlan, parseMilestones } from 'jg-plans';\n\nconst plan = parsePlan(planMarkdown);\nconst progress = parseMilestones(milestonesMarkdown);\n\nconst view = {\n  ...plan.metadata,\n  milestones: progress.milestones.map(({ title, status }) => ({\n    title,\n    status,\n  })),\n};`}
         lang="typescript"
         title="Build your own view model"

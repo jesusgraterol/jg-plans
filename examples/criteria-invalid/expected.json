@@ -1,0 +1,25 @@
+{
+  "conforms": false,
+  "protocol": "0.2",
+  "criteria": [
+    {
+      "id": "AC-01",
+      "text": "The export contains every visible column.",
+      "milestones": [{ "ordinal": 1, "id": "6f2b9c4d-1e7a-4d3b-8c5f-2a9e7d1b4c63" }],
+      "progress": "pending"
+    },
+    {
+      "id": "AC-03",
+      "text": "Large exports finish without timing out.",
+      "milestones": [],
+      "progress": null
+    }
+  ],
+  "diagnostics": [
+    { "code": "INVALID_STATUS", "document": "plan", "line": 6 },
+    { "code": "DUPLICATE_CRITERION", "document": "plan", "line": 17 },
+    { "code": "INVALID_CRITERION_ID", "document": "plan", "line": 18 },
+    { "code": "UNASSIGNED_CRITERION", "document": "plan", "line": 19 },
+    { "code": "UNKNOWN_CRITERION", "document": "milestones", "line": 4 }
+  ]
+}

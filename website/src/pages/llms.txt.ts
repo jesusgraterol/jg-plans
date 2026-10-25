@@ -8,7 +8,7 @@ export const GET = () =>
       name: SITE.name,
       summary: PAGES[0].description,
       details: [
-        'Protocol 0.1 is provisional. Pages expose Markdown alternatives through their alternate links. Documents remain useful without the library or CLI.',
+        'Protocol 0.2 is provisional. Pages expose Markdown alternatives through their alternate links. Documents remain useful without the library or CLI.',
       ],
       sections: [
         {

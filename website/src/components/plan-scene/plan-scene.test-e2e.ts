@@ -23,12 +23,7 @@ for (const colorScheme of ['light', 'dark'] as const)
       const json = create.getByRole('figure').filter({ hasText: 'JSON · selected result fields' });
       const copy = json.getByRole('button');
       await expect(copy).toHaveAccessibleName('Copy code');
-      expect(
-        await copy.evaluate(
-          (button) =>
-            getComputedStyle(button.querySelector('[data-copy-label]')!.parentElement!).clipPath,
-        ),
-      ).toBe('inset(50%)');
+      await expect(copy).toHaveAttribute('data-copy-display', 'icon');
       await copy.press('Enter');
       await expect(copy).toHaveAttribute('data-copy-state', 'success');
       await expect(copy).toHaveCSS('outline-style', 'solid');
@@ -107,7 +102,7 @@ test.describe('without JavaScript', () => {
   test('all four operations remain readable without scripting', async ({ page }) => {
     await page.goto('/');
     for (const name of ['Create', 'Inspect', 'Update', 'Revise'])
-      await expect(page.getByRole('tabpanel', { name, exact: true })).toBeVisible();
+      await expect(page.getByRole('region', { name, exact: true })).toBeVisible();
     await expect(
       page.getByText('Skills binding · stale after revision', { exact: true }),
     ).toBeVisible();

@@ -15,4 +15,5 @@ export type {
   ISourceSpan,
   IHeadingSection,
   IPlanFingerprint,
+  ISourceLine,
 } from './types.ts';

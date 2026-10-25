@@ -137,13 +137,14 @@ if (current.plan.state === 'readable') {
         <div class="mt-6">
           <Fragment set:html="<!--email_off-->" />
           <InstallCommand
+            copyDisplay="icon"
             id="install-command"
             command={`npm install jg-plans@${availability.version}`}
             context="install command"
             title={`Verified package · ${availability.version}`}
           />
           <Fragment set:html="<!--/email_off-->" />
-          <p class="mt-3 text-xs text-muted">Node.js 24.15.0+ · Protocol 0.1 is provisional.</p>
+          <p class="mt-3 text-xs text-muted">Node.js 24.15.0+ · Protocol 0.2 is provisional.</p>
         </div>
       ) : (
         <p class="mt-6 border-l-2 border-accent pl-4 text-sm text-muted">
@@ -164,7 +165,12 @@ if (current.plan.state === 'readable') {
       </div>
     </div>
     <div class="min-w-0">
-      <CodeBlock code={integration} lang="typescript" title="your-application.ts" />
+      <CodeBlock
+        copyDisplay="icon"
+        code={integration}
+        lang="typescript"
+        title="your-application.ts"
+      />
     </div>
   </section>
 

@@ -27,31 +27,8 @@
     letter-spacing: -0.055em;
     line-height: 1.08;
   }
-  .document-layout .jg-prose {
-    overflow-wrap: anywhere;
-  }
 }
 
-/* The shared component has no icon-only variant. Keep its accessible label and feedback. */
-.jg-code-window [data-copy-button] {
-  justify-content: center;
-  min-width: 2.5rem;
-  min-height: 2.5rem;
-  padding-inline: 0.5rem;
-}
-.jg-code-window [data-copy-button] > span:not(.sr-only) {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: -1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-.jg-code-window [data-copy-button] svg {
-  width: 1rem;
-  height: 1rem;
-}
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;

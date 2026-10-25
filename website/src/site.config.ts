@@ -39,11 +39,19 @@ export const PAGES = [
     source: 'protocol/README.md',
   },
   {
+    path: '/protocol/0.2/',
+    label: 'Specification 0.2',
+    title: 'Protocol 0.2 · jg-plans',
+    description:
+      'The provisional jg-plans 0.2 specification: acceptance criteria with stable IDs, milestone coverage, shared progress, and the 0.1 rules it keeps.',
+    source: 'protocol/0.2/README.md',
+  },
+  {
     path: '/protocol/0.1/',
     label: 'Specification 0.1',
     title: 'Protocol 0.1 · jg-plans',
     description:
-      'The provisional jg-plans 0.1 specification: metadata, optional milestones, revisions, deletion, and source-preserving edits.',
+      'The jg-plans 0.1 specification, superseded by 0.2 and still applied to plans without its marker: metadata, milestones, revisions, and edits.',
     source: 'protocol/0.1/README.md',
   },
   {

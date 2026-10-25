@@ -1,4 +1,10 @@
-import type { IDiagnostic, IPlanMetadata, ISourceLocation } from '../protocol/index.ts';
+import type { ICriterion } from '../criteria/index.ts';
+import type {
+  IDiagnostic,
+  IPlanMetadata,
+  IProtocolVersion,
+  ISourceLocation,
+} from '../protocol/index.ts';
 
 /** Original-source UTF-16 offsets, with an exclusive end. */
 export type ISourceSpan = { start: number; end: number };
@@ -27,6 +33,9 @@ export type IParsedPlan = {
   metadata: Partial<IPlanMetadata>;
   preamble: ISourceSpan;
   sections: IHeadingSection[];
+  // 0.2 only for a valid protocol: "0.2" declaration; every other plan follows 0.1
+  protocol: IProtocolVersion;
+  criteria: ICriterion[];
   diagnostics: IDiagnostic[];
 };
 
@@ -51,6 +60,9 @@ export type IMilestone = {
   body: string;
   statusMarkers: IMarker[];
   idMarkers: IMarker[];
+  // valid, distinct IDs from the first coverage line, or null when the milestone has none
+  criteria: string[] | null;
+  criteriaMarkers: IMarker[];
 };
 
 export type IOverviewRow = {

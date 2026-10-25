@@ -32,6 +32,7 @@ import { pageFor } from '../../../site.config.ts';
       </div>
     </div>
     <CodeBlock
+      copyDisplay="icon"
       code="jg-plans inspect --directory ./jg-plans/example --json"
       lang="sh"
       title="Read a selected planning directory"
@@ -39,6 +40,7 @@ import { pageFor } from '../../../site.config.ts';
     <div class="mt-6 grid min-w-0 gap-5 xl:grid-cols-2">
       <div class="min-w-0">
         <CodeBlock
+          copyDisplay="icon"
           code={JSON.stringify(
             { schemaVersion: 1, command: 'inspect', data: {}, diagnostics: [], error: null },
             null,

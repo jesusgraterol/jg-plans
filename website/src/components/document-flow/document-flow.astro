@@ -10,13 +10,21 @@ interface Props {
 const { source, filename, call, result } = Astro.props;
 ---
 
-<div class="document-flow min-w-0 [&_pre]:h-92 [&_pre]:whitespace-pre-wrap [&_pre]:wrap-anywhere">
+<div class="document-flow min-w-0">
   <div class="grid min-w-0 gap-6 lg:grid-cols-2 lg:gap-4">
     <div class="order-last min-w-0 lg:order-first">
       <p class="mb-3 flex min-h-8 items-center gap-2 text-sm font-semibold">
         <span class="text-accent">01</span> Markdown source
       </p>
-      <CodeBlock code={source} lang="markdown" title={filename} />
+      <CodeBlock
+        ariaLabel={filename + ' source'}
+        copyDisplay="icon"
+        height="23rem"
+        overflow="wrap"
+        code={source}
+        lang="markdown"
+        title={filename}
+      />
     </div>
     <div class="order-first min-w-0 lg:order-last">
       <div class="mb-3 flex min-h-8 flex-wrap items-center justify-between gap-2">
@@ -28,6 +36,10 @@ const { source, filename, call, result } = Astro.props;
         </code>
       </div>
       <CodeBlock
+        ariaLabel="Structured observation source"
+        copyDisplay="icon"
+        height="23rem"
+        overflow="wrap"
         code={JSON.stringify(result, null, 2)}
         lang="json"
         title="JSON · selected result fields"

@@ -84,6 +84,8 @@ export const verifyPackedConsumer = async (
       'dist/index.d.ts',
       'dist/cli/cli.js',
       'protocol/0.1/README.md',
+      'protocol/0.2/README.md',
+      'examples/criteria/expected.json',
       'api/README.md',
       'cli/README.md',
       'errors/README.md',
@@ -145,17 +147,18 @@ export const verifyPackedConsumer = async (
       import assert from 'node:assert/strict';
       import { createRequire } from 'node:module';
       import * as plans from 'jg-plans';
-      assert.equal(plans.PROTOCOL_VERSION, '0.1');
-      assert.deepEqual(Object.keys(plans).sort(), ['CreatePlanOptionsSchema','DiagnosticSchema','ERRORS','InspectPlanOptionsSchema','MilestoneSelectorSchema','MilestoneSetSchema','PROTOCOL_VERSION','PlanDocumentsSchema','PlanDocumentWriteSchema','RemoveMilestonesSchema','PlanFingerprintOptionsSchema','PlanFingerprintSchema','PlanMetadataSchema','PlanSetSchema','PlanUpdateSchema','ReadOptionsSchema','SourceLocationSchema','checkPlan','createPlan','fingerprintPlan','inspectPlan','parseMilestones','parsePlan','updatePlan','preparePlanUpdate','preparePlanDocumentWrite','writePlanDocument','removeMilestones','withPlanDocumentLocks'].sort());
+      assert.equal(plans.PROTOCOL_VERSION, '0.2');
+      assert.deepEqual(Object.keys(plans).sort(), ['CreatePlanOptionsSchema','CriterionIdSchema','DiagnosticSchema','ERRORS','InspectPlanOptionsSchema','MilestoneSelectorSchema','MilestoneSetSchema','PROGRESS_VALUES','PROTOCOL_VERSION','PROTOCOL_VERSIONS','ProgressSchema','ProtocolVersionSchema','PlanDocumentsSchema','PlanDocumentWriteSchema','RemoveMilestonesSchema','PlanFingerprintOptionsSchema','PlanFingerprintSchema','PlanMetadataSchema','PlanSetSchema','PlanUpdateSchema','ReadOptionsSchema','SourceLocationSchema','checkPlan','createPlan','fingerprintPlan','inspectPlan','observeCriteria','parseMilestones','parsePlan','updatePlan','preparePlanUpdate','preparePlanDocumentWrite','writePlanDocument','removeMilestones','withPlanDocumentLocks'].sort());
       assert.equal(plans.parsePlan('# Useful document').body, '# Useful document');
       assert.match(plans.fingerprintPlan('# Work').sha256, /^[a-f0-9]{64}$/);
       assert.equal(plans.parseMilestones('## Milestone 1: Work\\n**Status:** custom').milestones[0].status, 'custom');
+      assert.equal(plans.observeCriteria(plans.parsePlan('---\\nprotocol: "0.2"\\n---\\n- AC-01: Done.')).criteria[0].id, 'AC-01');
       assert.equal(plans.checkPlan({}).conforms, false);
       const result = await plans.inspectPlan('missing-directory');
       assert.equal(result.plan.state, 'missing');
       assert.equal(plans.ReadOptionsSchema.safeParse({maxBytes: 0}).success, false);
       const require = createRequire(import.meta.url);
-      assert.equal(require('jg-plans').PROTOCOL_VERSION, '0.1');
+      assert.equal(require('jg-plans').PROTOCOL_VERSION, '0.2');
       assert.throws(() => require('jg-plans/dist/documents/plan.js'), {code: 'ERR_PACKAGE_PATH_NOT_EXPORTED'});
       const created = await plans.createPlan({root: 'library-sample', slug: 'typed', body: '# Work'});
       assert.equal((await plans.updatePlan(created.directory, {document: 'plan', set: {revision: 2}})).changed, true);

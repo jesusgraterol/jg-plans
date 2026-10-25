@@ -1,6 +1,6 @@
 # Library API
 
-Protocol 0.1 is provisional. These operations describe the implemented reference library. Check the [website's availability label](https://jg-plans.jesusgraterol.dev/docs/api/) before choosing a published package version.
+Protocol 0.2 is provisional. These operations describe the implemented reference library. Check the [website's availability label](https://jg-plans.jesusgraterol.dev/docs/api/) before choosing a published package version.
 
 The ESM root exports compiled JavaScript and TypeScript declarations. Node.js 24.15.0 is the runtime floor. Importing jg-plans does not inspect files, log output, or start a process. The only public import path is `jg-plans`.
 
@@ -17,11 +17,29 @@ const observation = await inspectPlan('./jg-plans/example', { maxBytes: 1_048_57
 
 `parsePlan(source)` retains the exact source and body. Its `metadata` contains independently validated core fields. `rawMetadata` retains the expanded YAML value, including unknown fields and invalid known values. Missing metadata, malformed YAML, unsupported expansion, and incompatible values receive structured diagnostics; they do not discard the body or authorize work.
 
+The result also has `protocol`, which is `0.2` only when the frontmatter declares the string `"0.2"` and `0.1` otherwise, and `criteria`: every acceptance criterion definition outside fenced code and frontmatter, in source order, as `{ id, idText, text, location, range }`. `id` is null when the written ID is not valid; `text` joins the definition's continuation lines. A missing `protocol` field is never reported. A protocol 0.2 plan also receives the plan rules of [protocol 0.2](../protocol/0.2/README.md#diagnostics): NO_CRITERIA, INVALID_CRITERION_ID, DUPLICATE_CRITERION, EMPTY_CRITERION, and INVALID_STATUS. A 0.1 plan's criteria are observed without diagnostics.
+
 YAML uses maxAliasCount: 100 for expansion protection. Recursive aliases, unsafe integer expansions, non-string or ambiguous YAML mapping keys, and values JSON cannot represent receive a `YAML_VALUE_UNAVAILABLE` warning; rawMetadata is unavailable (`null`) and the original YAML remains in source. Raw observations use YAML's JavaScript conversion; source remains authoritative for original numeric spelling and presentation. Independently readable core fields are still observed. An unterminated frontmatter block retains the complete source as body because its boundary is unknown.
 
-`parseMilestones(source)` returns source, recognizable milestones, optional overview rows, overviewPresent, and diagnostics. overviewPresent distinguishes an absent table from an explicitly empty derived table; an existing table that omits observed milestones receives discrepancies. Each entry contains ordinal, title, observed status/ID or null, location, end offset, body, and all recognized status/ID markers. Duplicate markers remain visible and are diagnosed; the first observed marker supplies the convenience status/ID value. Consumers must consider ambiguity diagnostics before acting on it. Fenced examples are ignored. Missing IDs and overview tables are allowed. Gaps are observations, with no reconstructed entries or inferred completion.
+`parseMilestones(source)` returns source, recognizable milestones, optional overview rows, overviewPresent, and diagnostics. overviewPresent distinguishes an absent table from an explicitly empty derived table; an existing table that omits observed milestones receives discrepancies. Each entry contains ordinal, title, observed status/ID or null, location, end offset, body, and all recognized status/ID markers. Duplicate markers remain visible and are diagnosed; the first observed marker supplies the convenience status/ID value. Consumers must consider ambiguity diagnostics before acting on it. Fenced examples are ignored. Missing IDs and overview tables are allowed. Gaps are observations, with no reconstructed entries or inferred completion. Each entry also has `criteriaMarkers`, every `**Acceptance criteria:**` coverage line, and `criteria`, the valid distinct IDs of the first one, or null when the milestone has none. Coverage rules depend on the plan's protocol, so parseMilestones reports none of them.
 
-`checkPlan({ plan?, milestones? })` checks explicitly supplied strings against preferred writer conformance. Omit absent or deleted documents. It returns `{ conforms, diagnostics }`; error diagnostics make conforms false. It never writes, restores data, or runs as a prerequisite to another operation.
+`checkPlan({ plan?, milestones? })` checks explicitly supplied strings against preferred writer conformance. Omit absent or deleted documents. It returns `{ conforms, diagnostics }`; error diagnostics make conforms false. It never writes, restores data, or runs as a prerequisite to another operation. For a protocol 0.2 plan it includes `observeCriteria` diagnostics: supplying only the plan checks the plan rules, and the milestone, coverage, and unassigned-criterion rules need both documents.
+
+## Criteria and progress
+
+```ts
+import { observeCriteria, parseMilestones, parsePlan } from 'jg-plans';
+
+const observation = observeCriteria(parsePlan(planSource), parseMilestones(milestonesSource));
+for (const criterion of observation.criteria)
+  console.log(criterion.id, criterion.progress, criterion.milestones);
+```
+
+`observeCriteria(plan, milestones?)` takes parsed documents; omit milestones when milestones.md is absent. It returns `{ protocol, criteria, diagnostics }` (ICriteriaObservation). `criteria` lists each valid ID once, at its first definition and in definition order, as `{ id, text, location, milestones, progress }` (ICriterionCoverage), where `milestones` holds the ordinal and ID of every milestone whose coverage line names it.
+
+Progress follows protocol 0.2's rule for every plan: without milestones it is the plan's status; with milestones it is `done` when every covering milestone is done, `in progress` when at least one is in progress or done, and `pending` otherwise. It is null when no milestone covers the criterion or a status it depends on is not one of those three values. Progress describes the work, not evidence that a criterion is met.
+
+`diagnostics` holds the cross-document rules and is empty for 0.1 plans: INVALID_STATUS for milestones, INVALID_CRITERIA_MARKER, DUPLICATE_CRITERIA_MARKER, MISPLACED_CRITERIA_MARKER, UNKNOWN_CRITERION, and, when milestones are supplied, UNASSIGNED_CRITERION. Inputs that are not parsed documents throw JG_PLANS_INVALID_INPUT.
 
 ## Source ranges and milestone metadata
 
@@ -55,6 +73,8 @@ A structural fingerprint is distinct from an exact file hash and from an applica
 
 The result includes the resolved directory, each document's path and readable/missing/unreadable state, useful parsed data for readable files, and aggregated diagnostics. Every readable document also has lowercase `sha256` computed from the exact original bytes, including BOM and line endings. A readable empty file differs from a missing file. Orphan milestones remain observable when the plan has been deleted. No predecessor is required or restored.
 
+The result also has `criteria`: the `observeCriteria` result for a readable plan with its readable or missing milestones, or null otherwise, because an unreadable milestones.md could hold coverage. Its diagnostics are included in the aggregated diagnostics, so check and inspect report the same criteria findings.
+
 Supplying `fingerprint: { excludeMetadataKeys? }` adds a top-level `fingerprint` result, reusing the already-read and parsed plan. Missing/unreadable plans return an unavailable requested fingerprint rather than fabricated content. Omitting the option omits that result.
 
 Bytes must decode strictly as UTF-8. An existing BOM is retained in source. Invalid bytes receive INVALID_ENCODING, and another readable document still contributes observations. File-size failures and nonregular/unreadable targets receive operational diagnostics. Final-component file symlinks are not followed; the selected directory's ancestors are caller-chosen. The library does not silently transcode content.
@@ -63,9 +83,9 @@ Bytes must decode strictly as UTF-8. An existing BOM is retained in source. Inva
 
 Creation, preparation, updates, guarded writes, removal, and locks are described below. A [runnable library example](../examples/library.mjs) exercises creation, sequential updates, inspection, and checking in an owned temporary directory.
 
-Named public types are IPlanMetadata, IDiagnostic, ISourceLocation, ISourceSpan, IHeadingSection, IReadOptions, IPlanFingerprintOptions, IInspectPlanOptions, IPlanFingerprint, IPlanDocuments, IParsedPlan, IFrontmatter, IMarker, IMilestone, IOverviewRow, IParsedMilestones, ICheckResult, IDocumentRead, IPlanInspection, ICreatePlanOptions, IPlanCreation, IPlanUpdate, IPlanUpdateResult, IPlanDocumentWrite, IPlanDocumentWriteResult, IRemoveMilestones, IRemoveMilestonesResult, IPreparedPlanEdit, and IAssignedMilestoneId.
+Named public types are IPlanMetadata, IDiagnostic, ISourceLocation, ISourceSpan, IHeadingSection, IReadOptions, IPlanFingerprintOptions, IInspectPlanOptions, IPlanFingerprint, IPlanDocuments, IParsedPlan, IFrontmatter, IMarker, IMilestone, IOverviewRow, IParsedMilestones, ICheckResult, IDocumentRead, IPlanInspection, ICreatePlanOptions, IPlanCreation, IPlanUpdate, IPlanUpdateResult, IPlanDocumentWrite, IPlanDocumentWriteResult, IRemoveMilestones, IRemoveMilestonesResult, IPreparedPlanEdit, IAssignedMilestoneId, ICriterion, ICriterionCoverage, ICriteriaObservation, IProgress, and IProtocolVersion.
 
-PlanMetadataSchema defines preferred complete metadata and allows project extensions. DiagnosticSchema, SourceLocationSchema, ReadOptionsSchema, PlanFingerprintOptionsSchema, PlanFingerprintSchema, InspectPlanOptionsSchema, and PlanDocumentsSchema own the corresponding boundary contracts. Fingerprint results and inspection/fingerprint options are closed schemas; only explicit supported keys are accepted. Known metadata fields are validated independently during tolerant reads. PROTOCOL_VERSION is `0.1`; it is independent of the npm package version.
+PlanMetadataSchema defines preferred complete metadata, including the optional `protocol` marker, and allows project extensions. DiagnosticSchema, SourceLocationSchema, ReadOptionsSchema, PlanFingerprintOptionsSchema, PlanFingerprintSchema, InspectPlanOptionsSchema, and PlanDocumentsSchema own the corresponding boundary contracts. CriterionIdSchema accepts valid criterion IDs, ProgressSchema the three progress values in PROGRESS_VALUES, and ProtocolVersionSchema the versions in PROTOCOL_VERSIONS. Fingerprint results and inspection/fingerprint options are closed schemas; only explicit supported keys are accepted. Known metadata fields are validated independently during tolerant reads. PROTOCOL_VERSION is `0.2`; it is independent of the npm package version.
 
 Source offsets count JavaScript UTF-16 code units. Lines and columns start at one. Marker value spans exclude surrounding whitespace and line endings. Entries and overview rows retain ordinalText; ordinal is null for nonpositive or unsafe integer text, avoiding rounded identities. These are observations, not general-purpose rewrite permission.
 

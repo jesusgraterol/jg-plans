@@ -1,8 +1,17 @@
-export { DEFAULT_MAX_BYTES, PROTOCOL_VERSION } from './constants.ts';
 export {
+  CORE_METADATA_KEYS,
+  DEFAULT_MAX_BYTES,
+  PROGRESS_VALUES,
+  PROTOCOL_VERSION,
+  PROTOCOL_VERSIONS,
+} from './constants.ts';
+export {
+  CriterionIdSchema,
   DiagnosticSchema,
   PlanDocumentsSchema,
   PlanMetadataSchema,
+  ProgressSchema,
+  ProtocolVersionSchema,
   ReadOptionsSchema,
   PlanFingerprintOptionsSchema,
   PlanFingerprintSchema,
@@ -13,6 +22,8 @@ export type {
   IDiagnostic,
   IPlanDocuments,
   IPlanMetadata,
+  IProgress,
+  IProtocolVersion,
   IReadOptions,
   IPlanFingerprintOptions,
   IPlanFingerprint,

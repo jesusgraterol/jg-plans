@@ -9,14 +9,14 @@ Use the current task's authorization and the repository's engineering guidance. 
 
 ## Find the owning source
 
-Read [the project blueprint](../../../README.md), then the relevant parts of [protocol 0.1](../../../protocol/0.1/README.md) and [the examples](../../../examples/README.md). The protocol directory is normative; the website renders canonical files rather than maintaining another specification.
+Read [the project blueprint](../../../README.md), then the relevant parts of [protocol 0.2](../../../protocol/0.2/README.md) and [the examples](../../../examples/README.md). The protocol directory is normative; the website renders canonical files rather than maintaining another specification.
 
 For implementation commands and dependency ownership, read [development](../../../docs/development.md). When changing publication, also read docs/releasing.md once that workflow exists. Resolve JG Packages APIs from the installed package's bundled documentation before using an export.
 
 ## Preserve the document boundary
 
 - Keep optional milestones, unknown metadata and custom statuses useful. Missing or deleted material never implies approval, completion, or a need to restore history.
-- Keep project schemas, approvals, digests, registries, coordination journals and reconciliation with consumers. Protocol 0.1 stays provisional until separately scoped skill and HQ adoption exercises it.
+- Keep project schemas, approvals, digests, registries, coordination journals and reconciliation with consumers. Protocol 0.2 stays provisional until separately scoped skill and HQ adoption exercises it.
 - Keep narrow patches, explicit guarded body/source writes, guarded removal, and pure preparation on the same edit engine. Assign missing UUIDs only on request. Preserve every other byte, including encoding/BOM and line-ending details; report unsupported edits without silently normalizing prose.
 - Filesystem mutations and consumer persistence share canonical local document locks. Inside the public callback use pure preparation and your own persistence, never nested mutation calls. Busy/dead owners require explicit operator inspection; failed release may follow durable writes. Atomic replacement and prior-content comparison do not remove the nonparticipating-writer race.
 

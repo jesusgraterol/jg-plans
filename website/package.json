@@ -25,7 +25,7 @@
     "@tailwindcss/vite": "4.3.3",
     "astro": "7.4.2",
     "jg-plans": "workspace:*",
-    "jg-personal-astro-ui": "0.4.0",
+    "jg-personal-astro-ui": "0.5.0",
     "jg-site": "0.1.0",
     "tailwindcss": "4.3.3"
   },

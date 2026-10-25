@@ -75,21 +75,6 @@ const structuredData = noIndex
     <ThemeInitScript storageKey={SITE.themeKey} />
   </head>
   <body>
-    <noscript>
-      <style is:inline>
-        [data-static-tabs] [role='tablist'] {
-          display: none;
-        }
-        @layer base {
-          [data-static-tabs] [data-tab-panel][hidden] {
-            display: block !important;
-          }
-        }
-        [data-copy-button] {
-          display: none;
-        }
-      </style>
-    </noscript>
     <SkipLink />
     <SiteHeader currentPath={page.path} homeLabel="jg-plans home" items={navigation}>
       <BrandLogo slot="brand" name="jg-plans">

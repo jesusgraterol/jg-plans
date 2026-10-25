@@ -2,7 +2,7 @@
 
 The protocol and examples are usable directly. The reference library and CLI are optional; the [website's availability label](https://jg-plans.jesusgraterol.dev/docs/) identifies a verified published version. The checkout commands below work independently of npm publication.
 
-Start with an ordinary [small plan](../examples/small/plan.md). It contains five core metadata fields and a short Markdown body. Add [milestones](../examples/with-milestones/milestones.md) only when separate units help review the work. Users can edit, move, or delete these files.
+Start with an ordinary [small plan](../examples/small/plan.md). It contains five core metadata fields and a short Markdown body. Add [milestones](../examples/with-milestones/milestones.md) only when separate units help review the work. For acceptance criteria that tools can check, declare `protocol: "0.2"` and follow the [criteria example](../examples/criteria/plan.md). Users can edit, move, or delete these files.
 
 ## From a development checkout
 

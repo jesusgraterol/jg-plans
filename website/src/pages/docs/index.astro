@@ -30,7 +30,8 @@ const availability = readAvailability(import.meta.env.JG_PLANS_AVAILABILITY);
       </div>
       <div class="min-w-0">
         <CodeBlock
-          class="[&_pre]:whitespace-pre-wrap [&_pre]:wrap-anywhere"
+          copyDisplay="icon"
+          overflow="wrap"
           code={example.documents.plan!}
           lang="markdown"
           title="plan.md · complete example"
@@ -59,9 +60,15 @@ const availability = readAvailability(import.meta.env.JG_PLANS_AVAILABILITY);
       </div>
       <div class="grid min-w-0 gap-4">
         {availability.state === 'published' && (
-          <CodeBlock code="npm install jg-plans" lang="sh" title="Install · Node.js 24.15.0+" />
+          <CodeBlock
+            copyDisplay="icon"
+            code="npm install jg-plans"
+            lang="sh"
+            title="Install · Node.js 24.15.0+"
+          />
         )}
         <CodeBlock
+          copyDisplay="icon"
           code={`import { readFile } from 'node:fs/promises';\nimport { parsePlan } from 'jg-plans';\n\nconst source = await readFile('./plan.md', 'utf8');\nconst plan = parsePlan(source);\n\nconsole.log(plan.metadata.status); // "pending"\nconsole.log(plan.metadata.revision); // 1`}
           lang="typescript"
           title="read-plan.ts"
@@ -89,6 +96,7 @@ const availability = readAvailability(import.meta.env.JG_PLANS_AVAILABILITY);
       </div>
       <div class="min-w-0">
         <CodeBlock
+          copyDisplay="icon"
           code="jg-plans inspect --directory ./jg-plans/example --json"
           lang="sh"
           title="Inspect a selected directory"

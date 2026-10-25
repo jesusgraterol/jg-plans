@@ -5,6 +5,8 @@ minimumReleaseAge: 1440
 minimumReleaseAgeExclude:
   # Exact owned release; verify the qualified archive checksum before adoption.
   - jg-fs@1.7.0
+  - jg-personal-astro-ui@0.5.0
+  - jg-exception@1.7.1
   # Approved pinned website baseline, published 2026-10-21.
   - astro@7.4.2
   # The Markdown processor required by the pinned Astro baseline.

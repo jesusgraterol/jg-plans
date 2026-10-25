@@ -1,6 +1,21 @@
 import { z } from 'zod';
 
+import { PROGRESS_VALUES, PROTOCOL_VERSIONS } from './constants.ts';
+
 const NonblankStringSchema = z.string().refine((value) => value.trim().length > 0);
+
+// a valid criterion ID: AC-01 to AC-99, then AC-100 and up without extra leading zeros
+export const CriterionIdSchema = z.string().regex(/^AC-(?:0[1-9]|[1-9]\d+)$/);
+
+// the shared progress vocabulary of protocol 0.2
+export const ProgressSchema = z.enum(PROGRESS_VALUES);
+
+export type IProgress = z.infer<typeof ProgressSchema>;
+
+// a declarable protocol version; the YAML value must be a string
+export const ProtocolVersionSchema = z.enum(PROTOCOL_VERSIONS);
+
+export type IProtocolVersion = z.infer<typeof ProtocolVersionSchema>;
 
 /** Preferred new-plan metadata. Unknown project fields remain allowed. */
 export const PlanMetadataSchema = z.looseObject({
@@ -9,6 +24,7 @@ export const PlanMetadataSchema = z.looseObject({
   updated_at: z.iso.datetime({ offset: true }),
   revision: z.number().int().positive().max(Number.MAX_SAFE_INTEGER),
   status: NonblankStringSchema,
+  protocol: ProtocolVersionSchema.exactOptional(),
 });
 
 export type IPlanMetadata = z.infer<typeof PlanMetadataSchema>;

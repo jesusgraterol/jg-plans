@@ -11,6 +11,8 @@ export type {
   IHeadingSection,
   IPlanFingerprint,
 } from './documents/index.ts';
+export { observeCriteria } from './criteria/index.ts';
+export type { ICriteriaObservation, ICriterion, ICriterionCoverage } from './criteria/index.ts';
 export { ERRORS } from './errors/index.ts';
 export { inspectPlan } from './files/index.ts';
 export {
@@ -30,10 +32,15 @@ export type {
   IRemoveMilestonesResult,
 } from './files/index.ts';
 export {
+  PROGRESS_VALUES,
   PROTOCOL_VERSION,
+  PROTOCOL_VERSIONS,
+  CriterionIdSchema,
   DiagnosticSchema,
   PlanDocumentsSchema,
   PlanMetadataSchema,
+  ProgressSchema,
+  ProtocolVersionSchema,
   ReadOptionsSchema,
   PlanFingerprintOptionsSchema,
   PlanFingerprintSchema,
@@ -44,6 +51,8 @@ export type {
   IDiagnostic,
   IPlanDocuments,
   IPlanMetadata,
+  IProgress,
+  IProtocolVersion,
   IReadOptions,
   IPlanFingerprintOptions,
   IInspectPlanOptions,

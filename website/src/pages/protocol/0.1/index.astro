@@ -3,13 +3,13 @@ import CodeBlock from 'jg-personal-astro-ui/code-block';
 import { Content, getHeadings } from '../../../../../protocol/0.1/README.md';
 import { loadSource } from '../../../content/index.ts';
 import DocumentLayout from '../../../layouts/document-layout.astro';
-import { PAGES } from '../../../site.config.ts';
-await loadSource('specification');
+import { pageFor } from '../../../site.config.ts';
+await loadSource('previousSpecification');
 const example = await loadSource('smallPlan');
 const metadata = example.slice(0, example.indexOf('\n---', 4) + 4);
 ---
 
-<DocumentLayout page={PAGES[2]} headings={getHeadings()}>
+<DocumentLayout page={pageFor('/protocol/0.1/')} headings={getHeadings()}>
   <div slot="overview">
     <div class="mb-6 flex flex-wrap gap-2 font-mono text-xs">
       <a
@@ -56,7 +56,8 @@ const metadata = example.slice(0, example.indexOf('\n---', 4) + 4);
       </div>
       <div class="min-w-0">
         <CodeBlock
-          class="[&_pre]:whitespace-pre-wrap [&_pre]:wrap-anywhere"
+          copyDisplay="icon"
+          overflow="wrap"
           code={metadata}
           lang="yaml"
           title="plan.md · frontmatter"
@@ -74,7 +75,8 @@ const metadata = example.slice(0, example.indexOf('\n---', 4) + 4);
         Add milestones only when useful.
       </h2>
       <CodeBlock
-        class="[&_pre]:whitespace-pre-wrap [&_pre]:wrap-anywhere"
+        copyDisplay="icon"
+        overflow="wrap"
         code={
           '## Milestone 1: Explain empty search results\n**Status:** pending\n**Milestone ID:** 5a148c73-7d38-4a2f-9c0f-903d93b9b764\n\nDescribe the work and how to review it.'
         }

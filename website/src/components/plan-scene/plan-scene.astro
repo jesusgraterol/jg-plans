@@ -10,14 +10,8 @@ const sample = await loadExample('milestones');
 const lifecycle = await buildLifecycle(sample.documents.plan!, sample.documents.milestones!);
 ---
 
-<section
-  id="lifecycle"
-  class="plan-scene scroll-mt-24"
-  data-static-tabs
-  aria-label="A plan through its lifecycle"
->
+<section id="lifecycle" class="plan-scene scroll-mt-24" aria-label="A plan through its lifecycle">
   <Tabs
-    class="[&_[role=tab]]:px-2 sm:[&_[role=tab]]:px-3"
     id="plan-lifecycle"
     label="Plan lifecycle"
     tabs={lifecycle.stages.map(({ id, label }) => ({ id, label }))}
@@ -82,11 +76,17 @@ const lifecycle = await buildLifecycle(sample.documents.plan!, sample.documents.
             </summary>
             <div class="my-4 min-w-0">
               <CodeBlock
+                copyDisplay="icon"
                 code={JSON.stringify(stage.result, null, 2)}
                 lang="json"
                 title="JSON · selected result fields"
               />
-              <CodeBlock code={stage.source} lang="markdown" title="Complete revised plan.md" />
+              <CodeBlock
+                copyDisplay="icon"
+                code={stage.source}
+                lang="markdown"
+                title="Complete revised plan.md"
+              />
             </div>
           </details>
         )}
@@ -96,6 +96,7 @@ const lifecycle = await buildLifecycle(sample.documents.plan!, sample.documents.
           </summary>
           <div class="my-4 min-w-0">
             <CodeBlock
+              copyDisplay="icon"
               code={stage.code}
               lang="typescript"
               title="Selected API call · inputs from this example"
