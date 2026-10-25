@@ -32,12 +32,13 @@ for (const colorScheme of ['light', 'dark'] as const)
         milestones: 'missing',
         revision: 1,
         status: 'pending',
+        criteria: ['AC-01', 'AC-02', 'AC-03'],
       });
       await tabs.getByRole('tab', { name: 'Create', exact: true }).focus();
       await page.keyboard.press('ArrowRight');
       await expect(tabs.getByRole('tab', { name: 'Inspect', exact: true })).toBeFocused();
       await expect(scene.getByRole('tabpanel', { name: 'Inspect', exact: true })).toContainText(
-        '1792612860_example-gallery',
+        '1792612920_search-feedback-criteria',
       );
       await page.keyboard.press('ArrowRight');
       await expect(tabs.getByRole('tab', { name: 'Update', exact: true })).toHaveAttribute(
@@ -46,16 +47,28 @@ for (const colorScheme of ['light', 'dark'] as const)
       );
       const update = scene.getByRole('tabpanel', { name: 'Update', exact: true });
       await expect(update).toContainText('"current"');
+      // milestone 1 is done and milestone 2 has started, so only AC-01 is done
+      const progress = update
+        .getByRole('list', { name: 'Criterion progress' })
+        .getByRole('listitem');
+      await expect(progress).toHaveCount(3);
+      await expect(progress.nth(0)).toHaveText(/AC-01\s*done/u);
+      await expect(progress.nth(1)).toHaveText(/AC-02\s*in progress/u);
+      await expect(progress.nth(2)).toHaveText(/AC-03\s*in progress/u);
       await page.keyboard.press('ArrowRight');
       const revise = scene.getByRole('tabpanel', { name: 'Revise', exact: true });
       await expect(tabs.getByRole('tab', { name: 'Revise', exact: true })).toBeFocused();
       await expect(revise).toContainText('Skills binding · stale after revision');
-      await expect(revise).toContainText('Document cards');
-      await expect(revise).toContainText('5a148c73-7d38-4a2f-9c0f-903d93b9b764');
+      await expect(revise).toContainText('check · plan.md line 18');
+      await expect(revise).toContainText('UNASSIGNED_CRITERION');
+      await expect(revise).toContainText('Explain empty results');
+      await expect(revise).toContainText('3c7a2f1e-9b4d-4e8a-a6f2-1d5c7e9b0a34');
       const diff = revise.getByRole('figure').filter({ hasText: 'Before · revision 1' });
       await expect(diff).toContainText('Removed line: revision: 1');
       await expect(diff).toContainText('Added line: revision: 2');
-      await expect(diff).toContainText('Added line: Group the examples by workflow.');
+      await expect(diff).toContainText(
+        'Added line: - AC-04: Search suggests spelling corrections.',
+      );
       const diffPane = diff.getByRole('group').first();
       await diffPane.focus();
       await expect(diffPane).toHaveCSS('outline-style', 'solid');
@@ -70,9 +83,13 @@ for (const colorScheme of ['light', 'dark'] as const)
         status: 'in progress',
         binding: 'stale',
         milestones: [
-          { id: '5a148c73-7d38-4a2f-9c0f-903d93b9b764', status: 'done' },
-          { id: 'd7f04e92-61a7-4caf-8ab2-64c2b9f787e1', status: 'pending' },
+          { id: '3c7a2f1e-9b4d-4e8a-a6f2-1d5c7e9b0a34', status: 'done' },
+          { id: '8e1d6b2a-4f7c-4a3e-b9d1-6c2e8f4a7b15', status: 'in progress' },
         ],
+        check: {
+          conforms: false,
+          findings: [{ code: 'UNASSIGNED_CRITERION', criterion: 'AC-04', line: 18 }],
+        },
       });
       const revisedSource = revise
         .getByRole('figure')
@@ -80,7 +97,7 @@ for (const colorScheme of ['light', 'dark'] as const)
       await revisedSource.getByRole('button').press('Enter');
       const markdown = await page.evaluate(() => navigator.clipboard.readText());
       expect(markdown).toContain('revision: 2');
-      expect(markdown).toContain('Group the examples by workflow.');
+      expect(markdown).toContain('- AC-04: Search suggests spelling corrections.');
       await expectNoHorizontalOverflow(page);
       expect(
         (
@@ -105,6 +122,10 @@ test.describe('without JavaScript', () => {
       await expect(page.getByRole('region', { name, exact: true })).toBeVisible();
     await expect(
       page.getByText('Skills binding · stale after revision', { exact: true }),
+    ).toBeVisible();
+    await expect(page.getByRole('list', { name: 'Criterion progress' })).toBeVisible();
+    await expect(
+      page.locator('#lifecycle').getByText('UNASSIGNED_CRITERION', { exact: true }),
     ).toBeVisible();
     await expect(page.getByRole('button', { name: 'Copy code', exact: true })).toHaveCount(0);
     await expectNoHorizontalOverflow(page);

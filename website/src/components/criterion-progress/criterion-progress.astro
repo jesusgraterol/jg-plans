@@ -1,0 +1,23 @@
+---
+import Badge from 'jg-personal-astro-ui/badge';
+import type { IProgress } from 'jg-plans';
+
+interface Props {
+  progress: IProgress | null;
+}
+
+// a criterion without a delivering milestone has no progress and is shown as uncovered
+const PRESENTATIONS = {
+  done: { label: 'done', variant: 'success', dot: true },
+  'in progress': { label: 'in progress', variant: 'secondary', dot: true },
+  pending: { label: 'pending', variant: 'outline', dot: false },
+  uncovered: { label: 'uncovered', variant: 'danger', dot: true },
+} as const;
+
+const { progress } = Astro.props;
+const { label, variant, dot } = PRESENTATIONS[progress ?? 'uncovered'];
+---
+
+<Badge variant={variant} dot={dot}>
+  {label}
+</Badge>

@@ -168,8 +168,8 @@ test('keyboard navigation, theme persistence, copy, and mobile menu', async ({ p
     'success',
   );
   const copied = await page.evaluate(() => navigator.clipboard.readText());
-  expect(copied).toContain('1792612860_example-gallery');
-  expect(copied).toContain('# Example gallery');
+  expect(copied).toContain('1792612920_search-feedback-criteria');
+  expect(copied).toContain('# Search feedback');
   await page.setViewportSize({ width: 320, height: 800 });
   const menu = page.locator('[data-site-menu] summary');
   await menu.click();

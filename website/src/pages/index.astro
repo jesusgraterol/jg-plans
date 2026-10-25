@@ -1,16 +1,22 @@
 ---
+import Badge from 'jg-personal-astro-ui/badge';
 import Button from 'jg-personal-astro-ui/button';
-import Card from 'jg-personal-astro-ui/card';
 import CodeBlock from 'jg-personal-astro-ui/code-block';
+import FileTree from 'jg-personal-astro-ui/file-tree';
 import InstallCommand from 'jg-personal-astro-ui/install-command';
+import Step from 'jg-personal-astro-ui/step';
+import Steps from 'jg-personal-astro-ui/steps';
 import { readAvailability } from '../availability.ts';
+import CheckReport from '../components/check-report/check-report.astro';
+import CriteriaDashboard from '../components/criteria-dashboard/criteria-dashboard.astro';
 import PlanScene from '../components/plan-scene/plan-scene.astro';
 import ProtocolMap from '../components/protocol-map/protocol-map.astro';
 import BaseLayout from '../layouts/base-layout.astro';
 import { PAGES } from '../site.config.ts';
-import { loadExample } from '../content/examples.ts';
+import { loadExample, loadLifecycle } from '../content/examples.ts';
 
-const dashboard = await loadExample('milestones');
+const criteria = await loadExample('criteria');
+const { staleWrite } = await loadLifecycle();
 const availability = readAvailability(import.meta.env.JG_PLANS_AVAILABILITY);
 const integration = `import { inspectPlan, updatePlan } from 'jg-plans';
 
@@ -34,8 +40,8 @@ if (current.plan.state === 'readable') {
         <span class="text-accent">Precise tooling.</span>
       </h1>
       <p class="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-muted sm:text-xl">
-        Give people and coding agents shared planning documents. Create, inspect and edit them with
-        a TypeScript library or local CLI. Your project chooses the workflow and approvals.
+        Shared Markdown plans with acceptance criteria, read and edited by a TypeScript library and
+        CLI.
       </p>
       <div class="mt-7 flex flex-wrap justify-center gap-3">
         <Button href="/examples/#lifecycle">
@@ -55,67 +61,48 @@ if (current.plan.state === 'readable') {
   </section>
 
   <section class="border-y border-border bg-secondary/35" aria-labelledby="tools-title">
-    <div class="jg-container grid gap-10 py-12 sm:py-16 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] lg:items-center lg:gap-16">
-      <div>
-        <p class="eyebrow mb-4">From a file to your product</p>
-        <h2 id="tools-title" class="section-title">
-          Build the tool
-          <br />
-          you have in mind.
-        </h2>
-        <p class="mt-5 max-w-lg text-lg text-muted">
-          Read a plan, show its progress, or pass its context to an agent. jg-plans gives you the
-          document layer. You decide how the application works.
-        </p>
-        <a
-          href="/docs/integrations/"
-          class="mt-6 inline-flex min-h-11 items-center gap-2 font-semibold text-accent underline-offset-4 hover:underline"
-        >
-          See the integration guide <span aria-hidden="true">→</span>
-        </a>
-      </div>
-      <div
-        class="grid min-w-0 gap-4 sm:grid-cols-2"
-        aria-label="Illustrative tools built from planning data"
-      >
-        <Card class="sm:col-span-2">
-          <p class="mb-4 font-mono text-xs text-muted">YOUR DASHBOARD / EXAMPLE VIEW</p>
-          <div class="flex flex-wrap items-center justify-between gap-3">
-            <h3 class="text-xl font-semibold">Example gallery</h3>
-            <span class="rounded-full bg-secondary px-3 py-1 font-mono text-xs">
-              {dashboard.plan!.metadata.status}
-            </span>
+    <div class="jg-container py-12 sm:py-16">
+      <div class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-end lg:gap-16">
+        <div>
+          <p class="eyebrow mb-4">From a file to your product</p>
+          <h2 id="tools-title" class="section-title">
+            Build the tool
+            <br />
+            you have in mind.
+          </h2>
+          <p class="mt-5 max-w-lg text-lg text-muted">
+            jg-plans reads the documents; your app decides what to show, from progress to agent
+            context.
+          </p>
+          <a
+            href="/docs/integrations/"
+            class="mt-6 inline-flex min-h-11 items-center gap-2 font-semibold text-accent underline-offset-4 hover:underline"
+          >
+            See the integration guide <span aria-hidden="true">→</span>
+          </a>
+        </div>
+        <div class="grid min-w-0 gap-4 sm:grid-cols-2">
+          <div class="border-l-2 border-accent py-1 pl-4">
+            <h3 class="font-semibold">Agent context</h3>
+            <p class="mt-2 text-sm text-muted">
+              Give an agent the selected plan and the work still ahead.
+            </p>
           </div>
-          <ol class="mt-5 grid gap-3 text-sm">
-            {dashboard.milestones!.milestones.map((milestone) => (
-              <li class="flex items-center gap-3">
-                <span class="text-accent" aria-hidden="true">
-                  {milestone.status === 'done' ? '✓' : '○'}
-                </span>
-                <span>{milestone.title}</span>
-                <span class="ml-auto font-mono text-xs text-muted">{milestone.status}</span>
-              </li>
-            ))}
-          </ol>
-          <p class="mt-4 border-t border-border pt-3 text-xs text-muted">
-            An example view of the actual parsed milestone data.
-          </p>
-        </Card>
-        <div class="border-l-2 border-accent py-1 pl-4">
-          <h3 class="font-semibold">Agent context</h3>
-          <p class="mt-2 text-sm text-muted">
-            Give an agent the selected plan and the work still ahead.
-          </p>
+          <div class="border-l-2 border-accent py-1 pl-4">
+            <h3 class="font-semibold">Custom automation</h3>
+            <p class="mt-2 text-sm text-muted">
+              Connect JSON observations to your own project rules.
+            </p>
+          </div>
         </div>
-        <div class="border-l-2 border-accent py-1 pl-4">
-          <h3 class="font-semibold">Custom automation</h3>
-          <p class="mt-2 text-sm text-muted">
-            Connect JSON observations to your own project rules.
-          </p>
-        </div>
+      </div>
+      <div class="mt-10 min-w-0">
+        <CriteriaDashboard />
       </div>
     </div>
   </section>
+
+  <CheckReport />
 
   <section
     class="jg-container grid gap-8 py-14 sm:py-20 lg:grid-cols-2 lg:items-center lg:gap-16"
@@ -128,11 +115,23 @@ if (current.plan.state === 'readable') {
         <br />
         Edit it precisely.
       </h2>
-      <p class="mt-5 max-w-lg text-lg text-muted">
-        Parse strings or inspect one selected directory. Guard writes against the source you read,
-        keep custom metadata and edit only explicit fields. Revisions and approvals stay with your
-        project.
-      </p>
+      <Steps label="A guarded write" class="mt-6 max-w-lg">
+        <Step number={1} title="You read the plan" status="complete">
+          <p class="font-mono text-xs text-muted">
+            sha256 {staleWrite.expectedSha256.slice(0, 12)}…
+          </p>
+        </Step>
+        <Step number={2} title="Someone revises it" status="complete">
+          <p class="font-mono text-xs text-muted">
+            sha256 {staleWrite.currentSha256.slice(0, 12)}…
+          </p>
+        </Step>
+        <Step number={3} title="Your stale write is refused" status="error">
+          <Badge variant="danger" dot>
+            {staleWrite.code}
+          </Badge>
+        </Step>
+      </Steps>
       {availability.state === 'published' ? (
         <div class="mt-6">
           <Fragment set:html="<!--email_off-->" />
@@ -177,36 +176,58 @@ if (current.plan.state === 'readable') {
   <ProtocolMap />
 
   <section class="jg-container py-14 sm:py-20" aria-labelledby="freedom-title">
-    <div class="mb-8 max-w-2xl">
-      <p class="eyebrow mb-4">As much structure as the work needs</p>
-      <h2 id="freedom-title" class="section-title">
-        Start small. Stay in control.
-      </h2>
-    </div>
-    <div class="grid gap-8 md:grid-cols-3">
-      <div>
-        <p class="mb-4 font-mono text-sm text-accent">plan.md</p>
-        <h3 class="text-xl font-semibold">One file is enough.</h3>
-        <p class="mt-3 text-muted">
-          Identity, dates, revision, and status above an ordinary Markdown body. No fixed list of
-          headings.
-        </p>
+    <div class="grid min-w-0 gap-10 lg:grid-cols-2 lg:items-center lg:gap-16">
+      <div class="min-w-0">
+        <p class="eyebrow mb-4">As much structure as the work needs</p>
+        <h2 id="freedom-title" class="section-title">
+          Start small. Stay in control.
+        </h2>
+        <ul class="mt-8 grid gap-6">
+          <li>
+            <p class="font-mono text-sm text-accent">plan.md</p>
+            <h3 class="mt-1 text-xl font-semibold">One file is enough.</h3>
+            <p class="mt-2 text-muted">Identity, revision and status above ordinary Markdown.</p>
+          </li>
+          <li>
+            <p class="font-mono text-sm text-accent">+ milestones.md</p>
+            <h3 class="mt-1 text-xl font-semibold">Break it down when useful.</h3>
+            <p class="mt-2 text-muted">Numbered milestones name the criteria they deliver.</p>
+          </li>
+          <li>
+            <p class="font-mono text-sm text-accent">edit · move · delete</p>
+            <h3 class="mt-1 text-xl font-semibold">Your files remain yours.</h3>
+            <p class="mt-2 text-muted">
+              Custom fields survive edits, and deleted plans stay deleted.
+            </p>
+          </li>
+        </ul>
       </div>
-      <div>
-        <p class="mb-4 font-mono text-sm text-accent">+ milestones.md</p>
-        <h3 class="text-xl font-semibold">Break it down when useful.</h3>
-        <p class="mt-3 text-muted">
-          Optional numbered milestones with explicit status markers. Add stable IDs when they help.
-        </p>
-      </div>
-      <div>
-        <p class="mb-4 font-mono text-sm text-accent">edit · move · delete</p>
-        <h3 class="text-xl font-semibold">Your files remain yours.</h3>
-        <p class="mt-3 text-muted">
-          Keep custom fields. Remove old plans. Readers report what remains without rebuilding
-          deleted history.
-        </p>
-      </div>
+      <FileTree
+        class="min-w-0"
+        label="A project's plan files"
+        entries={[
+          {
+            kind: 'directory',
+            name: 'your-project',
+            children: [
+              {
+                kind: 'directory',
+                name: 'jg-plans',
+                children: [
+                  {
+                    kind: 'directory',
+                    name: criteria.plan!.metadata.id!,
+                    children: [
+                      { kind: 'file', name: 'plan.md' },
+                      { kind: 'file', name: 'milestones.md' },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ]}
+      />
     </div>
     <div class="mt-10 flex flex-wrap gap-3">
       <Button href="/examples/">
