@@ -7,9 +7,6 @@
   html {
     scroll-padding-top: 6rem;
   }
-  body {
-    min-width: 320px;
-  }
   main:focus {
     outline: none;
   }
@@ -17,20 +14,5 @@
   button,
   summary {
     -webkit-tap-highlight-color: transparent;
-  }
-}
-
-@layer components {
-  .hero-title {
-    font-size: clamp(2.5rem, 5.5vw, 5rem);
-    font-weight: 650;
-    letter-spacing: -0.055em;
-    line-height: 1.08;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  html {
-    scroll-behavior: auto;
   }
 }
