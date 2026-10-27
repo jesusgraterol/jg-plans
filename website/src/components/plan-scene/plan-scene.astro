@@ -100,15 +100,15 @@ const lifecycle = await loadLifecycle();
             <div class="my-4 min-w-0">
               <CodeBlock
                 copyDisplay="icon"
-                code={JSON.stringify(stage.result, null, 2)}
-                lang="json"
-                title="JSON · selected result fields"
-              />
-              <CodeBlock
-                copyDisplay="icon"
                 code={stage.source}
                 lang="markdown"
                 title="Complete revised plan.md"
+              />
+              <CodeBlock
+                copyDisplay="icon"
+                code={JSON.stringify(stage.result, null, 2)}
+                lang="json"
+                title="JSON · selected result fields"
               />
             </div>
           </details>

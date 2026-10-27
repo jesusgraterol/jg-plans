@@ -94,6 +94,24 @@ for (const colorScheme of ['light', 'dark'] as const)
       const revisedSource = revise
         .getByRole('figure')
         .filter({ hasText: 'Complete revised plan.md' });
+      const positions = await revise.evaluate((element) => {
+        const figures = [...element.querySelectorAll('figure')];
+        const source = figures.find((figure) =>
+          figure.textContent?.includes('Complete revised plan.md'),
+        )!;
+        const result = figures.find((figure) =>
+          figure.textContent?.includes('JSON · selected result fields'),
+        )!;
+        return {
+          sourceFirst: Boolean(
+            source.compareDocumentPosition(result) & Node.DOCUMENT_POSITION_FOLLOWING,
+          ),
+          sourceBottom: source.getBoundingClientRect().bottom,
+          resultTop: result.getBoundingClientRect().top,
+        };
+      });
+      expect(positions.sourceFirst).toBe(true);
+      expect(positions.sourceBottom).toBeLessThanOrEqual(positions.resultTop);
       await revisedSource.getByRole('button').press('Enter');
       const markdown = await page.evaluate(() => navigator.clipboard.readText());
       expect(markdown).toContain('revision: 2');
