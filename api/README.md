@@ -180,7 +180,7 @@ Pure preparation accepts null original source only for explicit absent milestone
 
 Use pure preparation and consumer persistence inside a callback; nesting filesystem mutations reacquires the held lock and fails busy. Keep callbacks bounded to one operation, never across model/agent turns. Locks use jg-fs ownership checks, support local filesystems, and fail immediately for busy or dead owners. There is no TTL, polling, or automatic takeover. After a crash, inspect the owner and affected documents before explicit operator recovery through jg-fs; never remove an unfamiliar lock.
 
-LOCK_BUSY and acquisition LOCK_FAILED report phase/document/reason and mutationOutcome not-applied. Release LOCK_FAILED reports operationCompleted and mutationOutcome uncertain when the callback started, even if all writes landed; inspect/reconcile durable state before retrying. Callback and release failures are retained in its internal AggregateError cause. These locks coordinate participants, not every editor. They provide neither a cross-document transaction nor an HQ journal.
+LOCK_BUSY and acquisition LOCK_FAILED report phase/document/reason and mutationOutcome not-applied. Release LOCK_FAILED reports operationCompleted and mutationOutcome uncertain when the callback started, even if all writes landed; inspect/reconcile durable state before retrying. Callback and release failures are retained in its internal AggregateError cause. These locks coordinate participants, not every editor. They provide neither a cross-document transaction nor a journal.
 
 ## Failures
 

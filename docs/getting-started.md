@@ -35,4 +35,4 @@ Inspect exact hashes and supply expectedSha256 for guarded edits. Shared local d
 
 ## Contributing
 
-The [development guide](https://github.com/jesusgraterol/jg-plans/blob/main/docs/development.md) owns checks and package/site boundaries. Tests exercise built root exports and an isolated installation of the actual tarball. The protocol remains provisional until separately approved skill and HQ integrations exercise it.
+The [development guide](https://github.com/jesusgraterol/jg-plans/blob/main/docs/development.md) owns checks and package/site boundaries. Tests exercise built root exports and an isolated installation of the actual tarball. The protocol remains provisional until separately approved consumer integrations exercise it.

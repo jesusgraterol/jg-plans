@@ -233,7 +233,7 @@ For substantive agent revisions, recommend a short inline summary explaining act
 
 Recommend a best-effort snapshot before an agent substantively rewrites prose. Snapshot placement and retention belong to the writer/project. Report a snapshot failure without making it a protocol gate.
 
-Readers never depend on a history directory, journal, coordination.json, database, hash ledger, or retained predecessor. Do not manufacture missing evidence or restore deleted documents/history automatically.
+Readers never depend on a history directory, journal, database, hash ledger, or retained predecessor. Do not manufacture missing evidence or restore deleted documents/history automatically.
 
 Inspection explicitly distinguishes a missing plan, missing milestone file, orphan milestone file, unreadable document, malformed/metadata-free plan, and partly deleted sequence. Absence means absence, not approval or completion. Return useful observations from other readable documents when one cannot be decoded or read.
 

@@ -16,7 +16,7 @@ For implementation commands and dependency ownership, read [development](../../.
 ## Preserve the document boundary
 
 - Keep optional milestones, unknown metadata and custom statuses useful. Missing or deleted material never implies approval, completion, or a need to restore history.
-- Keep project schemas, approvals, digests, allocation services, locks and reconciliation with consumers. Priority, repositories, and error code declarations are protocol fields, and overlaps are observations that grant nothing. Protocol 0.2 stays provisional until separately scoped skill and HQ adoption exercises it.
+- Keep project schemas, approvals, digests, allocation services, locks and reconciliation with consumers. Priority, repositories, and error code declarations are protocol fields, and overlaps are observations that grant nothing. Protocol 0.2 stays provisional until separately scoped consumer adoption exercises it.
 - Keep narrow patches, explicit guarded body/source writes, guarded removal, and pure preparation on the same edit engine. Assign missing UUIDs only on request. Preserve every other byte, including encoding/BOM and line-ending details; report unsupported edits without silently normalizing prose.
 - Filesystem mutations and consumer persistence share canonical local document locks. Inside the public callback use pure preparation and your own persistence, never nested mutation calls. Busy/dead owners require explicit operator inspection; failed release may follow durable writes. Atomic replacement and prior-content comparison do not remove the nonparticipating-writer race.
 
