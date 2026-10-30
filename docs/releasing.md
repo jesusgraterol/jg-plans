@@ -1,6 +1,6 @@
 # Releasing jg-plans
 
-The root library/CLI is the only published workspace package. The website is private. Protocol 0.1 remains provisional independently of the npm version. GitHub Pages delivery does not depend on a successful npm publication.
+The root library/CLI is the only published workspace package. The website is private. Protocol 0.2 remains provisional independently of the npm version. GitHub Pages delivery does not depend on a successful npm publication.
 
 ## Qualified archives
 

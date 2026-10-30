@@ -2,7 +2,7 @@
 
 A compact planning protocol for people and coding agents. Keep the plan in Markdown, add milestones when they help, and let projects choose their workflows.
 
-Protocol 0.2 is provisional. The [website](https://jg-plans.jesusgraterol.dev) presents the specification, documentation, and examples, with package availability verified independently of the protocol draft.
+Protocol 0.2 is provisional and is the only supported version; unversioned Markdown uses its rules. The 0.5.0 library/CLI uses CLI JSON schema 2. The [website](https://jg-plans.jesusgraterol.dev) presents the specification, documentation, and examples, with package availability verified independently of the protocol draft.
 
 - [Protocol 0.2](protocol/0.2/README.md)
 - [Examples](examples/README.md)
@@ -29,7 +29,7 @@ Protocol 0.2 is provisional. The [website](https://jg-plans.jesusgraterol.dev) p
 
 Users own their documents and can edit or delete them. No history store, metadata field, CLI, or website is required to read Markdown. Optional conformance checks do not authorize execution or become a prerequisite to inspection.
 
-Plans declare their priority, the repositories they change, and the error codes they add, and `jg-plans overlaps` reports declarations that collide. Approvals, allocation services, locks and reconciliation stay with applications, and jg-skills and HQ integrate independently.
+Plans declare their priority, the repositories they change, and the error codes they add, as explicit string/number lists. `jg-plans overlaps` compares String(code) and reports shared codes in active plans. Parsed results also expose a name derived from the plan ID. Approvals, allocation services, locks and reconciliation stay with applications, and jg-skills and HQ integrate independently.
 
 ## Development
 

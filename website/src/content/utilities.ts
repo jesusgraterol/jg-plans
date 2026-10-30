@@ -6,7 +6,6 @@ import type { IHastContext, IHastElement } from './types.ts';
 const SOURCES = {
   protocol: 'protocol/README.md',
   specification: 'protocol/0.2/README.md',
-  previousSpecification: 'protocol/0.1/README.md',
   smallPlan: 'examples/small/plan.md',
   milestones: 'examples/with-milestones/milestones.md',
   criteriaPlan: 'examples/criteria/plan.md',
@@ -26,9 +25,6 @@ const SOURCE_LINKS: Record<string, string> = {
   '0.2/README.md': '/protocol/0.2/',
   '../0.2/README.md': '/protocol/0.2/',
   '../protocol/0.2/README.md': '/protocol/0.2/',
-  '0.1/README.md': '/protocol/0.1/',
-  '../0.1/README.md': '/protocol/0.1/',
-  '../protocol/0.1/README.md': '/protocol/0.1/',
   '../api/README.md': '/docs/api/',
   '../../api/README.md': '/docs/api/',
   '../cli/README.md': '/docs/cli/',

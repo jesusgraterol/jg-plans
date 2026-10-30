@@ -1,6 +1,6 @@
 # Website ownership and delivery
 
-The website is a private pnpm workspace. The root publishes the library/CLI; the website depends on that workspace and builds it first. Protocol 0.1 remains provisional independently of package availability.
+The website is a private pnpm workspace. The root publishes the library/CLI; the website depends on that workspace and builds it first. Protocol 0.2 remains provisional independently of package availability.
 
 ## One content owner
 

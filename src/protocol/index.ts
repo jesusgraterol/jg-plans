@@ -10,7 +10,8 @@ export {
 export {
   CriterionIdSchema,
   DiagnosticSchema,
-  ErrorCodeRangeSchema,
+  ErrorCodeSchema,
+  ErrorCodeDeclarationSchema,
   ErrorCodesSchema,
   PlanDocumentsSchema,
   PlanMetadataSchema,
@@ -27,7 +28,8 @@ export {
 } from './types.ts';
 export type {
   IDiagnostic,
-  IErrorCodeRange,
+  IErrorCode,
+  IErrorCodeDeclaration,
   IPlanDocuments,
   IPlanMetadata,
   IPlanScopeMetadata,

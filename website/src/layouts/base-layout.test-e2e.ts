@@ -4,6 +4,20 @@ import { expect, test } from '../../testing/index.ts';
 
 import { PAGES, SITE } from '../site.config.ts';
 
+test('removed specification routes have no page, download, or compatibility redirect', async ({
+  request,
+}) => {
+  for (const path of [
+    '/protocol/0.1/',
+    '/raw/protocol/0.1/README.md',
+    '/downloads/protocol/0.1/README.md',
+  ]) {
+    const response = await request.get(path, { maxRedirects: 0 });
+    expect(response.status()).toBe(404);
+    expect(response.headers().location).toBeUndefined();
+  }
+});
+
 for (const colorScheme of ['light', 'dark'] as const) {
   for (const width of [320, 768, 1440]) {
     test(`${colorScheme} at ${width}px: readable, accessible production pages`, async ({
@@ -244,17 +258,17 @@ test.describe('without JavaScript', () => {
     await expect(page.getByRole('navigation', { name: 'Mobile navigation' })).toBeVisible();
     await page
       .locator('#reference')
-      .getByRole('link', { name: 'Protocol 0.1', exact: true })
+      .getByRole('link', { name: 'Protocol 0.2', exact: true })
       .click();
-    await expect(page.locator('h1')).toHaveText('Specification 0.1');
+    await expect(page.locator('h1')).toHaveText('Specification 0.2');
     await expectNoHorizontalOverflow(page);
   });
 });
 
 test('documents remain readable at the 200-percent desktop equivalent', async ({ page }) => {
   await page.setViewportSize({ width: 640, height: 500 });
-  await page.goto('/protocol/0.1/');
+  await page.goto('/protocol/0.2/');
   await waitForPageAssets(page);
   await expectNoHorizontalOverflow(page);
-  await expect(page.getByRole('article', { name: 'Specification 0.1', exact: true })).toBeVisible();
+  await expect(page.getByRole('article', { name: 'Specification 0.2', exact: true })).toBeVisible();
 });

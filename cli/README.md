@@ -19,7 +19,9 @@ Inspect reads only the selected plan.md and optional milestones.md. It reports r
 
 Bodies and complete document sources are excluded by default. `--include-body` explicitly includes them for inspect, including the whole milestone document body. Raw metadata for both documents, titles, markers, locations, source ranges, and exact-byte SHA-256 values for readable files remain part of ordinary observations.
 
-Acceptance criteria are ordinary observations too. `data.plan.protocol` is `0.2` or `0.1`, and `data.plan.criteria` lists every criterion definition with its ID, text, and location. Each milestone entry has `criteria` and `criteriaMarkers` from its coverage line. `data.criteria` holds each valid criterion's covering milestones and derived progress, or null when plan.md is unreadable or missing, or milestones.md is unreadable. See [criteria and progress](../api/README.md#criteria-and-progress).
+Acceptance criteria are ordinary observations too. `data.plan.protocol` reports current interpretation `"0.2"`, including for unversioned plans, and `data.plan.criteria` lists every criterion definition with its ID, text, and location. Each milestone entry has `criteria` and `criteriaMarkers` from its coverage line. `data.criteria` holds each valid criterion's covering milestones and derived progress, or null when plan.md is unreadable or missing, or milestones.md is unreadable. See [criteria and progress](../api/README.md#criteria-and-progress).
+
+`data.plan.name` is derived from the ID: timestamp_slug yields its lowercase kebab-case slug, another valid ID yields the full ID, and missing/invalid IDs yield null. Raw project metadata.name remains separate; hashes and bytes are unchanged.
 
 `--fingerprint-exclude <JSON-array>` requests a structural plan fingerprint and supplies its explicit top-level metadata exclusions. Pass `[]` to cover every key. The array must contain strings; duplicate keys are applied once. This flag is accepted only by inspect. The result includes `data.fingerprint` with sha256, the unique applied keys, and diagnostics. Invalid framing/YAML or unavailable structure yields a null fingerprint without hiding useful observations. It is an observation, never permission or a conformance gate. See [structural fingerprints](../api/README.md#structural-fingerprints).
 
@@ -27,7 +29,7 @@ Acceptance criteria are ordinary observations too. `data.plan.protocol` is `0.2`
 
 Check is an optional assessment against the preferred protocol writer format. Missing required metadata, malformed structures, duplicate markers, and overview discrepancies produce findings. Milestone IDs and overview tables remain optional. A missing milestone file is valid for a plan-only task. A checker result is never an execution approval or a restriction on manual editing.
 
-For a plan that declares `protocol: "0.2"`, check also reports missing, invalid, duplicate, or empty criteria, statuses other than pending, in progress, or done, malformed or misplaced coverage lines, unknown IDs, and criteria no milestone covers. Plans without that marker get exactly the 0.1 findings. Inspect reports the same criteria findings without failing.
+For every plan, check also reports missing, invalid, duplicate, or empty criteria, statuses other than pending, in progress, or done, malformed or misplaced coverage lines, unknown IDs, and criteria no milestone covers. Explicit unsupported string versions receive UNSUPPORTED_PROTOCOL; non-string versions receive INVALID_METADATA_FIELD. Original text and raw values remain available. Inspect reports the same criteria findings without failing.
 
 ## Create and update
 
@@ -41,15 +43,15 @@ Create input is a closed JSON object with body, optional metadata, and optional 
 
 ```json
 {
-  "body": "# Intent\n\nKeep this prose.\n",
+  "body": "# Intent\n\n- AC-01: Keep this prose.\n",
   "metadata": { "project": { "owner": "example" } },
-  "milestones": "## Milestone 1: Implement\n**Status:** pending\n"
+  "milestones": "## Milestone 1: Implement\n**Status:** pending\n**Acceptance criteria:** AC-01\n"
 }
 ```
 
-Slug and root are command flags, not JSON fields. Creation uses ./jg-plans relative to the working directory by default, without root discovery or migration. It creates an exclusive timestamp_slug directory, defaults missing metadata, preserves supplied body/milestones, and never overwrites. Slugs use lowercase ASCII kebab case; the generated component must fit 64 characters. Returned create data contains directory, plan metadata/rawMetadata/sha256, and milestones as { sha256, milestones: summaries } or null. No body is emitted.
+Slug and root are command flags, not JSON fields. Creation uses ./jg-plans relative to the working directory by default, without root discovery or migration. It creates an exclusive timestamp_slug directory, defaults missing metadata including protocol "0.2", preserves supplied body/milestones, and never overwrites. Unsupported creation protocols and invalid explicit-code declarations fail before filesystem mutation. Slugs use lowercase ASCII kebab case; the generated component must fit 64 characters. Returned create data contains directory, plan name/metadata/rawMetadata/sha256, and milestones as { sha256, milestones: summaries } or null. No body is emitted.
 
-Update input selects one document and optionally expectedSha256 from a fresh inspection; a stale or deleted guarded target fails before preparation. For a plan, use `{ "document": "plan", "set": { "status": "done", "revision": 2 } }`. The only allowed fields are id, created_at, updated_at, revision, and status. For milestones:
+Update input selects one document and optionally expectedSha256 from a fresh inspection; a stale or deleted guarded target fails before preparation. For a plan, use `{ "document": "plan", "set": { "status": "done", "revision": 2 } }`. The allowed fields are id, created_at, updated_at, revision, status, protocol, priority, repositories, and error_codes. Null removes an optional protocol or scope field. Name is derived, never an editable metadata field. For milestones:
 
 ```json
 {
@@ -71,7 +73,7 @@ jg-plans write --directory ./jg-plans/example --input write.json --json
 jg-plans remove-milestones --directory ./jg-plans/example --input remove.json --json
 ```
 
-Write accepts PlanDocumentWriteSchema. For plan bodies, use `{ "document": "plan", "expectedSha256": "<observed 64-character lowercase hash>", "body": "# Revised intent\n", "set": { "revision": 2 } }`. Set is optional and changes only core metadata. Body-only writes can preserve closed malformed YAML; unterminated framing fails. Unaffected frontmatter, BOM, and permissions are retained.
+Write accepts PlanDocumentWriteSchema. For plan bodies, use `{ "document": "plan", "expectedSha256": "<observed 64-character lowercase hash>", "body": "# Revised intent\n", "set": { "revision": 2 } }`. Set is optional and accepts the same metadata fields as update. Body-only writes can preserve closed malformed YAML; unterminated framing fails. Unaffected frontmatter, BOM, and permissions are retained.
 
 For complete milestone replacement use `{ "document": "milestones", "expectedSha256": "<observed hash>", "source": "## Milestone 1: Work\n**Status:** pending\n", "assignMissingIds": true }`. Null expectedSha256 explicitly creates an absent milestone file exclusively. Existing expectations never recreate deleted targets. UUID assignment is opt-in, preserves valid IDs, and rejects ambiguous identities/insertion points. Write output includes directory, document, changed, sha256, and assignedMilestoneIds, never full source.
 
@@ -81,9 +83,9 @@ The placeholders above must be replaced with actual hashes returned by inspect/c
 
 ## Overlaps
 
-`overlaps --root <dir> [--root <dir> ...]` checks whether active 0.2 plans declare the same error codes. Repeat `--root` for each planning root, such as every `jg-plans` folder of the repositories a plan changes. It lists the immediate child folders of each root without following links, reads only the frontmatter in the first 65536 bytes of each `plan.md`, and stops at 1024 folders per call. A folder without `plan.md` is not a plan. It takes no other flag.
+`overlaps --root <dir> [--root <dir> ...]` checks whether active 0.2 plans declare the same error codes. Repeat `--root` for each planning root, such as every `jg-plans` folder of the repositories a plan changes. It lists the immediate child folders of each root without following links, reads only the frontmatter in the first 65536 bytes of each `plan.md`, and selects at most 1024 folders for document reads per call. That cap does not bound directory enumeration or memory: complete root listings are sorted before selection. A folder without `plan.md` is not a plan. Besides repeated --root, it accepts --json and help/version; directory, max-bytes, include-body and input flags are unsupported.
 
-Its data is `{ plans, overlaps, unreadable, isComplete }`. `plans` holds each plan read, with its directory, id, protocol, status, and `errorCodes`. `overlaps` holds groups of declarations from at least two plans whose ranges chain by intersection in one registry of one repository, each as `{ repository, registry, first, last, plans: [{ directory, id, entry }] }`; a declaration is in at most one group. `unreadable` lists each plan whose frontmatter couldn't be used, as `{ directory, reason }`, with the reason `not-a-file`, `frontmatter-too-large`, `invalid-frontmatter`, `invalid-error-codes`, `invalid-encoding`, or `read-failed`. `isComplete` is true only when every plan under the limit was read and the limit wasn't reached.
+Its data is `{ plans, overlaps, unreadable, isComplete }`. `plans` holds each plan read, with its directory, id, protocol, status, and `errorCodes`. `overlaps` contains one record per canonical string code shared by distinct active plans in a repository/registry: `{ repository, registry, code, plans: [{ directory, id }] }`. Compare `String(code)`, so number 100 collides with string "100"; "0100" stays distinct. Declarations retain their original string/number types. Duplicate canonical claims within a directory count once. Repository identifiers compare case-insensitively; registry/code text is exact. Results sort by repository, registry and lexical code string, with directory/ID-sorted references. `unreadable` lists each plan whose frontmatter couldn't be used, as `{ directory, reason }`, with the reason `not-a-file`, `frontmatter-too-large`, `invalid-frontmatter`, `invalid-error-codes`, `invalid-encoding`, or `read-failed`. `isComplete` is true only when every selected plan was readable and no folders were omitted by the cap. Unsupported versions and legacy range declarations make it false.
 
 It exits 1 when it finds an overlap, 0 only when the result is complete and holds none, and 2 when the result is incomplete, a root can't be listed, or the arguments are invalid, so an incomplete check never reads as clean. Only `create` takes `--root` otherwise, once.
 
@@ -91,11 +93,11 @@ It exits 1 when it finds an overlap, 0 only when the result is complete and hold
 
 `--max-bytes <positive-safe-integer>` overrides the default 1048576-byte per-file bound. Inputs must be valid UTF-8; invalid bytes are diagnosed without replacement/transcoding. Help and version do not read selected plan files.
 
-Human output uses stdout for data and stderr for diagnostics. `--json` emits exactly one JSON envelope on stdout and no human/progress messages:
+Human output uses stdout for data and stderr for diagnostics. `--json` emits exactly one JSON envelope on stdout and no human/progress messages. This schematic shows envelope fields only; data is abbreviated and is not an executed inspect result:
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "command": "inspect",
   "data": {},
   "diagnostics": [],
@@ -103,7 +105,7 @@ Human output uses stdout for data and stderr for diagnostics. `--json` emits exa
 }
 ```
 
-Inspect data includes the resolved directory, per-document observations, and criteria; check also includes conforms. Mutation results are described above. Diagnostics have stable codes, severity, document, message, and an optional source location. Error is null or a safe code/message pair with optional data for a reason, affected core field, or cleanupFailedPaths. Causes are not emitted. Operational inspection failure can retain partial data. Source locations use UTF-16 character offsets and one-based lines/columns. The JSON contract is versioned independently of the protocol: `schemaVersion` changes whenever a command's input or output changes incompatibly, so a consumer that understands version 1 can use any jg-plans release that still reports 1.
+Inspect data includes the resolved directory, per-document observations, and criteria; check also includes conforms. Mutation results are described above. Diagnostics have stable codes, severity, document, message, and an optional source location. Error is null or a safe code/message pair with optional data for a reason, affected core field, or cleanupFailedPaths. Causes are not emitted. Operational inspection failure can retain partial data. Source locations use UTF-16 character offsets and one-based lines/columns. The JSON contract is versioned independently of the protocol: `schemaVersion` changes whenever a command's input or output changes incompatibly, so jg-plans 0.5.0 reports schemaVersion 2 for every command, including help, version and failures. Consumers must verify the envelope before using the changed code-list, overlap and name contracts. Release receipts use their independent schemaVersion 1.
 
 | Exit | Meaning                                                                                                                                                                |
 | ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -113,4 +115,4 @@ Inspect data includes the resolved directory, per-document observations, and cri
 
 Unknown/repeated flags, unsupported positionals, empty option values, and unsafe byte limits fail rather than silently changing the command. `--include-body` applies only to inspect, and `--root` to create, once, and to overlaps.
 
-See the [library API](../api/README.md), [error reference](../errors/README.md), and [protocol](../protocol/0.1/README.md).
+See the [library API](../api/README.md), [error reference](../errors/README.md), and [protocol](../protocol/0.2/README.md).

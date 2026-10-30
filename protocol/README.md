@@ -2,12 +2,11 @@
 
 A plan is an ordinary Markdown document. Optional metadata makes it easier to identify and revise; acceptance criteria with stable IDs say what done means; optional milestones describe progress when a task benefits from separate review boundaries.
 
-| Version | Status                                    | Specification                 |
-| ------- | ----------------------------------------- | ----------------------------- |
-| 0.2     | Provisional draft, current                | [Protocol 0.2](0.2/README.md) |
-| 0.1     | Superseded; 0.1 plans remain fully usable | [Protocol 0.1](0.1/README.md) |
+| Version | Status                     | Specification                 |
+| ------- | -------------------------- | ----------------------------- |
+| 0.2     | Provisional draft, current | [Protocol 0.2](0.2/README.md) |
 
-A plan opts into 0.2 by declaring `protocol: "0.2"`. Plans without that marker keep the 0.1 rules.
+Protocol 0.2 is the only supported version. New plans declare `protocol: "0.2"`; unversioned Markdown uses the same rules. Unsupported declarations receive diagnostics while source remains readable.
 
 The protocol belongs to jg-plans. Applications choose their own approval, execution, coordination, and retention policies. The reference library and CLI are implementations of this protocol, not prerequisites for using it.
 

@@ -4,6 +4,7 @@ created_at: 2026-10-21T20:01:00Z
 updated_at: 2026-10-21T20:02:00Z
 revision: 2
 status: in progress
+protocol: "0.2"
 ---
 
 # Example gallery
@@ -22,3 +23,8 @@ The source remains readable without JavaScript, with keyboard-accessible control
 
 - Revision 1: establish the gallery and its two reviewable units.
 - Revision 2: record the finished cards while keeping controls pending.
+
+## Acceptance criteria
+
+- AC-01: Every example has a readable document card and source link.
+- AC-02: Copy and download controls work with a keyboard and report success or failure.

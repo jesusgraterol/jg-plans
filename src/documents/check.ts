@@ -9,7 +9,7 @@ import { diagnostic } from './utilities.ts';
 
 /**
  * Explicitly check preferred writer conformance. Inspection never requires this operation.
- * A protocol 0.2 plan also gets its criteria, coverage, and status rules; supplying only the
+ * Current criteria, coverage, and status rules apply; supplying only the
  * plan checks the plan rules, and the milestone and coverage rules need both documents.
  * @param documents Selected document sources; omit deleted or absent files.
  * @returns Conformance and diagnostics. No source is changed or restored.

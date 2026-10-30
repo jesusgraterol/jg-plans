@@ -46,26 +46,31 @@ const RegistryPathSchema = z
       path.split('/').every((segment) => !['', '.', '..'].includes(segment)),
   );
 
-// an inclusive range of error codes a plan adds to one registry of one repository
-export const ErrorCodeRangeSchema = z
-  .strictObject({
-    repository: RepositoryIdSchema,
-    registry: RegistryPathSchema,
-    first: z.int(),
-    last: z.int(),
-  })
-  .refine((range) => range.first <= range.last);
+// identifiers retain their declared types; unsafe integers cannot be observed faithfully
+export const ErrorCodeSchema = z.union([
+  NonblankStringSchema,
+  z.number().refine((code) => !Number.isInteger(code) || Number.isSafeInteger(code)),
+]);
 
-export type IErrorCodeRange = z.infer<typeof ErrorCodeRangeSchema>;
+export type IErrorCode = z.infer<typeof ErrorCodeSchema>;
 
-// the error code ranges a 0.2 plan adds
-export const ErrorCodesSchema = z.array(ErrorCodeRangeSchema);
+// explicit code claims in one registry of one repository
+export const ErrorCodeDeclarationSchema = z.strictObject({
+  repository: RepositoryIdSchema,
+  registry: RegistryPathSchema,
+  codes: z.array(ErrorCodeSchema),
+});
 
-/** Optional 0.2 fields, validated apart from the shared metadata so 0.1 results stay unchanged. */
+export type IErrorCodeDeclaration = z.infer<typeof ErrorCodeDeclarationSchema>;
+
+// optional declarations in a plan's metadata
+export const ErrorCodesSchema = z.array(ErrorCodeDeclarationSchema);
+
+// optional scope fields are observed independently of core metadata
 export type IPlanScopeMetadata = {
   priority?: IPriority;
   repositories?: IRepositoryId[];
-  error_codes?: IErrorCodeRange[];
+  error_codes?: IErrorCodeDeclaration[];
 };
 
 /** Preferred new-plan metadata. Unknown project fields remain allowed. */
@@ -142,7 +147,7 @@ export const InspectPlanOptionsSchema = ReadOptionsSchema.extend({
 
 export type IInspectPlanOptions = z.infer<typeof InspectPlanOptionsSchema>;
 
-/** Creation accepts JSON metadata, including project extensions and nonconforming known values. */
+/** Creation preserves JSON metadata; declared protocols and error codes must be supported. */
 export const CreatePlanOptionsSchema = z.strictObject({
   slug: z
     .string()
@@ -154,7 +159,16 @@ export const CreatePlanOptionsSchema = z.strictObject({
     .refine((value) => !value.includes('\0'))
     .optional(),
   body: z.string(),
-  metadata: z.record(z.string(), z.json()).optional(),
+  metadata: z
+    .record(z.string(), z.json())
+    .refine(
+      (metadata) =>
+        (!Object.hasOwn(metadata, 'protocol') ||
+          ProtocolVersionSchema.safeParse(metadata.protocol).success) &&
+        (!Object.hasOwn(metadata, 'error_codes') ||
+          ErrorCodesSchema.safeParse(metadata.error_codes).success),
+    )
+    .optional(),
   milestones: z.string().optional(),
 });
 

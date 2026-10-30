@@ -5,6 +5,7 @@ import { checkDefinitions, readCriteria } from '../criteria/index.ts';
 import { planErrors } from '../errors/index.ts';
 import {
   CORE_METADATA_KEYS,
+  PROTOCOL_VERSION,
   ErrorCodesSchema,
   PlanMetadataSchema,
   PrioritySchema,
@@ -35,14 +36,14 @@ const SCOPE_METADATA_RULES = [
     schema: ErrorCodesSchema,
     code: 'INVALID_ERROR_CODES',
     message:
-      'The plan error codes are not a list of repository, registry, first, and last entries with first at most last.',
+      'The plan error codes are not a list of repository, registry, and codes entries with string or numeric codes.',
   },
 ] as const;
 
 /**
  * Observe a plan without requiring valid metadata. Source and body remain unchanged.
  * Unsupported YAML expansion retains source and a diagnostic, not a fabricated value.
- * Criteria are observed in every plan; their rules apply only to protocol 0.2 plans.
+ * Current criteria, status, and scope rules apply even without a protocol declaration.
  * @param source Original Markdown, optionally beginning with a UTF-8 BOM character.
  * @returns Useful metadata, raw YAML observations, criteria, original text, and diagnostics.
  * @throws
@@ -53,6 +54,7 @@ export const parsePlan = (source: string): IParsedPlan => {
   const observed = readFrontmatter(source, 'plan');
   const sections = headingSections(source, observed.lines);
   const result: IParsedPlan = {
+    name: null,
     source,
     body: observed.body,
     frontmatter: observed.frontmatter,
@@ -60,7 +62,7 @@ export const parsePlan = (source: string): IParsedPlan => {
     metadata: {},
     preamble: { start: 0, end: sections[0]?.heading.start ?? source.length },
     sections,
-    protocol: '0.1',
+    protocol: PROTOCOL_VERSION,
     criteria: [],
     diagnostics: observed.diagnostics,
   };
@@ -90,6 +92,15 @@ export const parsePlan = (source: string): IParsedPlan => {
       if (key === 'status') statusLocation = location;
       const parsed = PlanMetadataSchema.shape[key].safeParse(value);
       if (parsed.success) Object.assign(result.metadata, { [key]: parsed.data });
+      else if (key === 'protocol' && typeof value === 'string')
+        result.diagnostics.push(
+          diagnostic(
+            'plan',
+            'UNSUPPORTED_PROTOCOL',
+            'The declared plan protocol version is unsupported.',
+            location,
+          ),
+        );
       else
         result.diagnostics.push(
           diagnostic(
@@ -119,46 +130,44 @@ export const parsePlan = (source: string): IParsedPlan => {
         ),
       );
   }
-  result.protocol = result.metadata.protocol === '0.2' ? '0.2' : '0.1';
+  result.name = result.metadata.id?.replace(/^\d+_([a-z0-9]+(?:-[a-z0-9]+)*)$/, '$1') ?? null;
   result.criteria = readCriteria(lines);
-  if (result.protocol === '0.2') {
-    const { status } = result.metadata;
-    if (status !== undefined && !ProgressSchema.safeParse(status).success)
-      result.diagnostics.push(
-        diagnostic(
-          'plan',
-          'INVALID_STATUS',
-          'The plan status is not pending, in progress, or done.',
-          statusLocation,
-        ),
-      );
-    for (const item of checkDefinitions(result.criteria)) result.diagnostics.push(item);
-    const raw = result.rawMetadata;
-    if (
-      document &&
-      frontmatter &&
-      isMap(document.contents) &&
-      raw !== null &&
-      typeof raw === 'object'
-    )
-      for (const { key, schema, code, message } of SCOPE_METADATA_RULES) {
-        const node = document.get(key, true);
-        if (node === undefined || !Object.hasOwn(raw, key)) continue;
-        const parsed = schema.safeParse(Reflect.get(raw, key));
-        if (parsed.success) Object.assign(result.metadata, { [key]: parsed.data });
-        else
-          result.diagnostics.push(
-            diagnostic(
-              'plan',
-              code,
-              message,
-              sourceLocation(
-                lines,
-                frontmatter.contentStart + (isNode(node) ? (node.range?.[0] ?? 0) : 0),
-              ),
+  const { status } = result.metadata;
+  if (status !== undefined && !ProgressSchema.safeParse(status).success)
+    result.diagnostics.push(
+      diagnostic(
+        'plan',
+        'INVALID_STATUS',
+        'The plan status is not pending, in progress, or done.',
+        statusLocation,
+      ),
+    );
+  for (const item of checkDefinitions(result.criteria)) result.diagnostics.push(item);
+  const raw = result.rawMetadata;
+  if (
+    document &&
+    frontmatter &&
+    isMap(document.contents) &&
+    raw !== null &&
+    typeof raw === 'object'
+  )
+    for (const { key, schema, code, message } of SCOPE_METADATA_RULES) {
+      const node = document.get(key, true);
+      if (node === undefined || !Object.hasOwn(raw, key)) continue;
+      const parsed = schema.safeParse(Reflect.get(raw, key));
+      if (parsed.success) Object.assign(result.metadata, { [key]: parsed.data });
+      else
+        result.diagnostics.push(
+          diagnostic(
+            'plan',
+            code,
+            message,
+            sourceLocation(
+              lines,
+              frontmatter.contentStart + (isNode(node) ? (node.range?.[0] ?? 0) : 0),
             ),
-          );
-      }
-  }
+          ),
+        );
+    }
   return result;
 };

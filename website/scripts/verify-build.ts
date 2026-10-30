@@ -46,6 +46,10 @@ export const verifyBuild = async (
     assert.ok(bytes, `Missing site output: ${path}`);
     return bytes.toString('utf8');
   };
+  assert.ok(
+    ![...files.keys()].some((path) => /^(?:(?:raw|downloads)\/)?protocol\/0\.1(?:\/|$)/.test(path)),
+    'Removed protocol output exists',
+  );
   const release = SiteReleaseSchema.parse(JSON.parse(content('release.json')));
   assert.equal(release.version, SITE.sourceVersion);
   if (release.state === 'published') {

@@ -70,11 +70,12 @@ describe('shipped criteria examples', () => {
       const observed = (envelope: {
         diagnostics: { code: string; document: string; location?: { line: number } }[];
         data: {
-          plan: { metadata: Record<string, unknown> };
+          plan: { name: string | null; metadata: Record<string, unknown> };
           criteria: { protocol: string; criteria: Record<string, unknown>[] };
         };
       }) => ({
         protocol: envelope.data.criteria.protocol,
+        name: envelope.data.plan.name,
         // the optional scope fields the example declares
         metadata: Object.fromEntries(
           ['priority', 'repositories', 'error_codes']
@@ -93,6 +94,7 @@ describe('shipped criteria examples', () => {
       });
       const want = {
         protocol: expected.protocol,
+        name: expected.name,
         metadata: expected.metadata ?? {},
         criteria: expected.criteria,
         diagnostics: [...expected.diagnostics].sort(byDocumentAndLine),

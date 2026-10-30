@@ -27,6 +27,8 @@ export type IFrontmatter = {
 };
 
 export type IParsedPlan = {
+  // a display name derived from a valid id; never a stored metadata field
+  name: string | null;
   source: string;
   body: string;
   frontmatter: IFrontmatter | null;
@@ -34,7 +36,7 @@ export type IParsedPlan = {
   metadata: Partial<IPlanMetadata> & IPlanScopeMetadata;
   preamble: ISourceSpan;
   sections: IHeadingSection[];
-  // 0.2 only for a valid protocol: "0.2" declaration; every other plan follows 0.1
+  // the interpretation used, even when an explicit declaration is unsupported
   protocol: IProtocolVersion;
   criteria: ICriterion[];
   diagnostics: IDiagnostic[];

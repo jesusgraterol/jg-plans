@@ -11,6 +11,7 @@ import { planErrors } from '../errors/index.ts';
 import {
   CreatePlanOptionsSchema,
   PlanUpdateSchema,
+  PROTOCOL_VERSION,
   type ICreatePlanOptions,
   type IPlanUpdate,
   type IReadOptions,
@@ -112,6 +113,7 @@ export const createPlan = async (options: ICreatePlanOptions): Promise<IPlanCrea
     updated_at: timestamp,
     revision: 1,
     status: 'pending',
+    protocol: PROTOCOL_VERSION,
     ...input.metadata,
   };
   validateNewText(metadata);

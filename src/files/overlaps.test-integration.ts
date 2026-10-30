@@ -20,7 +20,7 @@ afterEach(async () => {
 });
 
 const frontmatter = (id: string, extra = ''): string =>
-  `---\nid: ${id}\nstatus: pending\nprotocol: '0.2'\nerror_codes: [{ repository: acme/app, registry: errors.md, first: 1, last: 2 }]\n${extra}---\n`;
+  `---\nid: ${id}\nstatus: pending\nprotocol: '0.2'\nerror_codes: [{ repository: acme/app, registry: errors.md, codes: [1, "INPUT_INVALID"] }]\n${extra}---\n`;
 
 const putPlan = async (name: string, source: string | Buffer, base = root): Promise<string> => {
   const directory = join(base, name);
@@ -42,7 +42,9 @@ describe('readOverlapPlans', () => {
           id: 'a',
           protocol: '0.2',
           status: 'pending',
-          errorCodes: [{ repository: 'acme/app', registry: 'errors.md', first: 1, last: 2 }],
+          errorCodes: [
+            { repository: 'acme/app', registry: 'errors.md', codes: [1, 'INPUT_INVALID'] },
+          ],
         },
       ],
       unreadable: [],
@@ -50,11 +52,31 @@ describe('readOverlapPlans', () => {
     });
   });
 
-  it('reads a plan without frontmatter as a 0.1 plan with no declarations', async () => {
+  it('reads a plan without frontmatter with current interpretation with no declarations', async () => {
     const directory = await putPlan('plain', '# Just Markdown\n');
     expect((await readOverlapPlans([root])).plans).toEqual([
-      { directory, id: null, protocol: '0.1', status: null, errorCodes: [] },
+      { directory, id: null, protocol: '0.2', status: null, errorCodes: [] },
     ]);
+  });
+
+  it.each([
+    "protocol: '0.1'",
+    'protocol: 2',
+    'error_codes: [{ repository: acme/app, registry: errors.md, first: 100, last: 101 }]',
+  ])('keeps the scan incomplete for unsupported declarations: %s', async (field) => {
+    const directory = await putPlan(
+      'unsupported',
+      `---\nid: unsupported\nstatus: pending\n${field}\n---\n`,
+    );
+    const read = await readOverlapPlans([root]);
+    expect(read.plans).toStrictEqual([]);
+    expect(read.unreadable).toStrictEqual([
+      {
+        directory,
+        reason: field.startsWith('protocol:') ? 'invalid-frontmatter' : 'invalid-error-codes',
+      },
+    ]);
+    expect(read.isComplete).toBe(false);
   });
 
   it.runIf(IS_POSIX)('never follows a linked folder or a linked plan.md', async () => {

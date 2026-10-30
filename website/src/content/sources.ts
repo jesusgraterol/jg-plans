@@ -8,7 +8,7 @@ export const EXAMPLES = [
   {
     id: 'small',
     label: 'Small plan',
-    description: 'Five fields and enough room to explain the work.',
+    description: 'Core metadata, a protocol marker, and one criterion.',
     plan: 'examples/small/plan.md',
   },
   {

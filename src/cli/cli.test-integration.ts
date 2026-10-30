@@ -67,6 +67,8 @@ describe('compiled CLI read contract', () => {
     expect(result.exitCode).toBe(0);
     expect(result.stderr).toBe('');
     const data = JSON.parse(result.stdout).data;
+    expect(data.plan.name).toBe('sample');
+    expect(data.plan.protocol).toBe('0.2');
     expect(data.plan.sha256).toMatch(/^[a-f0-9]{64}$/);
     expect(data.milestones.sha256).toMatch(/^[a-f0-9]{64}$/);
     expect(data.milestones.rawMetadata).toEqual({ jg_skills: { plan_id: 'sample' } });
@@ -156,7 +158,7 @@ describe('compiled CLI read contract', () => {
     expect(inspection.stdout).not.toContain('SECRET_BODY_MARKER');
     expect(inspection.stdout).not.toContain('SECRET_MILESTONE_BODY');
     expect(JSON.parse(inspection.stdout)).toMatchObject({
-      schemaVersion: 1,
+      schemaVersion: 2,
       command: 'inspect',
       error: null,
       data: {
@@ -203,9 +205,14 @@ describe('compiled CLI read contract', () => {
     await mkdir(join(root, 'plan.md'));
     expect((await run(['--help', '--directory', root])).exitCode).toBe(0);
     const version = await run(['--version', '--directory', root, '--json']);
+    expect(JSON.parse((await run(['--help', '--json'])).stdout)).toMatchObject({
+      schemaVersion: 2,
+      command: 'help',
+      error: null,
+    });
     expect(version.exitCode).toBe(0);
     expect(JSON.parse(version.stdout)).toMatchObject({
-      schemaVersion: 1,
+      schemaVersion: 2,
       command: 'version',
       data: { version: manifest.version },
       diagnostics: [],
@@ -223,7 +230,7 @@ describe('compiled CLI read contract', () => {
       expect(result.exitCode).toBe(2);
       expect(result.stderr).toBe('');
       expect(JSON.parse(result.stdout)).toMatchObject({
-        schemaVersion: 1,
+        schemaVersion: 2,
         error: { code: 'JG_PLANS_INVALID_INPUT' },
       });
     }
@@ -326,9 +333,9 @@ describe('compiled CLI mutation contract', () => {
       const created = await run(
         ['create', '--slug', 'cli-task', '--root', root, '--input', '-', '--json'],
         JSON.stringify({
-          body: '# PRIVATE_BODY',
+          body: '# PRIVATE_BODY\n\n- AC-01: Work is done.',
           metadata: { project: { label: 'invented' } },
-          milestones: '## Milestone 1: Work\n**Status:** pending',
+          milestones: '## Milestone 1: Work\n**Status:** pending\n**Acceptance criteria:** AC-01',
         }),
       );
       expect(created.exitCode).toBe(0);
@@ -345,7 +352,7 @@ describe('compiled CLI mutation contract', () => {
       );
       expect(updated.exitCode).toBe(0);
       expect(JSON.parse(updated.stdout)).toMatchObject({
-        schemaVersion: 1,
+        schemaVersion: 2,
         command: 'update',
         data: { changed: true, document: 'milestones' },
         error: null,
@@ -454,8 +461,8 @@ describe('compiled CLI mutation contract', () => {
 });
 
 describe('compiled CLI overlaps', () => {
-  const plan = (id: string, first: number, last: number, status = 'pending'): string =>
-    `---\nid: ${id}\nstatus: ${status}\nprotocol: '0.2'\nerror_codes: [{ repository: acme/app, registry: errors.md, first: ${first}, last: ${last} }]\n---\n# ${id}\n`;
+  const plan = (id: string, codes: (string | number)[], status = 'pending'): string =>
+    `---\nid: ${id}\nstatus: ${status}\nprotocol: '0.2'\nerror_codes: [{ repository: acme/app, registry: errors.md, codes: ${JSON.stringify(codes)} }]\n---\n# ${id}\n`;
   const put = async (root: string, name: string, source: string): Promise<void> => {
     await mkdir(join(root, name));
     await writeFile(join(root, name, 'plan.md'), source);
@@ -466,26 +473,26 @@ describe('compiled CLI overlaps', () => {
   }) => {
     const first = await fixture();
     const second = await fixture();
-    await put(first, 'a', plan('a', 1, 10));
-    await put(first, 'b', plan('b', 5, 6, 'done'));
+    await put(first, 'a', plan('a', [1, 10]));
+    await put(first, 'b', plan('b', [5, 6], 'done'));
     const clean = await run(['overlaps', '--root', first, '--json']);
     expect(clean.exitCode).toBe(0);
     expect(JSON.parse(clean.stdout)).toMatchObject({
-      schemaVersion: 1,
+      schemaVersion: 2,
       command: 'overlaps',
       data: { overlaps: [], unreadable: [], isComplete: true },
       diagnostics: [],
       error: null,
     });
-    await put(second, 'c', plan('c', 10, 12, 'in progress'));
+    await put(second, 'c', plan('c', ['10', 12], 'in progress'));
     const found = await run(['overlaps', '--root', first, '--root', second, '--json']);
     expect(found.exitCode).toBe(1);
     const { data } = JSON.parse(found.stdout) as {
-      data: { overlaps: { first: number; last: number; plans: { id: string }[] }[] };
+      data: { overlaps: { code: string; plans: { id: string }[] }[] };
     };
-    expect(
-      data.overlaps.map(({ first: low, last, plans }) => [low, last, plans.map((p) => p.id)]),
-    ).toEqual([[1, 12, ['a', 'c']]]);
+    expect(data.overlaps.map(({ code, plans }) => [code, plans.map((p) => p.id)])).toEqual([
+      ['10', first < second ? ['a', 'c'] : ['c', 'a']],
+    ]);
   });
 
   // creating 1025 plan folders and reading them takes several seconds on Windows runners
@@ -494,7 +501,7 @@ describe('compiled CLI overlaps', () => {
     { timeout: 60_000 },
     async ({ cli: { fixture, run } }) => {
       const root = await fixture();
-      await put(root, 'a', plan('a', 1, 2));
+      await put(root, 'a', plan('a', [1, 2]));
       await put(root, 'broken', "---\nid: [unclosed\nprotocol: '0.2'\n---\n");
       const unreadable = await run(['overlaps', '--root', root, '--json']);
       expect(unreadable.exitCode).toBe(2);
@@ -510,8 +517,8 @@ describe('compiled CLI overlaps', () => {
           put(crowded, `p${String(index).padStart(4, '0')}`, '# Plan\n'),
         ),
       );
-      await put(crowded, 'p0000-claim', plan('first', 1, 2));
-      await put(beyond, 'z-claim', plan('second', 1, 2));
+      await put(crowded, 'p0000-claim', plan('first', [1, 2]));
+      await put(beyond, 'z-claim', plan('second', [1, 2]));
       const truncated = await run(['overlaps', '--root', crowded, '--root', beyond, '--json']);
       expect(truncated.exitCode).toBe(2);
       expect(JSON.parse(truncated.stdout)).toMatchObject({

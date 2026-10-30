@@ -213,22 +213,18 @@ describe('scope field edits', () => {
     const result = update(source, {
       priority: 'high',
       repositories: ['acme/app', 'acme/api'],
-      error_codes: [
-        { repository: 'acme/app', registry: 'errors/README.md', first: 100, last: 149 },
-      ],
+      error_codes: [{ repository: 'acme/app', registry: 'errors/README.md', codes: [100, '100'] }],
     });
     expect(result.source).toBe(
       source.replace(
         '---\n# Body',
-        'priority: "high"\nrepositories: [ acme/app, acme/api ]\nerror_codes: [ { repository: acme/app, registry: errors/README.md, first: 100, last: 149 } ]\n---\n# Body',
+        'priority: "high"\nrepositories: [ acme/app, acme/api ]\nerror_codes: [ { repository: acme/app, registry: errors/README.md, codes: [ 100, "100" ] } ]\n---\n# Body',
       ),
     );
     expect(parsePlan(result.source).metadata).toMatchObject({
       priority: 'high',
       repositories: ['acme/app', 'acme/api'],
-      error_codes: [
-        { repository: 'acme/app', registry: 'errors/README.md', first: 100, last: 149 },
-      ],
+      error_codes: [{ repository: 'acme/app', registry: 'errors/README.md', codes: [100, '100'] }],
     });
   });
 
@@ -236,17 +232,19 @@ describe('scope field edits', () => {
     'replaces a block-style value with one line and leaves every other byte with %j',
     (eol) => {
       const source = plan(
-        'priority: low # triaged\nrepositories:\n  - acme/app # main\n  - acme/api\nerror_codes:\n  - repository: acme/app\n    registry: errors.md\n    first: 1\n    last: 2\n',
+        'priority: low # triaged\nrepositories:\n  - acme/app # main\n  - acme/api\nerror_codes:\n  - repository: acme/app\n    registry: errors.md\n    codes:\n      - 1\n      - OLD_INPUT\n',
         eol,
       );
       const result = update(source, {
         priority: 'hotfix',
         repositories: ['acme/web'],
-        error_codes: [{ repository: 'acme/web', registry: 'errors.md', first: 7, last: 9 }],
+        error_codes: [
+          { repository: 'acme/web', registry: 'errors.md', codes: ['NEW_INPUT', 7, 9] },
+        ],
       });
       expect(result.source).toBe(
         plan(
-          'priority: "hotfix" # triaged\nrepositories: [ acme/web ]\nerror_codes: [ { repository: acme/web, registry: errors.md, first: 7, last: 9 } ]\n',
+          'priority: "hotfix" # triaged\nrepositories: [ acme/web ]\nerror_codes: [ { repository: acme/web, registry: errors.md, codes: [ NEW_INPUT, 7, 9 ] } ]\n',
           eol,
         ),
       );
@@ -258,7 +256,7 @@ describe('scope field edits', () => {
 
   it('removes a field, a block-style one included, when it is set to null', () => {
     const source = plan(
-      'priority: high\nrepositories:\n  - acme/app\n  - acme/api\nerror_codes: [{ repository: acme/app, registry: e.md, first: 1, last: 1 }]\n',
+      'priority: high\nrepositories:\n  - acme/app\n  - acme/api\nerror_codes: [{ repository: acme/app, registry: e.md, codes: [1] }]\n',
     );
     const result = update(source, { priority: null, repositories: null, error_codes: null });
     expect(result.source).toBe(plan(''));
@@ -267,11 +265,11 @@ describe('scope field edits', () => {
 
   it('skips the write when the requested value deep-equals the current one', () => {
     const source = plan(
-      'repositories:\n  - acme/app\nerror_codes: [{ repository: acme/app, registry: e.md, first: 1, last: 1 }]\n',
+      'repositories:\n  - acme/app\nerror_codes: [{ repository: acme/app, registry: e.md, codes: [1] }]\n',
     );
     const result = update(source, {
       repositories: ['acme/app'],
-      error_codes: [{ repository: 'acme/app', registry: 'e.md', first: 1, last: 1 }],
+      error_codes: [{ repository: 'acme/app', registry: 'e.md', codes: [1] }],
     });
     expect(result.changed).toBe(false);
     expect(result.source).toBe(source);
@@ -294,7 +292,8 @@ describe('scope field edits', () => {
       { priority: 'urgent' },
       { repositories: [] },
       { repositories: ['acme/app', 'ACME/APP'] },
-      { error_codes: [{ repository: 'acme/app', registry: '/e.md', first: 1, last: 1 }] },
+      { error_codes: [{ repository: 'acme/app', registry: '/e.md', codes: [1] }] },
+      { error_codes: [{ repository: 'acme/app', registry: 'e.md', first: 1, last: 1 }] },
     ])
       expect(() => update(plan(''), set)).toThrow(
         expect.objectContaining({ code: ERRORS.INVALID_INPUT }),

@@ -141,7 +141,9 @@ test.describe('without JavaScript', () => {
         await expect(
           page.getByText('plan.md is deliberately absent. No file is restored.', { exact: true }),
         ).toBeVisible();
-        const criteria = page.getByRole('list', { name: 'Observed criterion progress' });
+        const criteria = page
+          .getByRole('region', { name: 'Acceptance criteria', exact: true })
+          .getByRole('list', { name: 'Observed criterion progress' });
         await expect(criteria.getByRole('listitem')).toHaveCount(3);
         await expect(criteria.getByRole('listitem').first()).toContainText(
           'Progress: done · Milestones: 1',

@@ -14,6 +14,7 @@ import {
   CriterionIdSchema,
   ProgressSchema,
   ProtocolVersionSchema,
+  SourceLocationSchema,
   type IDiagnostic,
   type IProgress,
 } from '../protocol/index.ts';
@@ -24,18 +25,35 @@ import type { ICriteriaObservation, ICriterion, ICriterionCoverage } from './typ
 // the parsed fields cross-document observation relies on; other fields stay unchecked
 const ObservedPlanSchema = z.looseObject({
   protocol: ProtocolVersionSchema,
-  metadata: z.looseObject({}),
-  criteria: z.array(z.looseObject({ id: z.string().nullable(), text: z.string() })),
+  metadata: z.looseObject({ status: z.string().optional() }),
+  criteria: z.array(
+    z.looseObject({
+      id: CriterionIdSchema.nullable(),
+      text: z.string(),
+      location: SourceLocationSchema,
+    }),
+  ),
+});
+
+// marker values and source positions consumed by coverage diagnostics
+const ObservedMarkerSchema = z.looseObject({
+  value: z.string(),
+  location: SourceLocationSchema,
+  lineStart: z.number().int().nonnegative(),
+  lineEnd: z.number().int().nonnegative(),
 });
 
 const ObservedMilestonesSchema = z.looseObject({
   milestones: z.array(
     z.looseObject({
+      ordinal: z.number().int().nullable(),
+      id: z.string().nullable(),
+      location: SourceLocationSchema,
       status: z.string().nullable(),
-      criteria: z.array(z.string()).nullable(),
-      statusMarkers: z.array(z.looseObject({})),
-      idMarkers: z.array(z.looseObject({})),
-      criteriaMarkers: z.array(z.looseObject({})),
+      criteria: z.array(CriterionIdSchema).nullable(),
+      statusMarkers: z.array(ObservedMarkerSchema),
+      idMarkers: z.array(ObservedMarkerSchema),
+      criteriaMarkers: z.array(ObservedMarkerSchema),
     }),
   ),
 });
@@ -196,8 +214,8 @@ const checkCoverage = (milestone: IMilestone, defined: Set<string>): IDiagnostic
 };
 
 /**
- * Observe criteria across a plan and its optional milestones: coverage, derived progress, and,
- * for protocol 0.2 plans, cross-document diagnostics. Progress describes work, not proof.
+ * Observe criteria across a plan and its optional milestones: coverage, derived progress, and
+ * current-protocol diagnostics. Progress describes work, not proof.
  * @param plan A parsed plan.
  * @param milestones Parsed milestones; omit when milestones.md is absent.
  * @returns Valid criteria in definition order, with coverage, progress, and diagnostics.
@@ -213,7 +231,6 @@ export const observeCriteria = (
     (milestones !== undefined && !ObservedMilestonesSchema.safeParse(milestones).success)
   )
     throw planErrors.create('invalidInput');
-  const current = plan.protocol === '0.2';
   const diagnostics: IDiagnostic[] = [];
   const definitions = new Map<string, ICriterion>();
   for (const criterion of plan.criteria)
@@ -222,7 +239,7 @@ export const observeCriteria = (
   const defined = new Set(definitions.keys());
   const covering = new Map<string, IMilestone[]>([...defined].map((id) => [id, []]));
   for (const milestone of milestones?.milestones ?? []) {
-    if (current && milestone.status !== null && !isProgress(milestone.status))
+    if (milestone.status !== null && !isProgress(milestone.status))
       diagnostics.push(
         diagnostic(
           'milestones',
@@ -231,12 +248,12 @@ export const observeCriteria = (
           milestone.statusMarkers[0]?.location ?? milestone.location,
         ),
       );
-    if (current) for (const item of checkCoverage(milestone, defined)) diagnostics.push(item);
+    for (const item of checkCoverage(milestone, defined)) diagnostics.push(item);
     for (const id of milestone.criteria ?? []) covering.get(id)?.push(milestone);
   }
   const criteria = [...definitions.values()].map((criterion): ICriterionCoverage => {
     const covered = covering.get(criterion.id!)!;
-    if (current && milestones !== undefined && !covered.length)
+    if (milestones !== undefined && !covered.length)
       diagnostics.push(
         diagnostic(
           'plan',

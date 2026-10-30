@@ -17,8 +17,8 @@ try {
   const created = await createPlan({
     root,
     slug: 'example',
-    body: '# A small change\n\nKeep the intent close to the work.\n',
-    milestones: '## Milestone 1: Implement\n**Status:** pending\n',
+    body: '# A small change\n\n- AC-01: Keep the intent close to the work.\n',
+    milestones: '## Milestone 1: Implement\n**Status:** pending\n**Acceptance criteria:** AC-01\n',
   });
   // A consumer journal stores exact prepared source/IDs once, then replays those bytes.
   const prepared = preparePlanDocumentWrite(created.milestones.source, {
@@ -37,7 +37,7 @@ try {
     expectedSha256: written.sha256,
     changes: [{ select: { ordinal: 1 }, set: { status: 'done' } }],
   });
-  const observed = await inspectPlan(created.directory);
+  let observed = await inspectPlan(created.directory);
   // Body/core metadata can also be replaced together using the observed digest.
   if (observed.plan.state === 'readable')
     await writePlanDocument(created.directory, {
@@ -46,6 +46,7 @@ try {
       body: observed.plan.value.body,
       set: { revision: 2 },
     });
+  observed = await inspectPlan(created.directory);
   const result = checkPlan({
     ...(observed.plan.state === 'readable' ? { plan: observed.plan.value.source } : {}),
     ...(observed.milestones.state === 'readable'

@@ -10,7 +10,7 @@ import type { IOverlapPlan } from '../overlaps/index.ts';
 
 import type { IOverlapRead, IUnreadablePlan } from './types.ts';
 
-// the most plan folders one overlaps read lists, across all its roots
+// the most plan folders selected for document reads, across all roots
 export const OVERLAP_MAX_FOLDERS = 1024;
 
 // the most bytes read from the start of each plan.md, which must hold its whole frontmatter
@@ -77,7 +77,12 @@ const readPlanHead = async (directory: string): Promise<IOverlapPlan | IUnreadab
     if (!head) return { directory, reason: 'frontmatter-too-large' };
     const parsed = parsePlan(decodeSource(head));
     const codes = new Set(parsed.diagnostics.map((item) => item.code));
-    if ([...UNREADABLE_FRONTMATTER].some((code) => codes.has(code)))
+    const hasInvalidProtocol =
+      parsed.metadata.protocol === undefined &&
+      parsed.rawMetadata !== null &&
+      typeof parsed.rawMetadata === 'object' &&
+      Object.hasOwn(parsed.rawMetadata, 'protocol');
+    if (hasInvalidProtocol || [...UNREADABLE_FRONTMATTER].some((code) => codes.has(code)))
       return { directory, reason: 'invalid-frontmatter' };
     if (codes.has('INVALID_ERROR_CODES')) return { directory, reason: 'invalid-error-codes' };
     return {
