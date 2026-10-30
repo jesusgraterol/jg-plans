@@ -9,11 +9,19 @@ From the repository root:
 ```sh
 pnpm install --frozen-lockfile
 pnpm --dir website dev
-pnpm --dir website exec playwright install chromium
 pnpm --dir website check
 ```
 
-`check` builds once, typechecks, runs unit/integration/browser tests against that artifact, then verifies its registered pages. To repeat the integration suite without rebuilding: `pnpm --dir website test:integration --repeats=2 --retry=0`.
+`check` builds once, typechecks, runs essential unit/integration tests against that artifact, then verifies its registered pages. It needs no browser installation. `test` uses essential coverage against a prepared build; `test:full` includes every unit, integration, and browser case against that build. Granular and focused commands remain complete by default. The [development guide](../docs/development.md#essential-and-full-suites) owns classification and the current root-package command boundary.
+
+Full runs locally only when explicitly requested:
+
+```sh
+pnpm --dir website exec playwright install chromium
+pnpm --dir website check:full
+```
+
+Completion uses essential regression plus complete focused checks for affected behavior, including full-only cases. After a build, repeat changed integration files with `pnpm --dir website test:integration <file> --repeats=2 --retry=0`; repeat changed browser files with `pnpm --dir website test:e2e <file> --repeat-each=3 --retries=0`. Reuse successful checks while their relevant inputs are unchanged.
 
 The preview server used by Playwright belongs to the test runner and is stopped by its teardown. Astro's `--ignore-lock` selects a foreground instance, including inside agent sessions. The runner reserves an OS-selected loopback port with jg-process, releases the reservation for its foreground preview child, and passes that port to workers through JG_PLANS_TEST_PREVIEW_PORT. It refuses to reuse a server that takes the port before that child starts. Screenshots and failure traces are retained in ignored website/test-results/. Open a retained trace with `pnpm --dir website exec playwright show-trace <trace.zip>`.
 

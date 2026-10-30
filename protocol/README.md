@@ -12,4 +12,4 @@ The protocol belongs to jg-plans. Applications choose their own approval, execut
 
 Start with the [small plan](../examples/small/plan.md), compare [optional milestones](../examples/with-milestones/milestones.md), see [acceptance criteria](../examples/criteria/plan.md) in a 0.2 plan, or explore [the examples](../examples/README.md).
 
-Protocol versions are independent of npm package versions. Version 0.2 remains provisional until jg-skills and at least one HQ consumer exercise separately approved integrations.
+Protocol versions are independent of npm package versions. Version 0.2 remains provisional until at least two independent consumers exercise separately approved integrations.

@@ -14,9 +14,9 @@ Inspect before each mutation and supply the observed expectedSha256. Use write f
 
 The skills bind a milestone sequence to plan id, revision, and structural content fingerprint, excluding exactly created_at, updated_at, revision, status, and priority from that fingerprint. Other metadata and exact body remain covered. Revalidate coverage after revisions before stamping a fresh binding. A stale/unavailable binding cannot authorize sequence execution. Whole-plan execution without an expected sequence stays a supported single unit; disappearance of an expected sequence is a loss to report.
 
-## HQ: one engine, application-owned policy
+## Applications: one engine, application-owned policy
 
-Use public jg-plans observations instead of another Markdown grammar. Read status, priority, repositories, and error code declarations from each plan's frontmatter, and report collisions with `findErrorCodeOverlaps` over the active plans of every repository HQ knows. These are observations: approvals, allocation services, locks, and reconciliation stay HQ's own policy and never become fields the protocol requires.
+An application that tracks plans across repositories uses public jg-plans observations instead of another Markdown grammar. It reads status, priority, repositories, and error code declarations from each plan's frontmatter, and reports collisions with `findErrorCodeOverlaps` over the active plans of every repository it knows. These are observations: how the application queues plans, locks work, or reconciles state stays its own policy, never fields the protocol requires.
 
 A writer that edits plan documents prepares once and persists the exact resulting source. Inside withPlanDocumentLocks, use pure preparation and its own persistence; do not nest filesystem mutation entry points.
 

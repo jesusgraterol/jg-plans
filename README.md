@@ -29,7 +29,7 @@ Protocol 0.2 is provisional and is the only supported version; unversioned Markd
 
 Users own their documents and can edit or delete them. No history store, metadata field, CLI, or website is required to read Markdown. Optional conformance checks do not authorize execution or become a prerequisite to inspection.
 
-Plans declare their priority, the repositories they change, and the error codes they add, as explicit string/number lists. `jg-plans overlaps` compares String(code) and reports shared codes in active plans. Parsed results also expose a name derived from the plan ID. Approvals, allocation services, locks and reconciliation stay with applications, and jg-skills and HQ integrate independently.
+Plans declare their priority, the repositories they change, and the error codes they add, as explicit string/number lists. `jg-plans overlaps` compares String(code) and reports shared codes in active plans. Parsed results also expose a name derived from the plan ID. Approvals, allocation services, locks and reconciliation stay with applications, and each consumer integrates independently.
 
 ## Development
 

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.1 — consumer-neutral documentation
+
+- The documentation no longer names a particular consumer application: the integration guide describes any application that tracks plans across repositories, and the README, API reference, getting-started guide and protocol overview speak of consumers in general. The protocol's list of state readers never depend on drops `coordination.json`. Nothing else changed.
+
 ## 0.5.0 — Current contracts and complete examples
 
 - Breaking: replace numeric error-code ranges with explicit `{ repository, registry, codes }` string/number lists. Export ErrorCodeSchema/IErrorCode and ErrorCodeDeclarationSchema/IErrorCodeDeclaration; remove ErrorCodeRangeSchema/IErrorCodeRange. Overlaps report one canonical String(code) and distinct directory/ID references per shared code; IOverlapPlanReference replaces IOverlapDeclaration. Numeric 100 and string "100" collide.

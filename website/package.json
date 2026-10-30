@@ -14,11 +14,13 @@
     "assets:check": "node assets/render.ts --check",
     "verify:deployment": "node scripts/verify-deployment.ts",
     "typecheck": "astro check",
-    "test": "pnpm test:unit && pnpm test:integration && pnpm test:e2e",
+    "test": "pnpm test:unit --mode essential --tagsFilter=!full && pnpm test:integration --mode essential --tagsFilter=!full",
     "test:unit": "vitest run --project unit",
     "test:integration": "vitest run --project integration",
     "test:e2e": "playwright test",
-    "check": "pnpm assets:check && pnpm build && pnpm typecheck && pnpm test && node scripts/verify-build.ts"
+    "check": "pnpm assets:check && pnpm build && pnpm typecheck && pnpm test && node scripts/verify-build.ts",
+    "test:full": "pnpm test:unit && pnpm test:integration && pnpm test:e2e",
+    "check:full": "pnpm assets:check && pnpm build && pnpm typecheck && pnpm test:full && node scripts/verify-build.ts"
   },
   "dependencies": {
     "@astrojs/markdown-satteri": "0.4.5",

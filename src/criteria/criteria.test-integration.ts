@@ -54,7 +54,7 @@ for (const entry of await readdir(examples, { withFileTypes: true }))
   if (entry.isDirectory() && (await readdir(join(examples, entry.name))).includes('expected.json'))
     directories.push(entry.name);
 
-describe('shipped criteria examples', () => {
+describe('shipped criteria examples', { tags: ['full'] }, () => {
   it('include both criteria examples', () => {
     expect(directories.sort()).toStrictEqual(['criteria', 'criteria-invalid']);
   });

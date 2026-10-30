@@ -13,13 +13,17 @@ describe('corrected plan contracts', () => {
     ['', null],
     [null, null],
     [undefined, null],
-  ])('derives name from id %j as %j without changing source metadata', (id, expected) => {
-    const source = `---\n${id === undefined ? '' : `id: ${JSON.stringify(id)}\n`}name: project-owned\nprotocol: "0.2"\n---\n- AC-01: Keep source.\n`;
-    const parsed = parsePlan(source);
-    expect(parsed.name).toBe(expected);
-    expect(parsed.source).toBe(source);
-    expect(parsed.rawMetadata).toMatchObject({ name: 'project-owned' });
-  });
+  ])(
+    'derives name from id %j as %j without changing source metadata',
+    { tags: ['full'] },
+    (id, expected) => {
+      const source = `---\n${id === undefined ? '' : `id: ${JSON.stringify(id)}\n`}name: project-owned\nprotocol: "0.2"\n---\n- AC-01: Keep source.\n`;
+      const parsed = parsePlan(source);
+      expect(parsed.name).toBe(expected);
+      expect(parsed.source).toBe(source);
+      expect(parsed.rawMetadata).toMatchObject({ name: 'project-owned' });
+    },
+  );
 
   it('interprets unversioned documents as protocol 0.2', () => {
     const source = `---\n${metadata.replace('waiting-for-feedback', 'pending')}\n---\n- AC-01: Use current rules.\n`;
@@ -256,7 +260,7 @@ describe('0.2 plan scope fields', () => {
     expect(parsePlan(plan(fields)).metadata).not.toHaveProperty(fields.split(':')[0]!);
   });
 
-  it('reports each invalid field at its value', () => {
+  it('reports each invalid field at its value', { tags: ['full'] }, () => {
     const source = plan('priority: urgent\nerror_codes: oops\n');
     const diagnostics = parsePlan(source).diagnostics;
     expect(diagnostics.map((item) => [item.code, item.location?.line])).toEqual([
