@@ -12,6 +12,8 @@ export type {
   IPlanFingerprint,
 } from './documents/index.ts';
 export { observeCriteria } from './criteria/index.ts';
+export { findErrorCodeOverlaps } from './overlaps/index.ts';
+export type { IErrorCodeOverlap, IOverlapDeclaration, IOverlapPlan } from './overlaps/index.ts';
 export type { ICriteriaObservation, ICriterion, ICriterionCoverage } from './criteria/index.ts';
 export { ERRORS } from './errors/index.ts';
 export { inspectPlan } from './files/index.ts';

@@ -452,3 +452,85 @@ describe('compiled CLI mutation contract', () => {
     expect(updated.exitCode).toBe(0);
   });
 });
+
+describe('compiled CLI overlaps', () => {
+  const plan = (id: string, first: number, last: number, status = 'pending'): string =>
+    `---\nid: ${id}\nstatus: ${status}\nprotocol: '0.2'\nerror_codes: [{ repository: acme/app, registry: errors.md, first: ${first}, last: ${last} }]\n---\n# ${id}\n`;
+  const put = async (root: string, name: string, source: string): Promise<void> => {
+    await mkdir(join(root, name));
+    await writeFile(join(root, name, 'plan.md'), source);
+  };
+
+  it('exits 0 for a clean complete read, and 1 with the groups when plans across roots overlap', async ({
+    cli: { fixture, run },
+  }) => {
+    const first = await fixture();
+    const second = await fixture();
+    await put(first, 'a', plan('a', 1, 10));
+    await put(first, 'b', plan('b', 5, 6, 'done'));
+    const clean = await run(['overlaps', '--root', first, '--json']);
+    expect(clean.exitCode).toBe(0);
+    expect(JSON.parse(clean.stdout)).toMatchObject({
+      schemaVersion: 1,
+      command: 'overlaps',
+      data: { overlaps: [], unreadable: [], isComplete: true },
+      diagnostics: [],
+      error: null,
+    });
+    await put(second, 'c', plan('c', 10, 12, 'in progress'));
+    const found = await run(['overlaps', '--root', first, '--root', second, '--json']);
+    expect(found.exitCode).toBe(1);
+    const { data } = JSON.parse(found.stdout) as {
+      data: { overlaps: { first: number; last: number; plans: { id: string }[] }[] };
+    };
+    expect(
+      data.overlaps.map(({ first: low, last, plans }) => [low, last, plans.map((p) => p.id)]),
+    ).toEqual([[1, 12, ['a', 'c']]]);
+  });
+
+  it('exits 2 with isComplete false for an unreadable plan, and for a conflict beyond the folder limit', async ({
+    cli: { fixture, run },
+  }) => {
+    const root = await fixture();
+    await put(root, 'a', plan('a', 1, 2));
+    await put(root, 'broken', "---\nid: [unclosed\nprotocol: '0.2'\n---\n");
+    const unreadable = await run(['overlaps', '--root', root, '--json']);
+    expect(unreadable.exitCode).toBe(2);
+    expect(JSON.parse(unreadable.stdout)).toMatchObject({
+      data: { isComplete: false, unreadable: [{ reason: 'invalid-frontmatter' }] },
+      error: null,
+    });
+
+    const crowded = await fixture();
+    const beyond = await fixture();
+    await Promise.all(
+      Array.from({ length: 1024 }, (_, index) =>
+        put(crowded, `p${String(index).padStart(4, '0')}`, '# Plan\n'),
+      ),
+    );
+    await put(crowded, 'p0000-claim', plan('first', 1, 2));
+    await put(beyond, 'z-claim', plan('second', 1, 2));
+    const truncated = await run(['overlaps', '--root', crowded, '--root', beyond, '--json']);
+    expect(truncated.exitCode).toBe(2);
+    expect(JSON.parse(truncated.stdout)).toMatchObject({
+      data: { overlaps: [], isComplete: false },
+    });
+  });
+
+  it('exits 2 for an unreadable root and for invalid overlaps or create flags', async ({
+    cli: { fixture, run },
+  }) => {
+    const root = await fixture();
+    const missing = await run(['overlaps', '--root', join(root, 'missing'), '--json']);
+    expect(missing.exitCode).toBe(2);
+    expect(JSON.parse(missing.stdout)).toMatchObject({ error: { code: 'JG_PLANS_READ_FAILED' } });
+    for (const args of [
+      ['overlaps', '--json'],
+      ['overlaps', '--root', root, '--directory', root],
+      ['overlaps', '--root', root, '--max-bytes', '10'],
+      ['create', '--slug', 'two', '--input', '-', '--root', root, '--root', root],
+      ['inspect', '--directory', root, '--root', root],
+    ])
+      expect((await run(args, '{"body":"# x"}')).exitCode).toBe(2);
+  });
+});

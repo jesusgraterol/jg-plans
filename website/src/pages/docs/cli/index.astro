@@ -80,6 +80,7 @@ import { pageFor } from '../../../site.config.ts';
             'Remove only matching milestone bytes.',
             '#write-and-remove-milestones',
           ],
+          ['overlaps', 'Find error codes two active plans declare.', '#overlaps'],
         ] as const
       ).map(([name, text, href]) => (
         <LinkCard href={href} title={name} monoTitle>

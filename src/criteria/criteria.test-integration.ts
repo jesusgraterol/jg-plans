@@ -69,9 +69,18 @@ describe('shipped criteria examples', () => {
       const inspect = await run(['inspect', '--directory', directory]);
       const observed = (envelope: {
         diagnostics: { code: string; document: string; location?: { line: number } }[];
-        data: { criteria: { protocol: string; criteria: Record<string, unknown>[] } };
+        data: {
+          plan: { metadata: Record<string, unknown> };
+          criteria: { protocol: string; criteria: Record<string, unknown>[] };
+        };
       }) => ({
         protocol: envelope.data.criteria.protocol,
+        // the optional scope fields the example declares
+        metadata: Object.fromEntries(
+          ['priority', 'repositories', 'error_codes']
+            .filter((key) => key in envelope.data.plan.metadata)
+            .map((key) => [key, envelope.data.plan.metadata[key]]),
+        ),
         criteria: envelope.data.criteria.criteria.map(({ id, text, milestones, progress }) => ({
           id,
           text,
@@ -84,6 +93,7 @@ describe('shipped criteria examples', () => {
       });
       const want = {
         protocol: expected.protocol,
+        metadata: expected.metadata ?? {},
         criteria: expected.criteria,
         diagnostics: [...expected.diagnostics].sort(byDocumentAndLine),
       };

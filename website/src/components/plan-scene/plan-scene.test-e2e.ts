@@ -59,7 +59,7 @@ for (const colorScheme of ['light', 'dark'] as const)
       const revise = scene.getByRole('tabpanel', { name: 'Revise', exact: true });
       await expect(tabs.getByRole('tab', { name: 'Revise', exact: true })).toBeFocused();
       await expect(revise).toContainText('Skills binding · stale after revision');
-      await expect(revise).toContainText('check · plan.md line 18');
+      await expect(revise).toContainText('check · plan.md line 26');
       await expect(revise).toContainText('UNASSIGNED_CRITERION');
       await expect(revise).toContainText('Explain empty results');
       await expect(revise).toContainText('3c7a2f1e-9b4d-4e8a-a6f2-1d5c7e9b0a34');
@@ -88,7 +88,7 @@ for (const colorScheme of ['light', 'dark'] as const)
         ],
         check: {
           conforms: false,
-          findings: [{ code: 'UNASSIGNED_CRITERION', criterion: 'AC-04', line: 18 }],
+          findings: [{ code: 'UNASSIGNED_CRITERION', criterion: 'AC-04', line: 26 }],
         },
       });
       const revisedSource = revise

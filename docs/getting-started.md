@@ -29,6 +29,8 @@ node dist/cli/cli.js create --slug small-change --input create.json --json
 
 Use the returned directory for inspection and updates. Update input such as `{ "document": "plan", "set": { "revision": 2, "status": "in progress" } }` changes only those requested fields. Supply updated_at explicitly when appropriate; nothing advances automatically. The [runnable example](../examples/library.mjs) shows the full library journey with cleanup limited to its own temporary directory.
 
+A 0.2 plan can also record its priority, the repositories it changes, and the error codes it adds, set the same way: `{ "document": "plan", "set": { "priority": "high", "repositories": ["acme/app"] } }`. Before choosing error codes, run `jg-plans overlaps --root <folder> --json` over each planning root those plans share: exit 1 names the overlapping plans, and exit 2 means it couldn't read every plan, which isn't the same as finding none.
+
 Inspect exact hashes and supply expectedSha256 for guarded edits. Shared local document locks coordinate library, CLI, and participating consumers. Unsupported affected YAML/ambiguous markers fail without writing, detected changes are not retried, and existing-target expectations never recreate deleted files. Use explicit body/source writes when replacing prose; all unaffected bytes remain intact.
 
 ## Contributing

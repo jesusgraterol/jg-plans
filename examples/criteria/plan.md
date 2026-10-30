@@ -5,6 +5,9 @@ updated_at: 2026-10-21T20:04:00Z
 revision: 2
 status: in progress
 protocol: "0.2"
+priority: medium
+repositories: [example/search]
+error_codes: [{ repository: example/search, registry: docs/errors.md, first: 4100, last: 4109 }]
 ---
 
 # Search feedback

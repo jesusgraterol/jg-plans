@@ -24,7 +24,7 @@ jg-plans/<id>/
 
 A consumer honors an explicitly chosen planning root. Otherwise it preserves the repository's established root, including coding-agent-planning/ or a custom location, and uses jg-plans/ for a new default. It does not move existing plans automatically. Placement is a convention, not document identity or a central registry.
 
-The reference CLI's --root default is ./jg-plans relative to the invocation directory. It uses explicit paths and does not discover a repository's established root on its own.
+The reference CLI's create --root default is ./jg-plans relative to the invocation directory. It uses explicit paths and does not discover a repository's established root on its own. The one read beyond a selected plan folder is `overlaps`, which lists the plan folders of the roots the caller names.
 
 The reference implementation supports UTF-8 Markdown, with an optional UTF-8 BOM. Invalid UTF-8 and unsupported encodings produce diagnostics. They are not silently transcoded. This implementation boundary does not require every protocol consumer to share the same file-size limit.
 
@@ -76,7 +76,7 @@ Default ID generation uses Unix seconds plus a descriptive slug. Readers do not 
 
 Do not invent an unknown historical creation time. A revision is not a digest, approval token, or execution permission. The reference library changes revision and timestamp fields only when callers explicitly request those edits.
 
-Read raw metadata independently from known-field validation. Preserve unknown keys and their source, and retain invalid known values as raw observations alongside diagnostics. Additional authorship, repository references, approval records, and other fields are consumer-owned extensions. Consumers may implement stricter local profiles if they identify that strictness as project policy.
+Read raw metadata independently from known-field validation. Preserve unknown keys and their source, and retain invalid known values as raw observations alongside diagnostics. Priority, repositories, and error codes are the protocol's optional fields; additional authorship, approval records, and other fields are consumer-owned extensions. Consumers may implement stricter local profiles if they identify that strictness as project policy.
 
 Protocol versions are independent of npm package versions.
 
@@ -186,6 +186,12 @@ Progress reports the state of the work. It is not evidence that the criterion is
 
 Only valid IDs take part in coverage and progress. When an ID is defined more than once, the first definition counts.
 
+## Error code overlaps
+
+Two plans overlap when both are 0.2 plans whose status is `pending` or `in progress`, and an `error_codes` entry of each names the same repository, compared without regard to case, and the same registry, with intersecting ranges. Ranges are inclusive, so `100` to `109` and `109` to `120` overlap. Overlapping declarations from several plans chain into one group, which spans their lowest and highest codes. An overlap is an observation: it grants nothing and settles nothing. Choosing other codes, or deciding that two plans may share a range, stays with their authors and applications.
+
+`jg-plans overlaps` reads the frontmatter of the plans in the folders of the roots the caller names. A plan it cannot read, or a call that reaches its folder limit, makes the result incomplete, and an incomplete result is never reported as free of overlaps.
+
 ## Diagnostics
 
 The 0.1 diagnostics continue to apply. A 0.2 plan adds the following. Each is an error and applies only to 0.2 plans. Messages describe the issue without quoting document text.
@@ -236,7 +242,7 @@ Inspection explicitly distinguishes a missing plan, missing milestone file, orph
 
 ## Reference mutation boundary
 
-The reference library supports creation, narrow core-metadata/marker patches, guarded plan-body/core-metadata replacement, complete milestone-source replacement with explicit missing-ID assignment, and guarded milestone removal. Pure preparation supplies exact output for consumer persistence. It never remaps progress, normalizes unrelated extension fields, maintains a snapshot service, or migrates repositories.
+The reference library supports creation, narrow metadata/marker patches, guarded plan-body/metadata replacement, complete milestone-source replacement with explicit missing-ID assignment, and guarded milestone removal. Pure preparation supplies exact output for consumer persistence. It never remaps progress, normalizes unrelated extension fields, maintains a snapshot service, or migrates repositories.
 
 For existing documents, preserve the original bytes outside the exact requested values or inserted field/marker lines, including unknown data, comments, whitespace, BOM, Unicode, CRLF, and final-newline state. Decode UTF-8 strictly and map character positions to original byte spans correctly. Unsupported or ambiguous affected YAML, unsupported encoding, invalid UTF-8, or unencodable replacement text leaves that file unchanged with a specific failure.
 
@@ -246,6 +252,6 @@ Library and CLI filesystem mutations share short local document locks, acquired 
 
 ## Consumer-owned policy
 
-Approval digests, authorization, execution, repositories and scopes, priorities, resource/error allocations, locks, reconciliation, snapshot retention, and stricter schemas belong to applications. The core protocol does not make them mandatory. Criteria and coverage give applications a shared vocabulary; deciding whether a criterion is met remains their responsibility.
+Approval digests, authorization, execution, allocation services, locks, reconciliation, snapshot retention, and stricter schemas belong to applications. A plan's priority, repositories, and error code declarations are protocol fields, and overlaps are observations; deciding what they allow is still the application's. The core protocol does not make them mandatory. Criteria and coverage give applications a shared vocabulary; deciding whether a criterion is met remains their responsibility.
 
 See [the integration guide](../../docs/integrations.md) and [examples](../../examples/README.md). The library/CLI implement observations and explicit operations; using these tools is optional.

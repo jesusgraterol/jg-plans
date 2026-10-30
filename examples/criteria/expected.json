@@ -1,23 +1,50 @@
 {
   "conforms": true,
   "protocol": "0.2",
+  "metadata": {
+    "priority": "medium",
+    "repositories": ["example/search"],
+    "error_codes": [
+      {
+        "repository": "example/search",
+        "registry": "docs/errors.md",
+        "first": 4100,
+        "last": 4109
+      }
+    ]
+  },
   "criteria": [
     {
       "id": "AC-01",
       "text": "Empty search results explain why nothing matched.",
-      "milestones": [{ "ordinal": 1, "id": "3c7a2f1e-9b4d-4e8a-a6f2-1d5c7e9b0a34" }],
+      "milestones": [
+        {
+          "ordinal": 1,
+          "id": "3c7a2f1e-9b4d-4e8a-a6f2-1d5c7e9b0a34"
+        }
+      ],
       "progress": "done"
     },
     {
       "id": "AC-02",
       "text": "The empty state offers one next action, such as clearing the active filters.",
-      "milestones": [{ "ordinal": 2, "id": "8e1d6b2a-4f7c-4a3e-b9d1-6c2e8f4a7b15" }],
+      "milestones": [
+        {
+          "ordinal": 2,
+          "id": "8e1d6b2a-4f7c-4a3e-b9d1-6c2e8f4a7b15"
+        }
+      ],
       "progress": "in progress"
     },
     {
       "id": "AC-03",
       "text": "The explanation and the action work with a keyboard and a screen reader.",
-      "milestones": [{ "ordinal": 2, "id": "8e1d6b2a-4f7c-4a3e-b9d1-6c2e8f4a7b15" }],
+      "milestones": [
+        {
+          "ordinal": 2,
+          "id": "8e1d6b2a-4f7c-4a3e-b9d1-6c2e8f4a7b15"
+        }
+      ],
       "progress": "in progress"
     }
   ],

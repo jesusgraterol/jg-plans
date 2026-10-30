@@ -10,11 +10,13 @@ import { planErrors } from '../errors/index.ts';
 import {
   createPlan,
   inspectPlan,
+  readOverlapPlans,
   updatePlan,
   writePlanDocument,
   removeMilestones,
   type IPlanInspection,
 } from '../files/index.ts';
+import { findErrorCodeOverlaps } from '../overlaps/index.ts';
 import {
   CreatePlanOptionsSchema,
   DEFAULT_MAX_BYTES,
@@ -35,14 +37,17 @@ Commands:
   update  --directory <path> --input <file-or-dash> [--json] [--max-bytes <bytes>]
   write   --directory <path> --input <file-or-dash> [--json] [--max-bytes <bytes>]
   remove-milestones --directory <path> --input <file-or-dash> [--json] [--max-bytes <bytes>]
+  overlaps --root <path> [--root <path> ...] [--json]
   --help, -h
   --version, -v
 
-Only the selected plan.md and optional milestones.md are read.
+Only the selected plan.md and optional milestones.md are read. overlaps lists the plan folders
+of each root, reading the frontmatter in the first 65536 bytes of at most 1024 plans per call.
 The default bound is 1048576 bytes per file. Checks are optional.
 Mutations share local document locks. Busy owners require explicit recovery. No history is required.
-Exit 0: completed inspection, successful mutation, or conforming check; 1: conformance errors;
-2: invalid command or operational failure. Missing files do not imply completion.`;
+Exit 0: completed inspection, successful mutation, conforming check, or overlaps that read every
+plan and found none; 1: conformance errors or an error code overlap; 2: invalid command,
+operational failure, or an incomplete overlaps result. Missing files do not imply completion.`;
 
 const projectInspection = (inspection: IPlanInspection, includeBody: boolean): object => {
   const plan = inspection.plan;
@@ -172,6 +177,17 @@ export const runCli = async (args: string[]): Promise<number> => {
             }
           : null,
       };
+    } else if (options.command === 'overlaps') {
+      const read = await readOverlapPlans(options.roots!);
+      const overlaps = findErrorCodeOverlaps(read.plans);
+      data = {
+        plans: read.plans,
+        overlaps,
+        unreadable: read.unreadable,
+        isComplete: read.isComplete,
+      };
+      // a finding wins; otherwise only a complete read is clean
+      exitCode = overlaps.length ? 1 : read.isComplete ? 0 : 2;
     } else if (options.command === 'update') {
       const raw = await readMutationInput(options.input!, options.maxBytes ?? DEFAULT_MAX_BYTES);
       const parsed = PlanUpdateSchema.safeParse(raw);
