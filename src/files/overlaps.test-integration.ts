@@ -107,26 +107,31 @@ describe('readOverlapPlans', () => {
     expect(read.isComplete).toBe(false);
   });
 
-  it('reads at most 1024 folders per call, in name order across the roots given', async () => {
-    const second = await realpath(await mkdtemp(join(tmpdir(), 'jg-plans-overlaps-second-')));
-    try {
-      await Promise.all(
-        Array.from({ length: OVERLAP_MAX_FOLDERS }, (_, index) =>
-          putPlan(`p${String(index).padStart(4, '0')}`, '# Plan\n'),
-        ),
-      );
-      await putPlan('beyond', frontmatter('beyond'), second);
-      const complete = await readOverlapPlans([root, root]);
-      expect(complete.plans).toHaveLength(OVERLAP_MAX_FOLDERS);
-      expect(complete.isComplete).toBe(true);
-      const truncated = await readOverlapPlans([root, second]);
-      expect(truncated.plans).toHaveLength(OVERLAP_MAX_FOLDERS);
-      expect(truncated.plans.some((item) => item.id === 'beyond')).toBe(false);
-      expect(truncated.isComplete).toBe(false);
-    } finally {
-      await rm(second, { recursive: true, force: true });
-    }
-  });
+  // creating and reading 1025 plan folders takes several seconds on Windows runners
+  it(
+    'reads at most 1024 folders per call, in name order across the roots given',
+    { timeout: 60_000 },
+    async () => {
+      const second = await realpath(await mkdtemp(join(tmpdir(), 'jg-plans-overlaps-second-')));
+      try {
+        await Promise.all(
+          Array.from({ length: OVERLAP_MAX_FOLDERS }, (_, index) =>
+            putPlan(`p${String(index).padStart(4, '0')}`, '# Plan\n'),
+          ),
+        );
+        await putPlan('beyond', frontmatter('beyond'), second);
+        const complete = await readOverlapPlans([root, root]);
+        expect(complete.plans).toHaveLength(OVERLAP_MAX_FOLDERS);
+        expect(complete.isComplete).toBe(true);
+        const truncated = await readOverlapPlans([root, second]);
+        expect(truncated.plans).toHaveLength(OVERLAP_MAX_FOLDERS);
+        expect(truncated.plans.some((item) => item.id === 'beyond')).toBe(false);
+        expect(truncated.isComplete).toBe(false);
+      } finally {
+        await rm(second, { recursive: true, force: true });
+      }
+    },
+  );
 
   it('throws JG_PLANS_READ_FAILED for a root it cannot list', async () => {
     await expectToRejectCode(readOverlapPlans([join(root, 'missing')]), ERRORS.READ_FAILED);

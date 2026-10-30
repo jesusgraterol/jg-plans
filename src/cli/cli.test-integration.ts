@@ -488,34 +488,37 @@ describe('compiled CLI overlaps', () => {
     ).toEqual([[1, 12, ['a', 'c']]]);
   });
 
-  it('exits 2 with isComplete false for an unreadable plan, and for a conflict beyond the folder limit', async ({
-    cli: { fixture, run },
-  }) => {
-    const root = await fixture();
-    await put(root, 'a', plan('a', 1, 2));
-    await put(root, 'broken', "---\nid: [unclosed\nprotocol: '0.2'\n---\n");
-    const unreadable = await run(['overlaps', '--root', root, '--json']);
-    expect(unreadable.exitCode).toBe(2);
-    expect(JSON.parse(unreadable.stdout)).toMatchObject({
-      data: { isComplete: false, unreadable: [{ reason: 'invalid-frontmatter' }] },
-      error: null,
-    });
+  // creating 1025 plan folders and reading them takes several seconds on Windows runners
+  it(
+    'exits 2 with isComplete false for an unreadable plan, and for a conflict beyond the folder limit',
+    { timeout: 60_000 },
+    async ({ cli: { fixture, run } }) => {
+      const root = await fixture();
+      await put(root, 'a', plan('a', 1, 2));
+      await put(root, 'broken', "---\nid: [unclosed\nprotocol: '0.2'\n---\n");
+      const unreadable = await run(['overlaps', '--root', root, '--json']);
+      expect(unreadable.exitCode).toBe(2);
+      expect(JSON.parse(unreadable.stdout)).toMatchObject({
+        data: { isComplete: false, unreadable: [{ reason: 'invalid-frontmatter' }] },
+        error: null,
+      });
 
-    const crowded = await fixture();
-    const beyond = await fixture();
-    await Promise.all(
-      Array.from({ length: 1024 }, (_, index) =>
-        put(crowded, `p${String(index).padStart(4, '0')}`, '# Plan\n'),
-      ),
-    );
-    await put(crowded, 'p0000-claim', plan('first', 1, 2));
-    await put(beyond, 'z-claim', plan('second', 1, 2));
-    const truncated = await run(['overlaps', '--root', crowded, '--root', beyond, '--json']);
-    expect(truncated.exitCode).toBe(2);
-    expect(JSON.parse(truncated.stdout)).toMatchObject({
-      data: { overlaps: [], isComplete: false },
-    });
-  });
+      const crowded = await fixture();
+      const beyond = await fixture();
+      await Promise.all(
+        Array.from({ length: 1024 }, (_, index) =>
+          put(crowded, `p${String(index).padStart(4, '0')}`, '# Plan\n'),
+        ),
+      );
+      await put(crowded, 'p0000-claim', plan('first', 1, 2));
+      await put(beyond, 'z-claim', plan('second', 1, 2));
+      const truncated = await run(['overlaps', '--root', crowded, '--root', beyond, '--json']);
+      expect(truncated.exitCode).toBe(2);
+      expect(JSON.parse(truncated.stdout)).toMatchObject({
+        data: { overlaps: [], isComplete: false },
+      });
+    },
+  );
 
   it('exits 2 for an unreadable root and for invalid overlaps or create flags', async ({
     cli: { fixture, run },
