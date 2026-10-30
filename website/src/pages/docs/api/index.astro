@@ -20,11 +20,7 @@ const example = await loadExample('small');
       source={example.documents.plan!}
       filename="plan.md"
       call="parsePlan(source)"
-      result={{
-        metadata: example.plan!.metadata,
-        body: example.plan!.body,
-        diagnostics: example.plan!.diagnostics,
-      }}
+      result={example.plan}
     />
     <div class="mt-8 grid gap-3 sm:grid-cols-2">
       {(
@@ -36,7 +32,7 @@ const example = await loadExample('small');
             '#source-ranges-and-milestone-metadata',
           ],
           ['fingerprintPlan', 'Body + metadata → structural digest', '#structural-fingerprints'],
-          ['findErrorCodeOverlaps', 'Declarations → overlap groups', '#error-code-overlaps'],
+          ['findErrorCodeOverlaps', 'Explicit codes → shared-code records', '#error-code-overlaps'],
           ['inspectPlan', 'Selected directory → document states', '#selected-directory-inspection'],
           ['createPlan', 'Body + metadata → new files', '#exclusive-creation'],
           ['updatePlan', 'Explicit patch → targeted edit', '#targeted-updates'],

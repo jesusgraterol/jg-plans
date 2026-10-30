@@ -1,5 +1,5 @@
 // These administrative exclusions belong to the example consumer, not the protocol.
-export const ADMINISTRATIVE_KEYS = ['created_at', 'updated_at', 'revision', 'status'];
+export const ADMINISTRATIVE_KEYS = ['created_at', 'updated_at', 'revision', 'status', 'priority'];
 
 // the criterion the revision appends before any milestone delivers it
 export const REVISED_CRITERION = '- AC-04: Search suggests spelling corrections.\n';

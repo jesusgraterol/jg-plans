@@ -60,12 +60,16 @@ const availability = readAvailability(import.meta.env.JG_PLANS_AVAILABILITY);
       </div>
       <div class="grid min-w-0 gap-4">
         {availability.state === 'published' && (
-          <CodeBlock
-            copyDisplay="icon"
-            code="npm install jg-plans"
-            lang="sh"
-            title="Install · Node.js 24.15.0+"
-          />
+          <Fragment>
+            <Fragment set:html="<!--email_off-->" />
+            <CodeBlock
+              copyDisplay="icon"
+              code={`npm install jg-plans@${availability.version}`}
+              lang="sh"
+              title="Install · Node.js 24.15.0+"
+            />
+            <Fragment set:html="<!--/email_off-->" />
+          </Fragment>
         )}
         <CodeBlock
           copyDisplay="icon"

@@ -32,15 +32,7 @@ const lifecycle = await loadLifecycle();
           <DocumentFlow
             source={stage.source}
             filename="plan.md"
-            call={
-              stage.id === 'create'
-                ? 'createPlan(options)'
-                : stage.id === 'inspect'
-                  ? 'inspectPlan(directory)'
-                  : stage.id === 'update'
-                    ? 'updatePlan(directory, patch)'
-                    : 'writePlanDocument(directory, input)'
-            }
+            call={stage.call}
             result={stage.result}
           />
         )}
@@ -97,22 +89,57 @@ const lifecycle = await loadLifecycle();
             <summary class="min-h-10 cursor-pointer content-center text-sm font-semibold">
               Actual revision observation
             </summary>
-            <div class="my-4 min-w-0">
+            <div class="my-4 grid min-w-0 gap-4">
               <CodeBlock
                 copyDisplay="icon"
+                height="23rem"
+                overflow="wrap"
                 code={stage.source}
                 lang="markdown"
                 title="Complete revised plan.md"
               />
+              <p class="text-sm font-semibold">{stage.call} · complete result</p>
               <CodeBlock
                 copyDisplay="icon"
+                height="23rem"
+                overflow="wrap"
                 code={JSON.stringify(stage.result, null, 2)}
                 lang="json"
-                title="JSON · selected result fields"
+                title="JSON · complete result"
               />
             </div>
           </details>
         )}
+        {stage.operations.length > 0 && (
+          <details class="mt-5 rounded-lg border border-border px-4 py-2">
+            <summary class="min-h-10 cursor-pointer content-center text-sm font-semibold">
+              Mutation and check results
+            </summary>
+            <div class="my-4 grid min-w-0 gap-4">
+              {stage.operations.map((operation) => (
+                <CodeBlock
+                  copyDisplay="icon"
+                  code={JSON.stringify(operation.result, null, 2)}
+                  lang="json"
+                  title={operation.call + ' · complete result'}
+                />
+              ))}
+            </div>
+          </details>
+        )}
+        <details class="mt-5 rounded-lg border border-border px-4 py-2">
+          <summary class="min-h-10 cursor-pointer content-center text-sm font-semibold">
+            Consumer-derived summary
+          </summary>
+          <div class="my-4 min-w-0">
+            <CodeBlock
+              copyDisplay="icon"
+              code={JSON.stringify(stage.consumer, null, 2)}
+              lang="json"
+              title="Consumer-derived summary · not an API return"
+            />
+          </div>
+        </details>
         <details class="mt-5 rounded-lg border border-border px-4 py-2">
           <summary class="min-h-10 cursor-pointer content-center text-sm font-semibold">
             Public API call · excerpt
@@ -130,6 +157,9 @@ const lifecycle = await loadLifecycle();
     ))}
   </Tabs>
   <p class="mt-5 text-xs leading-6 text-muted">
-    Actual reference-library output · the skills binding is example consumer policy.
+    Complete reference-library results. Runtime directory and document-path fields are shown as
+    jg-plans/search-feedback and its document paths. Source, body, metadata, diagnostics, IDs, and
+    hashes are unchanged. Summaries, criterion progress, and the skills binding are consumer-derived
+    views.
   </p>
 </section>

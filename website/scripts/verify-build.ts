@@ -53,14 +53,16 @@ export const verifyBuild = async (
   const release = SiteReleaseSchema.parse(JSON.parse(content('release.json')));
   assert.equal(release.version, SITE.sourceVersion);
   if (release.state === 'published') {
-    const protectedCommand = /<!--email_off-->([\s\S]*?)<!--\/email_off-->/.exec(
-      content('index.html'),
-    )?.[1];
-    assert.ok(
-      protectedCommand?.includes('id="install-command"') &&
-        protectedCommand.includes(`jg-plans@${release.version}`),
-      'The install command must be protected from email obfuscation',
-    );
+    for (const path of ['index.html', 'docs/index.html']) {
+      const protectedCommand = /<!--email_off-->([\s\S]*?)<!--\/email_off-->/.exec(
+        content(path),
+      )?.[1];
+      assert.ok(
+        protectedCommand?.includes(`jg-plans@${release.version}`) &&
+          (path !== 'index.html' || protectedCommand.includes('id="install-command"')),
+        `${path}: The install command must be protected from email obfuscation`,
+      );
+    }
   }
   const expected = new Set([
     '404.html',
@@ -154,6 +156,9 @@ export const verifyBuild = async (
               (node) => node.textContent ?? '',
             ),
             text: document.body.textContent ?? '',
+            installExamples: [...document.querySelectorAll('pre')]
+              .map((node) => node.textContent?.trim() ?? '')
+              .filter((command) => command.startsWith('npm install jg-plans')),
             installCommand:
               document
                 .querySelector('#install-command')
@@ -211,6 +216,18 @@ export const verifyBuild = async (
           ),
         );
       }
+      for (const command of document.installExamples)
+        assert.equal(
+          command,
+          `npm install jg-plans@${release.version}`,
+          `${registry.path}: install example must pin the verified version`,
+        );
+      if (release.state === 'published' && registry.path === '/docs/')
+        assert.equal(
+          document.installExamples.length,
+          1,
+          'Getting started must show the verified install command',
+        );
       if (release.state !== 'published') {
         assert.ok(!document.text.includes('npm install jg-plans'));
         assert.ok(

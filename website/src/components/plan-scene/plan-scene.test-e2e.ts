@@ -1,6 +1,14 @@
+import { readFile } from 'node:fs/promises';
 import { expectNoHorizontalOverflow } from 'jg-playwright';
 import AxeBuilder from '@axe-core/playwright';
+
+import { buildLifecycle } from '../../../scripts/lifecycle/index.ts';
 import { expect, test } from '../../../testing/index.ts';
+
+const expectedLifecycle = await buildLifecycle(
+  await readFile(new URL('../../../../examples/criteria/plan.md', import.meta.url), 'utf8'),
+  await readFile(new URL('../../../../examples/criteria/milestones.md', import.meta.url), 'utf8'),
+);
 
 for (const colorScheme of ['light', 'dark'] as const)
   for (const width of [320, 1440]) {
@@ -20,26 +28,32 @@ for (const colorScheme of ['light', 'dark'] as const)
         expect(box!.x + box!.width).toBeLessThanOrEqual(width);
       }
       const create = scene.getByRole('tabpanel', { name: 'Create', exact: true });
-      const json = create.getByRole('figure').filter({ hasText: 'JSON · selected result fields' });
+      const json = create.getByRole('figure').filter({ hasText: 'JSON · complete result' });
       const copy = json.getByRole('button');
       await expect(copy).toHaveAccessibleName('Copy code');
       await expect(copy).toHaveAttribute('data-copy-display', 'icon');
       await copy.press('Enter');
       await expect(copy).toHaveAttribute('data-copy-state', 'success');
       await expect(copy).toHaveCSS('outline-style', 'solid');
-      expect(JSON.parse(await page.evaluate(() => navigator.clipboard.readText()))).toEqual({
-        plan: 'readable',
-        milestones: 'missing',
-        revision: 1,
-        status: 'pending',
-        criteria: ['AC-01', 'AC-02', 'AC-03'],
-      });
+      expect(JSON.parse(await page.evaluate(() => navigator.clipboard.readText()))).toStrictEqual(
+        expectedLifecycle.stages[0]!.result,
+      );
       await tabs.getByRole('tab', { name: 'Create', exact: true }).focus();
       await page.keyboard.press('ArrowRight');
       await expect(tabs.getByRole('tab', { name: 'Inspect', exact: true })).toBeFocused();
       await expect(scene.getByRole('tabpanel', { name: 'Inspect', exact: true })).toContainText(
         '1792612920_search-feedback-criteria',
       );
+      const inspected = scene.getByRole('tabpanel', { name: 'Inspect', exact: true });
+      await inspected
+        .getByRole('figure')
+        .filter({ hasText: 'JSON · complete result' })
+        .getByRole('button')
+        .click();
+      expect(JSON.parse(await page.evaluate(() => navigator.clipboard.readText()))).toStrictEqual(
+        expectedLifecycle.stages[1]!.result,
+      );
+      await tabs.getByRole('tab', { name: 'Inspect', exact: true }).focus();
       await page.keyboard.press('ArrowRight');
       await expect(tabs.getByRole('tab', { name: 'Update', exact: true })).toHaveAttribute(
         'aria-selected',
@@ -55,6 +69,32 @@ for (const colorScheme of ['light', 'dark'] as const)
       await expect(progress.nth(0)).toHaveText(/AC-01\s*done/u);
       await expect(progress.nth(1)).toHaveText(/AC-02\s*in progress/u);
       await expect(progress.nth(2)).toHaveText(/AC-03\s*in progress/u);
+      await update
+        .getByRole('figure')
+        .filter({ hasText: 'JSON · complete result' })
+        .getByRole('button')
+        .click();
+      expect(JSON.parse(await page.evaluate(() => navigator.clipboard.readText()))).toStrictEqual(
+        expectedLifecycle.stages[2]!.result,
+      );
+      await update.getByText('Mutation and check results', { exact: true }).click();
+      for (const operation of expectedLifecycle.stages[2]!.operations) {
+        await update
+          .getByRole('figure')
+          .filter({ hasText: operation.call + ' · complete result' })
+          .getByRole('button')
+          .click();
+        expect(JSON.parse(await page.evaluate(() => navigator.clipboard.readText()))).toStrictEqual(
+          operation.result,
+        );
+      }
+      await update.getByText('Consumer-derived summary', { exact: true }).click();
+      await expect(
+        update
+          .getByRole('figure')
+          .filter({ hasText: 'Consumer-derived summary · not an API return' }),
+      ).toContainText('"current"');
+      await tabs.getByRole('tab', { name: 'Update', exact: true }).focus();
       await page.keyboard.press('ArrowRight');
       const revise = scene.getByRole('tabpanel', { name: 'Revise', exact: true });
       await expect(tabs.getByRole('tab', { name: 'Revise', exact: true })).toBeFocused();
@@ -73,24 +113,10 @@ for (const colorScheme of ['light', 'dark'] as const)
       await diffPane.focus();
       await expect(diffPane).toHaveCSS('outline-style', 'solid');
       await revise.getByText('Actual revision observation', { exact: true }).click();
-      const result = revise
-        .getByRole('figure')
-        .filter({ hasText: 'JSON · selected result fields' });
+      const result = revise.getByRole('figure').filter({ hasText: 'JSON · complete result' });
       await result.getByRole('button').press('Enter');
       const revised = JSON.parse(await page.evaluate(() => navigator.clipboard.readText()));
-      expect(revised).toMatchObject({
-        revision: 2,
-        status: 'in progress',
-        binding: 'stale',
-        milestones: [
-          { id: '3c7a2f1e-9b4d-4e8a-a6f2-1d5c7e9b0a34', status: 'done' },
-          { id: '8e1d6b2a-4f7c-4a3e-b9d1-6c2e8f4a7b15', status: 'in progress' },
-        ],
-        check: {
-          conforms: false,
-          findings: [{ code: 'UNASSIGNED_CRITERION', criterion: 'AC-04', line: 27 }],
-        },
-      });
+      expect(revised).toStrictEqual(expectedLifecycle.stages[3]!.result);
       const revisedSource = revise
         .getByRole('figure')
         .filter({ hasText: 'Complete revised plan.md' });
@@ -100,7 +126,7 @@ for (const colorScheme of ['light', 'dark'] as const)
           figure.textContent?.includes('Complete revised plan.md'),
         )!;
         const result = figures.find((figure) =>
-          figure.textContent?.includes('JSON · selected result fields'),
+          figure.textContent?.includes('JSON · complete result'),
         )!;
         return {
           sourceFirst: Boolean(
@@ -116,6 +142,18 @@ for (const colorScheme of ['light', 'dark'] as const)
       const markdown = await page.evaluate(() => navigator.clipboard.readText());
       expect(markdown).toContain('revision: 2');
       expect(markdown).toContain('- AC-04: Search suggests spelling corrections.');
+      await revise.getByText('Mutation and check results', { exact: true }).click();
+      for (const operation of expectedLifecycle.stages[3]!.operations) {
+        await revise
+          .getByRole('figure')
+          .filter({ hasText: operation.call + ' · complete result' })
+          .getByRole('button')
+          .click();
+        expect(JSON.parse(await page.evaluate(() => navigator.clipboard.readText()))).toStrictEqual(
+          operation.result,
+        );
+      }
+      await expect(scene).toContainText('Runtime directory and document-path fields');
       await expectNoHorizontalOverflow(page);
       expect(
         (

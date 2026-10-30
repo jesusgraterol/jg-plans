@@ -14,18 +14,18 @@ Protocol 0.2 is provisional and is the only supported version; unversioned Markd
 
 ## Project blueprint
 
-| Area                                 | Ownership                                                                                                |
-| ------------------------------------ | -------------------------------------------------------------------------------------------------------- |
-| protocol/                            | Normative versioned specification and version index.                                                     |
-| examples/                            | Invented public documents and independently described expected observations.                             |
-| docs/                                | Concise durable concepts and operating guides; API and HTTP/error references stay outside docs/.         |
-| Root package                         | Public reference library and thin CLI.                                                                   |
-| src/                                 | Protocol schemas, tolerant parsers, selected-directory reads, targeted metadata/marker edits, and CLI.   |
-| api/, cli/, errors/                  | Canonical public API, automation, and error references.                                                  |
-| scripts/package/                     | Build, local archive creation, and isolated installed-consumer verification.                             |
-| scripts/release/, .github/workflows/ | Source/checksum receipts, registry/provenance verification, and qualified delivery.                      |
-| website/                             | Private Astro/Tailwind workspace for canonical docs, parsed examples, and verified release presentation. |
-| .agents/skills/jg-plans-maintenance/ | Shared project maintenance skill; Claude discovers the same source through its repository symlink.       |
+| Area                                 | Ownership                                                                                                                              |
+| ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
+| protocol/                            | Normative versioned specification and version index.                                                                                   |
+| examples/                            | Invented public documents and independently described expected observations.                                                           |
+| docs/                                | Concise durable concepts and operating guides; API and HTTP/error references stay outside docs/.                                       |
+| Root package                         | Public reference library and thin CLI.                                                                                                 |
+| src/                                 | Protocol schemas, tolerant parsers, selected-directory reads, targeted metadata/marker edits, and CLI.                                 |
+| api/, cli/, errors/                  | Canonical public API, automation, and error references.                                                                                |
+| scripts/package/                     | Build, local archive creation, and isolated installed-consumer verification.                                                           |
+| scripts/release/, .github/workflows/ | Source/checksum receipts, registry/provenance verification, and qualified delivery.                                                    |
+| website/                             | Private Astro/Tailwind workspace for canonical docs, complete API examples, checked sharing assets, and verified release presentation. |
+| .agents/skills/jg-plans-maintenance/ | Shared project maintenance skill; Claude discovers the same source through its repository symlink.                                     |
 
 Users own their documents and can edit or delete them. No history store, metadata field, CLI, or website is required to read Markdown. Optional conformance checks do not authorize execution or become a prerequisite to inspection.
 

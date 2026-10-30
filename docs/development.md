@@ -53,10 +53,8 @@ Start from the independently specified observations in examples/README.md. Add s
 
 Test public built exports and the installed executable. Keep known-field diagnostics separate from tolerant source observations and verify every byte outside targeted edit spans. Filesystem mutations share canonical local document locks; detected conflicts are failures, never an instruction to retry over newer user content.
 
-## First delivery prerequisites
+## Delivery prerequisites
 
-GitHub Pages is configured through Actions for jg-plans.jesusgraterol.dev. Recheck repository access, Actions permissions, branch policies, and domain/certificate readiness before delivery. Verify HTTPS enforcement when a Pages certificate/deployment is available.
+GitHub Pages uses Actions for jg-plans.jesusgraterol.dev. Recheck repository access, Actions permissions, branch policies, domain/certificate readiness, and HTTPS enforcement before delivery.
 
-The owner uses an isolated temporary npm login for the qualified first-publication handoff, preserving any account configured for other work. Verify the intended owner account and 2FA readiness then; account setup does not block independent website delivery.
-
-The release workflow and exact tested artifacts must exist on main before that owner step. The [release runbook](releasing.md) covers retained bootstrap/automated archives, isolated account setup, trusted-publisher settings, immediate owner-started main dispatch, and evidence distinguishing actual publication from a skip. Website delivery remains independent of npm availability.
+Release only the qualified main archive through the configured Check workflow. Verify registry contents and provenance independently of website delivery; a successful build alone establishes neither publication nor deployment. The [release runbook](releasing.md) owns these checks and recovery. Its original 0.1.0/0.1.1 owner bootstrap is explicitly historical and is not repeated for later releases. Any manual account setup or recovery uses an isolated temporary npm login without changing another account's configuration.
