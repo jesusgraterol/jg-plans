@@ -53,7 +53,6 @@ describe('findErrorCodeOverlaps', () => {
     [['é'], ['e\u0301'], []],
   ] satisfies [IErrorCode[], IErrorCode[], string[]][])(
     'compares explicit %j and %j as %j',
-    { tags: ['full'] },
     (first, second, expected) => {
       expect(
         memberships([plan('a', first), plan('b', second)]).map(({ code }) => code),
