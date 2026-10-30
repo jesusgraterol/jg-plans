@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { isDeepStrictEqual } from 'node:util';
 import { hashValue } from 'jg-crypto';
 
 import { parseMilestones, parsePlan, type IParsedPlan } from '../documents/index.ts';
@@ -6,6 +7,7 @@ import { planErrors } from '../errors/index.ts';
 import {
   PlanDocumentWriteSchema,
   PlanUpdateSchema,
+  SCOPE_METADATA_KEYS,
   type IDiagnostic,
   type IPlanDocumentWrite,
   type IPlanUpdate,
@@ -55,11 +57,21 @@ const validateSet = (
     )
   )
     throw planErrors.create('unsafeEdit', { data: { reason: 'invalid-serialized-frontmatter' } });
-  for (const [key, value] of Object.entries(set))
-    if (!Object.is(observation.metadata[key], value))
+  const raw = observation.rawMetadata;
+  for (const [key, value] of Object.entries(set)) {
+    // scope fields are read back from the YAML, which holds them for 0.1 plans too
+    const isScope = (SCOPE_METADATA_KEYS as readonly string[]).includes(key);
+    const isPresent = raw !== null && typeof raw === 'object' && Object.hasOwn(raw, key);
+    const isWritten = isScope
+      ? value === null
+        ? !isPresent
+        : isPresent && isDeepStrictEqual(Reflect.get(raw, key), value)
+      : Object.is(Reflect.get(observation.metadata, key), value);
+    if (!isWritten)
       throw planErrors.create('unsafeEdit', {
         data: { reason: 'unsupported-serialized-value', field: key },
       });
+  }
 };
 
 /**

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { PROGRESS_VALUES, PROTOCOL_VERSIONS } from './constants.ts';
+import { PRIORITY_VALUES, PROGRESS_VALUES, PROTOCOL_VERSIONS } from './constants.ts';
 
 const NonblankStringSchema = z.string().refine((value) => value.trim().length > 0);
 
@@ -16,6 +16,57 @@ export type IProgress = z.infer<typeof ProgressSchema>;
 export const ProtocolVersionSchema = z.enum(PROTOCOL_VERSIONS);
 
 export type IProtocolVersion = z.infer<typeof ProtocolVersionSchema>;
+
+// a 0.2 plan's priority
+export const PrioritySchema = z.enum(PRIORITY_VALUES);
+
+export type IPriority = z.infer<typeof PrioritySchema>;
+
+// a repository as its remote names it, owner/name; identifiers compare without regard to case
+export const RepositoryIdSchema = z
+  .string()
+  .regex(/^[A-Za-z0-9][A-Za-z0-9_.-]*\/[A-Za-z0-9_.-]+$/)
+  .refine((value) => !['.', '..'].includes(value.split('/')[1]!));
+
+export type IRepositoryId = z.infer<typeof RepositoryIdSchema>;
+
+// the repositories a 0.2 plan changes, each listed once regardless of case
+export const RepositoriesSchema = z
+  .array(RepositoryIdSchema)
+  .min(1)
+  .refine((ids) => new Set(ids.map((id) => id.toLowerCase())).size === ids.length);
+
+// a repository-relative POSIX path: no leading slash, backslash, or empty, '.', or '..' segment
+const RegistryPathSchema = z
+  .string()
+  .refine(
+    (path) =>
+      !path.includes('\\') &&
+      !path.includes('\0') &&
+      path.split('/').every((segment) => !['', '.', '..'].includes(segment)),
+  );
+
+// an inclusive range of error codes a plan adds to one registry of one repository
+export const ErrorCodeRangeSchema = z
+  .strictObject({
+    repository: RepositoryIdSchema,
+    registry: RegistryPathSchema,
+    first: z.int(),
+    last: z.int(),
+  })
+  .refine((range) => range.first <= range.last);
+
+export type IErrorCodeRange = z.infer<typeof ErrorCodeRangeSchema>;
+
+// the error code ranges a 0.2 plan adds
+export const ErrorCodesSchema = z.array(ErrorCodeRangeSchema);
+
+/** Optional 0.2 fields, validated apart from the shared metadata so 0.1 results stay unchanged. */
+export type IPlanScopeMetadata = {
+  priority?: IPriority;
+  repositories?: IRepositoryId[];
+  error_codes?: IErrorCodeRange[];
+};
 
 /** Preferred new-plan metadata. Unknown project fields remain allowed. */
 export const PlanMetadataSchema = z.looseObject({
@@ -109,7 +160,10 @@ export const CreatePlanOptionsSchema = z.strictObject({
 
 export type ICreatePlanOptions = z.infer<typeof CreatePlanOptionsSchema>;
 
-/** Only explicitly supplied core fields are changed; no implicit revision or timestamp bump. */
+/**
+ * Only explicitly supplied core and 0.2 scope fields are changed; no implicit revision or timestamp
+ * bump. A null scope field removes it.
+ */
 export const PlanSetSchema = z
   .strictObject({
     id: PlanMetadataSchema.shape.id.exactOptional(),
@@ -117,6 +171,9 @@ export const PlanSetSchema = z
     updated_at: PlanMetadataSchema.shape.updated_at.exactOptional(),
     revision: PlanMetadataSchema.shape.revision.exactOptional(),
     status: PlanMetadataSchema.shape.status.exactOptional(),
+    priority: PrioritySchema.nullable().exactOptional(),
+    repositories: RepositoriesSchema.nullable().exactOptional(),
+    error_codes: ErrorCodesSchema.nullable().exactOptional(),
   })
   .refine((value) => Object.keys(value).length > 0);
 

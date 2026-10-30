@@ -1,8 +1,18 @@
-import { isMap, isScalar, parseDocument, Scalar, stringify } from 'yaml';
+import { isDeepStrictEqual } from 'node:util';
+import {
+  isAlias,
+  isMap,
+  isNode,
+  isScalar,
+  type Pair,
+  parseDocument,
+  Scalar,
+  stringify,
+} from 'yaml';
 
 import { parseMilestones, parsePlan, sourceLines } from '../documents/index.ts';
 import { planErrors } from '../errors/index.ts';
-import type { IPlanUpdate } from '../protocol/index.ts';
+import { SCOPE_METADATA_KEYS, type IPlanUpdate } from '../protocol/index.ts';
 
 import type { ITextEdit } from './types.ts';
 
@@ -38,6 +48,81 @@ const scalarText = (value: string | number, style?: string): string => {
   return stringify(scalar, { lineWidth: 0, doubleQuotedAsJSON: true }).replace(/\n$/, '');
 };
 
+// a value a plan patch sets; null removes a scope field
+type IPlanSet = Extract<IPlanUpdate, { document: 'plan' }>['set'];
+type IPlanSetValue = NonNullable<IPlanSet[keyof IPlanSet]>;
+
+const isScopeKey = (key: string): boolean =>
+  (SCOPE_METADATA_KEYS as readonly string[]).includes(key);
+
+// a list written as one YAML flow line, such as `[ acme/app, acme/api ]`
+const flowText = (value: readonly unknown[]): string => {
+  const text = stringify(value, { flow: true, lineWidth: 0 }).replace(/\n$/, '');
+  encodeSource(text);
+  return text;
+};
+
+const valueText = (value: IPlanSetValue, style?: string): string =>
+  Array.isArray(value) ? flowText(value) : scalarText(value, style);
+
+// the offset of the line that holds an index
+const lineStart = (text: string, index: number): number => {
+  let start = index;
+  while (start > 0 && !/[\r\n]/.test(text[start - 1]!)) start -= 1;
+  return start;
+};
+
+// the offset just past the line break that ends an index's line, or the text's end
+const pastLineBreak = (text: string, index: number): number => {
+  if (text[index - 1] === '\r' && text[index] === '\n') return index + 1;
+  if (index > 0 && /[\r\n]/.test(text[index - 1]!)) return index;
+  const match = /\r\n|\n|\r/.exec(text.slice(index));
+  return match ? index + match.index + match[0].length : text.length;
+};
+
+/**
+ * Replace a scope field's whole value, whatever its style, with one line, or remove the field's
+ * line or lines when the value is null. Offsets are relative to the frontmatter content.
+ * @throws
+ * - JG_PLANS_UNSAFE_EDIT: The requested edit is unsupported or ambiguous
+ * - JG_PLANS_UNSUPPORTED_ENCODING: Document text is not valid UTF-8
+ */
+const scopeFieldEdit = (
+  yamlSource: string,
+  pair: Pair,
+  key: string,
+  value: IPlanSetValue | null,
+): ITextEdit | undefined => {
+  const node = pair.value;
+  const keyRange = isScalar(pair.key) ? pair.key.range : undefined;
+  if (
+    !keyRange ||
+    isAlias(node) ||
+    (isNode(node) && (node.anchor || node.tag || !node.range)) ||
+    (node !== null && !isNode(node))
+  )
+    throw planErrors.create('unsafeEdit', {
+      data: { reason: 'unsupported-metadata-value', field: key },
+    });
+  const valueRange = isNode(node) ? node.range : undefined;
+  if (value === null)
+    return {
+      start: lineStart(yamlSource, keyRange[0]),
+      end: pastLineBreak(yamlSource, valueRange?.[2] ?? keyRange[1]),
+      replacement: '',
+    };
+  if (isNode(node) && isDeepStrictEqual(node.toJSON(), value)) return undefined;
+  const colon = yamlSource.indexOf(':', keyRange[1]);
+  let end = valueRange?.[1] ?? colon + 1;
+  // a block value's range ends past its last line break, which stays
+  while (end > colon + 1 && /[\r\n]/.test(yamlSource[end - 1]!)) end -= 1;
+  return {
+    start: colon + 1,
+    end,
+    replacement: ` ${valueText(value, isScalar(node) ? node.type : undefined)}`,
+  };
+};
+
 /**
  * Prepare supported metadata edits without changing unrelated YAML or Markdown.
  * @throws
@@ -52,9 +137,11 @@ export const planEdits = (
   const frontmatter = observation.frontmatter;
   const eol = lineEnding(source);
   if (!frontmatter) {
-    const text = Object.entries(patch.set)
-      .map(([key, value]) => `${key}: ${scalarText(value)}`)
-      .join(eol);
+    const fields = Object.entries(patch.set).filter(
+      (entry): entry is [string, IPlanSetValue] => entry[1] !== null,
+    );
+    if (!fields.length) return [];
+    const text = fields.map(([key, value]) => `${key}: ${valueText(value)}`).join(eol);
     const offset = source.startsWith('\uFEFF') ? 1 : 0;
     return [
       {
@@ -96,9 +183,24 @@ export const planEdits = (
         data: { reason: 'duplicate-metadata-key', field: key },
       });
     if (!pairs.length) {
-      insertions.push(`${key}: ${scalarText(value)}${eol}`);
+      if (value !== null) insertions.push(`${key}: ${valueText(value)}${eol}`);
       continue;
     }
+    if (isScopeKey(key)) {
+      const edit = scopeFieldEdit(yamlSource, pairs[0]!, key, value);
+      if (edit)
+        edits.push({
+          start: frontmatter.contentStart + edit.start,
+          end: frontmatter.contentStart + edit.end,
+          replacement: edit.replacement,
+        });
+      continue;
+    }
+    // core fields are scalars, which the schema keeps from being null or lists
+    if (value === null || Array.isArray(value))
+      throw planErrors.create('unsafeEdit', {
+        data: { reason: 'unsupported-metadata-value', field: key },
+      });
     const node = pairs[0]!.value;
     if (
       !isScalar(node) ||

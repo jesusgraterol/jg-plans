@@ -41,6 +41,16 @@ A newly generated preferred plan starts with YAML frontmatter containing:
 | status     | `pending`, `in progress`, or `done` | Progress of the whole plan.                 |
 | protocol   | The string `"0.2"`                  | Opts the plan into protocol 0.2.            |
 
+A 0.2 plan may also declare these optional fields:
+
+| Field        | Writer value                                              | Meaning                                    |
+| ------------ | --------------------------------------------------------- | ------------------------------------------ |
+| priority     | `low`, `medium`, `high`, or `hotfix`                      | How urgent the plan is.                    |
+| repositories | A nonempty list of unique `owner/name` identifiers        | The repositories the plan changes.         |
+| error_codes  | A list of `{ repository, registry, first, last }` entries | The ranges of numeric error codes it adds. |
+
+Each repository identifier is taken from the repository's remote, such as `acme/app` for `git@github.com:acme/app.git`, and identifiers compare without regard to case. In an `error_codes` entry, `repository` is such an identifier, `registry` is the repository-relative POSIX path of the error registry, without a leading `/`, a backslash, or an empty, `.`, or `..` segment, and `first` and `last` are safe integers with `first` at most `last`, an inclusive range.
+
 ```markdown
 ---
 id: 1792612920_search-feedback-criteria
@@ -192,14 +202,17 @@ The 0.1 diagnostics continue to apply. A 0.2 plan adds the following. Each is an
 | MISPLACED_CRITERIA_MARKER | milestones         | A coverage line is not directly after the ID line, or the status line.      |
 | UNKNOWN_CRITERION         | milestones         | A coverage line names an ID the plan doesn't define.                        |
 | UNASSIGNED_CRITERION      | plan               | milestones.md exists and no milestone covers the criterion.                 |
+| INVALID_PRIORITY          | plan               | The `priority` field is not `low`, `medium`, `high`, or `hotfix`.           |
+| INVALID_REPOSITORIES      | plan               | The `repositories` field is not a nonempty list of unique identifiers.      |
+| INVALID_ERROR_CODES       | plan               | The `error_codes` field is not a list of valid entries.                     |
 
-Each diagnostic points at the line it concerns: the definition, the coverage line, or the status field or marker. A check of plan.md alone reports the plan rules. The milestone and coverage rules need both documents. An explicit check fails on any of these errors; inspection reports them without failing.
+Each diagnostic points at the line it concerns: the definition, the coverage line, the status field or marker, or the value of the optional field. A check of plan.md alone reports the plan rules. The milestone and coverage rules need both documents. An explicit check fails on any of these errors; inspection reports them without failing.
 
 ## Compatibility with 0.1
 
 A plan without `protocol: "0.2"`, including one that declares `protocol: "0.1"`, is a 0.1 plan:
 
-- It receives no criteria, coverage, or status diagnostics, so its check and inspection diagnostics match those of protocol 0.1.
+- It receives no criteria, coverage, status, or optional-field diagnostics, so its check and inspection diagnostics match those of protocol 0.1. Fields named `priority`, `repositories`, or `error_codes` stay ordinary project metadata.
 - Its status values remain any nonempty string.
 - Readers may still observe `AC-` lines and coverage lines in it, and report their derived progress, without diagnosing them.
 

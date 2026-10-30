@@ -2,6 +2,7 @@ import type { ICriterion } from '../criteria/index.ts';
 import type {
   IDiagnostic,
   IPlanMetadata,
+  IPlanScopeMetadata,
   IProtocolVersion,
   ISourceLocation,
 } from '../protocol/index.ts';
@@ -30,7 +31,7 @@ export type IParsedPlan = {
   body: string;
   frontmatter: IFrontmatter | null;
   rawMetadata: unknown;
-  metadata: Partial<IPlanMetadata>;
+  metadata: Partial<IPlanMetadata> & IPlanScopeMetadata;
   preamble: ISourceSpan;
   sections: IHeadingSection[];
   // 0.2 only for a valid protocol: "0.2" declaration; every other plan follows 0.1

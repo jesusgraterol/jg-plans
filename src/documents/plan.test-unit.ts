@@ -148,3 +148,107 @@ describe('built plan parser', () => {
     );
   });
 });
+
+describe('0.2 plan scope fields', () => {
+  const plan = (fields: string, protocol = "'0.2'"): string =>
+    `---\nid: scoped\ncreated_at: 2026-10-21T20:00:00Z\nupdated_at: 2026-10-21T20:00:00Z\nrevision: 1\nstatus: pending\nprotocol: ${protocol}\n${fields}---\n# Plan\n\n## Acceptance criteria\n\n- AC-01: It works.\n`;
+  const codes = (source: string): string[] =>
+    parsePlan(source).diagnostics.map((item) => item.code);
+
+  it('returns valid priority, repositories, and error codes in metadata', () => {
+    const parsed = parsePlan(
+      plan(
+        'priority: hotfix\nrepositories:\n  - acme/app\n  - Acme/api.v2\nerror_codes: [{ repository: acme/app, registry: errors/README.md, first: 100, last: 100 }]\n',
+      ),
+    );
+    expect(parsed.diagnostics).toEqual([]);
+    expect(parsed.metadata).toMatchObject({
+      priority: 'hotfix',
+      repositories: ['acme/app', 'Acme/api.v2'],
+      error_codes: [
+        { repository: 'acme/app', registry: 'errors/README.md', first: 100, last: 100 },
+      ],
+    });
+  });
+
+  it.each([
+    ['priority: urgent\n', 'INVALID_PRIORITY'],
+    ['priority: [high]\n', 'INVALID_PRIORITY'],
+    ['repositories: []\n', 'INVALID_REPOSITORIES'],
+    ['repositories: [acme/app, ACME/App]\n', 'INVALID_REPOSITORIES'],
+    ['repositories: [acme]\n', 'INVALID_REPOSITORIES'],
+    ['repositories: [acme/..]\n', 'INVALID_REPOSITORIES'],
+    ['repositories: acme/app\n', 'INVALID_REPOSITORIES'],
+    ['repositories:\n', 'INVALID_REPOSITORIES'],
+    [
+      'error_codes: [{ repository: acme/app, registry: errors.md, first: 5, last: 4 }]\n',
+      'INVALID_ERROR_CODES',
+    ],
+    [
+      'error_codes: [{ repository: acme/app, registry: /errors.md, first: 1, last: 2 }]\n',
+      'INVALID_ERROR_CODES',
+    ],
+    [
+      'error_codes: [{ repository: acme/app, registry: docs/../errors.md, first: 1, last: 2 }]\n',
+      'INVALID_ERROR_CODES',
+    ],
+    [
+      'error_codes: [{ repository: acme/app, registry: "docs\\\\errors.md", first: 1, last: 2 }]\n',
+      'INVALID_ERROR_CODES',
+    ],
+    [
+      'error_codes: [{ repository: acme/app, registry: errors.md, first: 1.5, last: 2 }]\n',
+      'INVALID_ERROR_CODES',
+    ],
+    [
+      'error_codes: [{ repository: acme/app, registry: errors.md, first: 1, last: 2, owner: me }]\n',
+      'INVALID_ERROR_CODES',
+    ],
+  ])('parsePlan(%j) -> %s', (fields, code) => {
+    expect(codes(plan(fields))).toEqual([code]);
+    expect(parsePlan(plan(fields)).metadata).not.toHaveProperty(fields.split(':')[0]!);
+  });
+
+  it('reports each invalid field at its value', () => {
+    const source = plan('priority: urgent\nerror_codes: oops\n');
+    const diagnostics = parsePlan(source).diagnostics;
+    expect(diagnostics.map((item) => [item.code, item.location?.line])).toEqual([
+      ['INVALID_PRIORITY', 8],
+      ['INVALID_ERROR_CODES', 9],
+    ]);
+    expect(source.slice(diagnostics[0]!.location!.offset).startsWith('urgent')).toBe(true);
+    expect(diagnostics.every((item) => item.severity === 'error')).toBe(true);
+  });
+
+  it('accepts an empty error code list', () => {
+    expect(parsePlan(plan('error_codes: []\n')).metadata.error_codes).toEqual([]);
+  });
+
+  it('keeps a 0.1 plan unchanged: no findings and no scope metadata', () => {
+    for (const protocol of ["'0.1'", 'null']) {
+      const source = plan(
+        'priority: urgent\nrepositories: []\nerror_codes: [{ first: 9, last: 1 }]\n',
+        protocol,
+      ).replace('protocol: null\n', '');
+      const parsed = parsePlan(source);
+      expect(parsed.protocol).toBe('0.1');
+      expect(parsed.diagnostics.map((item) => item.code)).not.toEqual(
+        expect.arrayContaining(['INVALID_PRIORITY', 'INVALID_REPOSITORIES', 'INVALID_ERROR_CODES']),
+      );
+      expect(parsed.metadata).not.toHaveProperty('priority');
+      expect(checkPlan({ plan: source }).diagnostics).toEqual(
+        checkPlan({ plan: source.replace(/priority[\s\S]*?(?=---)/, '') }).diagnostics.map(
+          (item) => ({ ...item }),
+        ),
+      );
+    }
+  });
+
+  it('reports nothing new when the metadata cannot be read as JSON', () => {
+    const source = plan(
+      'priority: urgent\nerror_codes: [{ repository: acme/app, registry: errors.md, first: 1, last: 9007199254740993 }]\n',
+    );
+    expect(parsePlan(source).rawMetadata).toBeNull();
+    expect(codes(source)).toEqual(['YAML_VALUE_UNAVAILABLE']);
+  });
+});

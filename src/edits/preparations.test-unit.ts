@@ -187,3 +187,124 @@ describe('pure public edit preparation', () => {
     ).toThrowError(expect.objectContaining({ code: ERRORS.UNSAFE_EDIT }));
   });
 });
+
+describe('scope field edits', () => {
+  const plan = (fields: string, eol = '\n'): string =>
+    [
+      '---',
+      'id: scoped # keep',
+      'revision: 2',
+      "protocol: '0.2'",
+      ...fields.split('\n').filter(Boolean),
+      'extension: {scope: [one, two]}',
+      '---',
+      '# Body 😀',
+      '',
+    ].join(eol);
+  const update = (source: string, set: Record<string, unknown>) =>
+    preparePlanUpdate(source, {
+      document: 'plan',
+      expectedSha256: digest(source),
+      set,
+    } as Parameters<typeof preparePlanUpdate>[1]);
+
+  it('inserts missing fields as single-line values before the closing delimiter', () => {
+    const source = plan('');
+    const result = update(source, {
+      priority: 'high',
+      repositories: ['acme/app', 'acme/api'],
+      error_codes: [
+        { repository: 'acme/app', registry: 'errors/README.md', first: 100, last: 149 },
+      ],
+    });
+    expect(result.source).toBe(
+      source.replace(
+        '---\n# Body',
+        'priority: "high"\nrepositories: [ acme/app, acme/api ]\nerror_codes: [ { repository: acme/app, registry: errors/README.md, first: 100, last: 149 } ]\n---\n# Body',
+      ),
+    );
+    expect(parsePlan(result.source).metadata).toMatchObject({
+      priority: 'high',
+      repositories: ['acme/app', 'acme/api'],
+      error_codes: [
+        { repository: 'acme/app', registry: 'errors/README.md', first: 100, last: 149 },
+      ],
+    });
+  });
+
+  it.each(['\n', '\r\n'])(
+    'replaces a block-style value with one line and leaves every other byte with %j',
+    (eol) => {
+      const source = plan(
+        'priority: low # triaged\nrepositories:\n  - acme/app # main\n  - acme/api\nerror_codes:\n  - repository: acme/app\n    registry: errors.md\n    first: 1\n    last: 2\n',
+        eol,
+      );
+      const result = update(source, {
+        priority: 'hotfix',
+        repositories: ['acme/web'],
+        error_codes: [{ repository: 'acme/web', registry: 'errors.md', first: 7, last: 9 }],
+      });
+      expect(result.source).toBe(
+        plan(
+          'priority: "hotfix" # triaged\nrepositories: [ acme/web ]\nerror_codes: [ { repository: acme/web, registry: errors.md, first: 7, last: 9 } ]\n',
+          eol,
+        ),
+      );
+      expect(result.diagnostics).toEqual(
+        expect.not.arrayContaining([expect.objectContaining({ code: 'INVALID_REPOSITORIES' })]),
+      );
+    },
+  );
+
+  it('removes a field, a block-style one included, when it is set to null', () => {
+    const source = plan(
+      'priority: high\nrepositories:\n  - acme/app\n  - acme/api\nerror_codes: [{ repository: acme/app, registry: e.md, first: 1, last: 1 }]\n',
+    );
+    const result = update(source, { priority: null, repositories: null, error_codes: null });
+    expect(result.source).toBe(plan(''));
+    expect(update(plan(''), { priority: null }).changed).toBe(false);
+  });
+
+  it('skips the write when the requested value deep-equals the current one', () => {
+    const source = plan(
+      'repositories:\n  - acme/app\nerror_codes: [{ repository: acme/app, registry: e.md, first: 1, last: 1 }]\n',
+    );
+    const result = update(source, {
+      repositories: ['acme/app'],
+      error_codes: [{ repository: 'acme/app', registry: 'e.md', first: 1, last: 1 }],
+    });
+    expect(result.changed).toBe(false);
+    expect(result.source).toBe(source);
+  });
+
+  it('writes the fields into a plan without frontmatter, and ignores null there', () => {
+    const result = preparePlanDocumentWrite('# Body\n', {
+      document: 'plan',
+      expectedSha256: digest('# Body\n'),
+      body: '# Body\n',
+      set: { priority: 'medium', repositories: ['acme/app'], error_codes: null },
+    });
+    expect(result.source).toBe(
+      '---\npriority: "medium"\nrepositories: [ acme/app ]\n---\n# Body\n',
+    );
+  });
+
+  it('refuses invalid values, and an aliased or tagged current value', () => {
+    for (const set of [
+      { priority: 'urgent' },
+      { repositories: [] },
+      { repositories: ['acme/app', 'ACME/APP'] },
+      { error_codes: [{ repository: 'acme/app', registry: '/e.md', first: 1, last: 1 }] },
+    ])
+      expect(() => update(plan(''), set)).toThrow(
+        expect.objectContaining({ code: ERRORS.INVALID_INPUT }),
+      );
+    for (const fields of [
+      'shared: &list [acme/app]\nrepositories: *list\n',
+      'repositories: !!seq [acme/app]\n',
+    ])
+      expect(() => update(plan(fields), { repositories: ['acme/api'] })).toThrow(
+        expect.objectContaining({ code: ERRORS.UNSAFE_EDIT }),
+      );
+  });
+});
