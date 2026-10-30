@@ -177,26 +177,29 @@ describe('compiled CLI read contract', () => {
     expect(human.stderr).toContain('MISSING_FRONTMATTER');
   });
 
-  it('distinguishes passing checks, absence, format observations, and operational failures', async ({
-    cli: { fixture, run },
-  }) => {
-    const root = await fixture();
-    expect((await run(['inspect', '--directory', root, '--json'])).exitCode).toBe(0);
-    expect((await run(['check', '--directory', root, '--json'])).exitCode).toBe(1);
-    const example = resolve(import.meta.dirname, '../../examples/small');
-    expect((await run(['check', '--directory', example, '--json'])).exitCode).toBe(0);
-    await writeFile(join(root, 'plan.md'), Buffer.from([0xc3, 0x28]));
-    expect((await run(['inspect', '--directory', root, '--json'])).exitCode).toBe(0);
-    expect((await run(['check', '--directory', root, '--json'])).exitCode).toBe(1);
-    await rm(join(root, 'plan.md'));
-    await mkdir(join(root, 'plan.md'));
-    const failed = await run(['inspect', '--directory', root, '--json']);
-    expect(failed.exitCode).toBe(2);
-    expect(JSON.parse(failed.stdout)).toMatchObject({
-      error: { code: 'JG_PLANS_READ_FAILED' },
-      data: { plan: { state: 'unreadable' } },
-    });
-  });
+  // six compiled CLI processes take over 5 s on Windows runners
+  it(
+    'distinguishes passing checks, absence, format observations, and operational failures',
+    { timeout: 30_000 },
+    async ({ cli: { fixture, run } }) => {
+      const root = await fixture();
+      expect((await run(['inspect', '--directory', root, '--json'])).exitCode).toBe(0);
+      expect((await run(['check', '--directory', root, '--json'])).exitCode).toBe(1);
+      const example = resolve(import.meta.dirname, '../../examples/small');
+      expect((await run(['check', '--directory', example, '--json'])).exitCode).toBe(0);
+      await writeFile(join(root, 'plan.md'), Buffer.from([0xc3, 0x28]));
+      expect((await run(['inspect', '--directory', root, '--json'])).exitCode).toBe(0);
+      expect((await run(['check', '--directory', root, '--json'])).exitCode).toBe(1);
+      await rm(join(root, 'plan.md'));
+      await mkdir(join(root, 'plan.md'));
+      const failed = await run(['inspect', '--directory', root, '--json']);
+      expect(failed.exitCode).toBe(2);
+      expect(JSON.parse(failed.stdout)).toMatchObject({
+        error: { code: 'JG_PLANS_READ_FAILED' },
+        data: { plan: { state: 'unreadable' } },
+      });
+    },
+  );
 
   it(
     'supports help/version without reading selected documents',
