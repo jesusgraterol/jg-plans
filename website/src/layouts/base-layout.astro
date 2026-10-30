@@ -73,6 +73,21 @@ const structuredData = noIndex
       structuredData={structuredData}
     />
     <ThemeInitScript storageKey={SITE.themeKey} />
+    {/*
+     * Repeats the shared stylesheet's page-transition opt-in inline. Chromium can resolve an
+     * incoming page's opt-in from the styles active when its body started, so when the bundled
+     * stylesheet arrives later it skips the transition and reports an unhandled InvalidStateError.
+     */}
+    <style is:inline>
+      @view-transition {
+        navigation: auto;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        @view-transition {
+          navigation: none;
+        }
+      }
+    </style>
   </head>
   <body>
     <SkipLink />

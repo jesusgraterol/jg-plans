@@ -12,7 +12,7 @@ The homepage and examples page share a create → inspect → update → revise 
 
 The homepage dashboard renders the criteria example's milestones and criterion progress, and the check report marks each finding checkPlan reports for the registered criteria-invalid example on its own line. Both are computed at build time; the invalid example stays out of the gallery.
 
-Plain Markdown destinations do not opt into native page transitions. The base layout explicitly skips the outgoing transition for /raw/ links through pageswap, while HTML page transitions keep the shared UI behavior. Browsers without that optional event still navigate normally. See [cross-document transition controls](https://developer.chrome.com/docs/web-platform/view-transitions/cross-document).
+Plain Markdown destinations do not opt into native page transitions. The base layout explicitly skips the outgoing transition for /raw/ links through pageswap, while HTML page transitions keep the shared UI behavior. Browsers without that optional event still navigate normally. The layout also repeats the shared opt-in and its reduced-motion opt-out in an inline head style, because Chromium can resolve an incoming page's opt-in before the bundled stylesheet is active, which skips the transition and reports an unhandled InvalidStateError. See [cross-document transition controls](https://developer.chrome.com/docs/web-platform/view-transitions/cross-document).
 
 ## Availability is evidence
 

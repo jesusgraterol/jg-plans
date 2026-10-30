@@ -156,12 +156,9 @@ test('keyboard navigation, theme persistence, copy, and mobile menu', async ({ p
     'data-resolved-theme',
     initial === 'dark' ? 'light' : 'dark',
   );
+  // page.goto never starts a page transition; wait for fonts and images before the resize below
   await page.goto('/');
-  // Settle the return transition before the mobile viewport resize below.
   await waitForPageAssets(page);
-  await page.evaluate(async () => {
-    await document.activeViewTransition?.finished;
-  });
   await page.locator('[data-copy-button]').first().click();
   await expect(page.locator('[data-copy-button]').first()).toHaveAttribute(
     'data-copy-state',
@@ -180,6 +177,28 @@ test('keyboard navigation, theme persistence, copy, and mobile menu', async ({ p
   expect(await page.evaluate((key) => localStorage.getItem(key), SITE.themeKey)).toBe(
     initial === 'dark' ? 'light' : 'dark',
   );
+});
+
+test('a slow stylesheet keeps the native page transition', async ({ page, context }) => {
+  await page.goto('/');
+  await page.addInitScript(() => {
+    window.addEventListener('pagereveal', (event) => {
+      document.documentElement.dataset['revealedTransition'] = String(
+        event.viewTransition !== null,
+      );
+    });
+  });
+  // simulates a slow network or cache, so the destination's stylesheet arrives after its body starts
+  await context.route('**/_astro/*.css', async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    await route.continue();
+  });
+  await page.getByRole('link', { name: 'See a plan evolve' }).click();
+  await expect(page).toHaveURL('/examples/#lifecycle');
+  await expect(page.locator('html')).toHaveAttribute('data-revealed-transition', 'true');
+  await page.evaluate(async () => {
+    await document.activeViewTransition?.finished;
+  });
 });
 
 test('clipboard denial provides manual-copy feedback', async ({ page }) => {
