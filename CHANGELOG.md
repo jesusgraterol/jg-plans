@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.1 — protocol page example
+
+- The protocol's repository identifier example names an HTTPS remote, `https://github.com/acme/app.git`, so the website's protocol page shows it as written instead of an obfuscated email address. Nothing else changed.
+
 ## 0.4.0 — Plan metadata and error-code overlaps
 
 - Add optional `priority` (`low`, `medium`, `high`, or `hotfix`), `repositories` (unique `owner/name` identifiers), and `error_codes` (`{ repository, registry, first, last }` ranges) to protocol 0.2 plan metadata. A 0.2 plan reports INVALID_PRIORITY, INVALID_REPOSITORIES, or INVALID_ERROR_CODES at an invalid value, and valid values join `metadata`. 0.1 plans read and check exactly as before.
