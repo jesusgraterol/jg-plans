@@ -1,8 +1,8 @@
 /** The implemented provisional document protocol, independent of the npm version. */
 export const PROTOCOL_VERSION = '0.2';
 
-// protocol versions a plan can declare; a plan without a declaration follows 0.1
-export const PROTOCOL_VERSIONS = ['0.1', '0.2'] as const;
+// supported declarations; unversioned documents use the current protocol too
+export const PROTOCOL_VERSIONS = ['0.2'] as const;
 
 // the progress vocabulary of 0.2 plans, milestones, and derived criterion progress
 export const PROGRESS_VALUES = ['pending', 'in progress', 'done'] as const;

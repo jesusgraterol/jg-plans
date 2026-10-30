@@ -6,6 +6,9 @@ import { readBoundedFile, writeFileAtomic } from 'jg-fs';
 import { createShutdownSignal, parseStrictArgs } from 'jg-process';
 import { z } from 'zod';
 
+// asset checks run before the package build in CI, so compare the owning source entry
+import { PROTOCOL_VERSION } from '../../src/protocol/index.ts';
+
 import manifest from '../package.json' with { type: 'json' };
 
 const root = resolve(import.meta.dirname, '..');
@@ -35,6 +38,12 @@ let browser: Browser | undefined;
 const shutdown = createShutdownSignal({ forceOnRepeat: true, onSignal: () => browser?.close() });
 try {
   const flags = parseStrictArgs(process.argv.slice(2), { check: { type: 'boolean' } });
+  const template = (await read('assets/social.html')).toString('utf8');
+  assert.ok(
+    template.includes(`<span class="badge">Protocol ${PROTOCOL_VERSION} · Provisional</span>`) &&
+      template.includes(`protocol: <span class="value">"${PROTOCOL_VERSION}"</span>`),
+    'Sharing image protocol differs from the public PROTOCOL_VERSION',
+  );
   const hashes = Object.fromEntries(
     await Promise.all(inputs.map(async (path) => [path, hashValue(await read(path))])),
   );
@@ -51,7 +60,7 @@ try {
     );
     checkDimensions(png);
   } else {
-    let html = (await read('assets/social.html')).toString('utf8');
+    let html = template;
     for (const [token, path] of [
       ['SANS', inputs[3]!],
       ['MONO', inputs[4]!],

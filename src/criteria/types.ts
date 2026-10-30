@@ -24,7 +24,7 @@ export type ICriterionCoverage = {
   progress: IProgress | null;
 };
 
-// cross-document criteria observations; diagnostics are reported only for 0.2 plans
+// cross-document criteria observations under the current protocol
 export type ICriteriaObservation = {
   protocol: IProtocolVersion;
   criteria: ICriterionCoverage[];

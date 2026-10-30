@@ -29,7 +29,7 @@ const { source, filename, call, result } = Astro.props;
     <div class="min-w-0">
       <div class="mb-3 flex min-h-8 flex-wrap items-center justify-between gap-2">
         <p class="flex items-center gap-2 text-sm font-semibold">
-          <span class="text-accent">02</span> Structured observation
+          <span class="text-accent">02</span> Complete API result
         </p>
         <code class="rounded-md bg-secondary px-2 py-1 font-mono text-xs text-muted">
           {call} <span aria-hidden="true">→</span>
@@ -42,7 +42,7 @@ const { source, filename, call, result } = Astro.props;
         overflow="wrap"
         code={JSON.stringify(result, null, 2)}
         lang="json"
-        title="JSON · selected result fields"
+        title="JSON · complete result"
       />
     </div>
   </div>

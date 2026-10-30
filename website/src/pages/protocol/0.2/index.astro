@@ -45,7 +45,10 @@ const milestone = milestones.slice(0, milestones.indexOf('\n## Milestone 2') + 1
         </p>
         <dl class="mt-5 grid gap-3 text-sm">
           {[
-            ['protocol: "0.2"', 'Opts the plan in; plans without it keep the 0.1 rules'],
+            [
+              'protocol: "0.2"',
+              'Declares the current version; unversioned text uses the same rules',
+            ],
             ['- AC-01: …', 'One testable requirement with a stable ID'],
             ['**Acceptance criteria:**', 'The criteria a milestone delivers'],
             ['pending / in progress / done', 'The shared progress vocabulary'],

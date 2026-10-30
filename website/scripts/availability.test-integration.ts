@@ -117,16 +117,18 @@ it(
         expect(build.exitCode, build.stderr).toBe(0);
         await verifyBuild(directory);
         if (availability.state === 'published') {
-          const homepage = join(directory, 'index.html');
-          const homepageBytes = await readBoundedFile(homepage, 1024 * 1024);
-          await writeFile(
-            homepage,
-            homepageBytes.toString('utf8').replaceAll(/<!--\/?email_off-->/g, ''),
-          );
-          await expect(verifyBuild(directory)).rejects.toThrow(
-            'The install command must be protected from email obfuscation',
-          );
-          await writeFile(homepage, homepageBytes);
+          for (const path of ['index.html', 'docs/index.html']) {
+            const homepage = join(directory, path);
+            const homepageBytes = await readBoundedFile(homepage, 1024 * 1024);
+            await writeFile(
+              homepage,
+              homepageBytes.toString('utf8').replaceAll(/<!--\/?email_off-->/g, ''),
+            );
+            await expect(verifyBuild(directory)).rejects.toThrow(
+              'The install command must be protected from email obfuscation',
+            );
+            await writeFile(homepage, homepageBytes);
+          }
         }
         const raw = (
           await readBoundedFile(join(directory, 'raw/api/README.md'), 1024 * 1024)

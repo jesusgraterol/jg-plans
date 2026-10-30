@@ -83,7 +83,6 @@ export const verifyPackedConsumer = async (
       'dist/index.js',
       'dist/index.d.ts',
       'dist/cli/cli.js',
-      'protocol/0.1/README.md',
       'protocol/0.2/README.md',
       'examples/criteria/expected.json',
       'api/README.md',
@@ -96,6 +95,10 @@ export const verifyPackedConsumer = async (
       'NOTICE',
     ])
       assert.ok(files.includes(required), `Missing shipped path: ${required}`);
+    assert.ok(
+      !files.some((file) => file.startsWith('protocol/0.1/')),
+      'Removed specification ships',
+    );
     const payload = await inspectPackageArchive(
       await readBoundedFile(archive, ARCHIVE_LIMITS.compressedBytes),
     );
@@ -148,12 +151,16 @@ export const verifyPackedConsumer = async (
       import { createRequire } from 'node:module';
       import * as plans from 'jg-plans';
       assert.equal(plans.PROTOCOL_VERSION, '0.2');
-      assert.deepEqual(Object.keys(plans).sort(), ['CreatePlanOptionsSchema','CriterionIdSchema','DiagnosticSchema','ERRORS','ErrorCodeRangeSchema','InspectPlanOptionsSchema','MilestoneSelectorSchema','MilestoneSetSchema','PRIORITY_VALUES','PROGRESS_VALUES','PROTOCOL_VERSION','PROTOCOL_VERSIONS','ProgressSchema','ProtocolVersionSchema','PlanDocumentsSchema','PlanDocumentWriteSchema','RemoveMilestonesSchema','PlanFingerprintOptionsSchema','PlanFingerprintSchema','PlanMetadataSchema','PlanSetSchema','PlanUpdateSchema','PrioritySchema','ReadOptionsSchema','RepositoryIdSchema','SourceLocationSchema','checkPlan','createPlan','fingerprintPlan','findErrorCodeOverlaps','inspectPlan','observeCriteria','parseMilestones','parsePlan','updatePlan','preparePlanUpdate','preparePlanDocumentWrite','writePlanDocument','removeMilestones','withPlanDocumentLocks'].sort());
+      assert.deepEqual(plans.PROTOCOL_VERSIONS, ['0.2']);
+      assert.equal(plans.parsePlan('---\\nid: 1792612920_search-feedback-criteria\\n---').name, 'search-feedback-criteria');
+      assert.deepEqual(Object.keys(plans).sort(), ['CreatePlanOptionsSchema','CriterionIdSchema','DiagnosticSchema','ERRORS','ErrorCodeDeclarationSchema','ErrorCodeSchema','InspectPlanOptionsSchema','MilestoneSelectorSchema','MilestoneSetSchema','PRIORITY_VALUES','PROGRESS_VALUES','PROTOCOL_VERSION','PROTOCOL_VERSIONS','ProgressSchema','ProtocolVersionSchema','PlanDocumentsSchema','PlanDocumentWriteSchema','RemoveMilestonesSchema','PlanFingerprintOptionsSchema','PlanFingerprintSchema','PlanMetadataSchema','PlanSetSchema','PlanUpdateSchema','PrioritySchema','ReadOptionsSchema','RepositoryIdSchema','SourceLocationSchema','checkPlan','createPlan','fingerprintPlan','findErrorCodeOverlaps','inspectPlan','observeCriteria','parseMilestones','parsePlan','updatePlan','preparePlanUpdate','preparePlanDocumentWrite','writePlanDocument','removeMilestones','withPlanDocumentLocks'].sort());
       assert.equal(plans.parsePlan('# Useful document').body, '# Useful document');
       assert.match(plans.fingerprintPlan('# Work').sha256, /^[a-f0-9]{64}$/);
       assert.equal(plans.parseMilestones('## Milestone 1: Work\\n**Status:** custom').milestones[0].status, 'custom');
       assert.equal(plans.observeCriteria(plans.parsePlan('---\\nprotocol: "0.2"\\n---\\n- AC-01: Done.')).criteria[0].id, 'AC-01');
       assert.equal(plans.checkPlan({}).conforms, false);
+      const claims = {id: null, protocol: '0.2', status: 'pending', errorCodes: [{repository: 'acme/app', registry: 'errors.md', codes: [100, '100', 'INPUT_INVALID']}]};
+      assert.deepEqual(plans.findErrorCodeOverlaps([{...claims, directory: 'a'}, {...claims, directory: 'b', errorCodes: [{repository: 'acme/app', registry: 'errors.md', codes: ['100']}]}]), [{repository: 'acme/app', registry: 'errors.md', code: '100', plans: [{directory: 'a', id: null}, {directory: 'b', id: null}]}]);
       const result = await plans.inspectPlan('missing-directory');
       assert.equal(result.plan.state, 'missing');
       assert.equal(plans.ReadOptionsSchema.safeParse({maxBytes: 0}).success, false);
@@ -179,8 +186,12 @@ export const verifyPackedConsumer = async (
 
     await writeFile(
       join(directory, 'types.mts'),
-      `import { parsePlan, inspectPlan, createPlan, updatePlan, fingerprintPlan, preparePlanUpdate, preparePlanDocumentWrite, writePlanDocument, removeMilestones, withPlanDocumentLocks, findErrorCodeOverlaps, type IErrorCodeOverlap, type IOverlapPlan, type IPreparedPlanEdit, type IAssignedMilestoneId, type IPlanDocumentWrite, type IPlanDocumentWriteResult, type IRemoveMilestones, type IRemoveMilestonesResult, type IPlanUpdate, type IPlanCreation, type IParsedPlan, type IPlanInspection, type IDiagnostic, type ISourceSpan, type IHeadingSection, type IPlanFingerprint, type IInspectPlanOptions, type IPlanFingerprintOptions } from 'jg-plans';
+      `import { parsePlan, inspectPlan, createPlan, updatePlan, fingerprintPlan, preparePlanUpdate, preparePlanDocumentWrite, writePlanDocument, removeMilestones, withPlanDocumentLocks, findErrorCodeOverlaps, type IErrorCode, type IErrorCodeDeclaration, type IOverlapPlanReference, type IErrorCodeOverlap, type IOverlapPlan, type IPreparedPlanEdit, type IAssignedMilestoneId, type IPlanDocumentWrite, type IPlanDocumentWriteResult, type IRemoveMilestones, type IRemoveMilestonesResult, type IPlanUpdate, type IPlanCreation, type IParsedPlan, type IPlanInspection, type IDiagnostic, type ISourceSpan, type IHeadingSection, type IPlanFingerprint, type IInspectPlanOptions, type IPlanFingerprintOptions } from 'jg-plans';
 const plan: IParsedPlan = parsePlan('# Work');
+const name: string | null = plan.name;
+const code: IErrorCode = 'INPUT_INVALID';
+const declaration: IErrorCodeDeclaration = {repository: 'acme/app', registry: 'errors.md', codes: [100, code]};
+const reference: IOverlapPlanReference = {directory: 'example', id: 'custom'};
 const inspection: IPlanInspection = await inspectPlan('.');
 const diagnostics: IDiagnostic[] = plan.diagnostics;
 const created: IPlanCreation = await createPlan({slug: 'typed-example', body: '# Work'});
@@ -199,9 +210,9 @@ const written: IPlanDocumentWriteResult = await writePlanDocument(created.direct
 const removal: IRemoveMilestones = {expectedSha256: prepared.sha256};
 const removed: IRemoveMilestonesResult = await removeMilestones(created.directory, removal);
 const locked: number = await withPlanDocumentLocks(created.directory, ['milestones', 'plan'], () => 1);
-const declared: IOverlapPlan = {directory: created.directory, id: null, protocol: '0.2', status: 'pending', errorCodes: [{repository: 'acme/app', registry: 'errors.md', first: 1, last: 2}]};
+const declared: IOverlapPlan = {directory: created.directory, id: null, protocol: '0.2', status: 'pending', errorCodes: [{repository: 'acme/app', registry: 'errors.md', codes: [1, 'INPUT_INVALID']}]};
 const overlaps: IErrorCodeOverlap[] = findErrorCodeOverlaps([declared, {...declared, directory: 'other'}]);
-void [inspection, overlaps, diagnostics, changed, fingerprint, preamble, sections, inspectOptions, narrow, assignments, written, removed, locked];\n`,
+void [name, declaration, reference, inspection, overlaps, diagnostics, changed, fingerprint, preamble, sections, inspectOptions, narrow, assignments, written, removed, locked];\n`,
     );
     const require = createRequire(import.meta.url);
     const typecheck = await runProcess({
@@ -243,7 +254,7 @@ void [inspection, overlaps, diagnostics, changed, fingerprint, preamble, section
     assert.equal(cli.stderr, '');
     const envelope = z
       .object({
-        schemaVersion: z.literal(1),
+        schemaVersion: z.literal(2),
         command: z.literal('inspect'),
         data: z.object({
           plan: z.object({ state: z.literal('missing') }),
@@ -271,11 +282,14 @@ void [inspection, overlaps, diagnostics, changed, fingerprint, preamble, section
       return JSON.parse(result.stdout) as unknown;
     };
     const markerId = '6cc499ed-c9ab-4986-a16b-7e910c6b9521';
-    const milestoneSource = `## Milestone 1: Consumer\n**Status:** pending\n**Milestone ID:** ${markerId}\n\nKeep this prose.\n`;
+    const milestoneSource = `## Milestone 1: Consumer\n**Status:** pending\n**Milestone ID:** ${markerId}\n**Acceptance criteria:** AC-01\n\nKeep this prose.\n`;
     const createInput = join(directory, 'create.json');
     await writeFile(
       createInput,
-      JSON.stringify({ body: '# Installed executable', milestones: milestoneSource }),
+      JSON.stringify({
+        body: '# Installed executable\n\n- AC-01: Keep this prose.',
+        milestones: milestoneSource,
+      }),
     );
     const created = z
       .object({
@@ -340,7 +354,7 @@ void [inspection, overlaps, diagnostics, changed, fingerprint, preamble, section
       JSON.stringify({
         document: 'plan',
         expectedSha256: observedForWrite.data.plan.sha256,
-        body: '# Revised installed example\n',
+        body: '# Revised installed example\n\n- AC-01: Keep this prose.\n',
         set: { revision: 2 },
       }),
     );
@@ -382,7 +396,7 @@ void [inspection, overlaps, diagnostics, changed, fingerprint, preamble, section
       JSON.stringify({
         document: 'milestones',
         expectedSha256: null,
-        source: '## Milestone 1: New scope\n**Status:** pending\n',
+        source: '## Milestone 1: New scope\n**Status:** pending\n**Acceptance criteria:** AC-01\n',
         assignMissingIds: true,
       }),
     );

@@ -5,6 +5,7 @@ import {
   observeCriteria,
   parseMilestones,
   parsePlan,
+  type IParsedMilestones,
   type IParsedPlan,
 } from 'jg-plans';
 import { describe, expect, it } from 'vitest';
@@ -26,6 +27,75 @@ const milestone = (
   id = `5a148c73-7d38-4a2f-9c0f-90${ordinal}e938290229`.slice(0, 36),
 ): string =>
   `## Milestone ${ordinal}: Work ${ordinal}\n**Status:** ${status}\n**Milestone ID:** ${id}\n${coverage === undefined ? '' : `**Acceptance criteria:** ${coverage}\n`}\nDo the work.\n\n`;
+
+describe('corrected plan contracts', () => {
+  it.each([
+    { metadata: { status: 4 } },
+    { criteria: [{ id: 4, text: 'Work', location: { offset: 0, line: 1, column: 1 } }] },
+    { criteria: [{ id: 'AC-01', text: null, location: { offset: 0, line: 1, column: 1 } }] },
+    { criteria: [{ id: 'AC-01', text: 'Work', location: { offset: -1, line: 1, column: 1 } }] },
+  ])('rejects malformed consumed plan fields: %o', (fields) => {
+    const parsed = parsePlan(plan02('- AC-01: Work.'));
+    expectToThrowCode(
+      () => observeCriteria({ ...parsed, ...fields } as unknown as IParsedPlan),
+      ERRORS.INVALID_INPUT,
+    );
+  });
+
+  it.each([
+    { ordinal: '1' },
+    { id: 4 },
+    { status: {} },
+    { criteria: [4] },
+    { location: null },
+    { statusMarkers: [{ value: 'pending', location: null, lineStart: 0, lineEnd: 1 }] },
+    {
+      idMarkers: [
+        {
+          value: 'custom',
+          location: { offset: 0, line: 1, column: 1 },
+          lineStart: '0',
+          lineEnd: 1,
+        },
+      ],
+    },
+    {
+      criteriaMarkers: [
+        {
+          value: 'AC-01',
+          location: { offset: 0, line: 1, column: 1 },
+          lineStart: 0,
+          lineEnd: null,
+        },
+      ],
+    },
+  ])('rejects malformed consumed milestone fields: %o', (fields) => {
+    const plan = parsePlan(plan02('- AC-01: Work.'));
+    const parsed = parseMilestones(milestone(1, 'pending', 'AC-01'));
+    const malformed = {
+      ...parsed,
+      milestones: [{ ...parsed.milestones[0], ...fields }],
+    } as unknown as IParsedMilestones;
+    expectToThrowCode(() => observeCriteria(plan, malformed), ERRORS.INVALID_INPUT);
+  });
+
+  it('rejects a malformed coverage marker through the documented input error', () => {
+    const plan = parsePlan(plan02('- AC-01: A requirement.\n'));
+    const parsed = parseMilestones(milestone(1, 'pending', 'AC-01'));
+    const malformed = {
+      ...parsed,
+      milestones: parsed.milestones.map((entry) => ({
+        ...entry,
+        criteriaMarkers: [{ ...entry.criteriaMarkers[0], value: 4 }],
+      })),
+    } as unknown as IParsedMilestones;
+    expectToThrowCode(
+      () => observeCriteria(plan, malformed),
+      ERRORS.INVALID_INPUT,
+      'Invalid jg-plans input',
+    );
+  });
+});
 
 describe('criterion definitions', () => {
   it('recognizes every list marker form with up to three spaces of indentation', () => {
@@ -119,19 +189,19 @@ describe('criterion definitions', () => {
 });
 
 describe('protocol 0.2 plan rules', () => {
-  it('reads only the string "0.2" as protocol 0.2 and never reports a missing marker', () => {
+  it('uses current interpretation while diagnosing unsupported or non-string declarations', () => {
     expect(parsePlan(plan02('- AC-01: Text.\n')).protocol).toBe('0.2');
     const legacy = parsePlan(`${frontmatter('pending', '"0.1"')}\n- AC-01: Text.\n`);
-    expect(legacy.protocol).toBe('0.1');
-    expect(legacy.diagnostics).toStrictEqual([]);
+    expect(legacy.protocol).toBe('0.2');
+    expect(codes(legacy.diagnostics)).toStrictEqual(['UNSUPPORTED_PROTOCOL']);
     const unquoted = parsePlan(`${frontmatter('pending', '0.2')}\n- AC-01: Text.\n`);
-    expect(unquoted.protocol).toBe('0.1');
+    expect(unquoted.protocol).toBe('0.2');
     expect(codes(unquoted.diagnostics)).toStrictEqual(['INVALID_METADATA_FIELD']);
     const absent = parsePlan(
       '---\nid: invented\ncreated_at: 2026-10-21T20:00:00Z\nupdated_at: 2026-10-21T20:00:00Z\nrevision: 1\nstatus: pending\n---\n',
     );
-    expect(absent.protocol).toBe('0.1');
-    expect(absent.diagnostics).toStrictEqual([]);
+    expect(absent.protocol).toBe('0.2');
+    expect(codes(absent.diagnostics)).toStrictEqual(['NO_CRITERIA']);
   });
 
   it('reports missing, invalid, duplicate, and empty criteria at their lines', () => {
@@ -279,19 +349,34 @@ describe('criterion progress', () => {
   });
 });
 
-describe('protocol 0.1 plans', () => {
-  it('observe criteria and coverage without any new diagnostics', () => {
+describe('unsupported protocol observations', () => {
+  it('retains useful criteria while reporting current conformance failures', () => {
     const plan = `${frontmatter('waiting-for-feedback', '"0.1"')}\n- AC-1: Invalid but unchecked.\n- AC-01: Kept.\n- AC-01: Duplicate.\n`;
     const milestones =
       '## Milestone 1: Work\n**Status:** custom\n\n**Acceptance criteria:**\n- The page loads.\n';
     const result = checkPlan({ plan, milestones });
-    expect(result).toStrictEqual({ conforms: true, diagnostics: [] });
+    expect(result.conforms).toBe(false);
+    expect(codes(result.diagnostics)).toStrictEqual([
+      'UNSUPPORTED_PROTOCOL',
+      'INVALID_STATUS',
+      'INVALID_CRITERION_ID',
+      'DUPLICATE_CRITERION',
+      'INVALID_STATUS',
+      'INVALID_CRITERIA_MARKER',
+      'MISPLACED_CRITERIA_MARKER',
+      'UNASSIGNED_CRITERION',
+    ]);
     const observed = observeCriteria(parsePlan(plan), parseMilestones(milestones));
-    expect(observed.protocol).toBe('0.1');
+    expect(observed.protocol).toBe('0.2');
     expect(observed.criteria.map((criterion) => [criterion.id, criterion.progress])).toStrictEqual([
       ['AC-01', null],
     ]);
-    expect(observed.diagnostics).toStrictEqual([]);
+    expect(codes(observed.diagnostics)).toStrictEqual([
+      'INVALID_STATUS',
+      'INVALID_CRITERIA_MARKER',
+      'MISPLACED_CRITERIA_MARKER',
+      'UNASSIGNED_CRITERION',
+    ]);
   });
 });
 

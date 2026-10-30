@@ -59,7 +59,7 @@ const validateSet = (
     throw planErrors.create('unsafeEdit', { data: { reason: 'invalid-serialized-frontmatter' } });
   const raw = observation.rawMetadata;
   for (const [key, value] of Object.entries(set)) {
-    // scope fields are read back from the YAML, which holds them for 0.1 plans too
+    // scope removals and collections are verified against the serialized YAML
     const isScope = (SCOPE_METADATA_KEYS as readonly string[]).includes(key);
     const isPresent = raw !== null && typeof raw === 'object' && Object.hasOwn(raw, key);
     const isWritten = isScope

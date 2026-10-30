@@ -13,7 +13,7 @@ export type {
 } from './documents/index.ts';
 export { observeCriteria } from './criteria/index.ts';
 export { findErrorCodeOverlaps } from './overlaps/index.ts';
-export type { IErrorCodeOverlap, IOverlapDeclaration, IOverlapPlan } from './overlaps/index.ts';
+export type { IErrorCodeOverlap, IOverlapPlanReference, IOverlapPlan } from './overlaps/index.ts';
 export type { ICriteriaObservation, ICriterion, ICriterionCoverage } from './criteria/index.ts';
 export { ERRORS } from './errors/index.ts';
 export { inspectPlan } from './files/index.ts';
@@ -40,7 +40,8 @@ export {
   PROTOCOL_VERSIONS,
   CriterionIdSchema,
   DiagnosticSchema,
-  ErrorCodeRangeSchema,
+  ErrorCodeSchema,
+  ErrorCodeDeclarationSchema,
   PlanDocumentsSchema,
   PlanMetadataSchema,
   PrioritySchema,
@@ -55,7 +56,8 @@ export {
 } from './protocol/index.ts';
 export type {
   IDiagnostic,
-  IErrorCodeRange,
+  IErrorCode,
+  IErrorCodeDeclaration,
   IPlanDocuments,
   IPlanMetadata,
   IPlanScopeMetadata,

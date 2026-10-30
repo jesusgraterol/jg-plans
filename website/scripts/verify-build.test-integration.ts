@@ -15,7 +15,7 @@ it('ships the real canonical protocol and original example in the production art
   ).toString('utf8');
   const specification = (
     await readBoundedFile(
-      fileURLToPath(new URL('../dist/protocol/0.1/index.html', import.meta.url)),
+      fileURLToPath(new URL('../dist/protocol/0.2/index.html', import.meta.url)),
       1024 * 1024,
     )
   ).toString('utf8');

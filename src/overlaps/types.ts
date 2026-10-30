@@ -1,10 +1,6 @@
 import { z } from 'zod';
 
-import {
-  ErrorCodeRangeSchema,
-  ProtocolVersionSchema,
-  type IErrorCodeRange,
-} from '../protocol/index.ts';
+import { ErrorCodeDeclarationSchema, ProtocolVersionSchema } from '../protocol/index.ts';
 
 /** One plan's identity, state, and error code declarations, as findErrorCodeOverlaps reads them. */
 export const OverlapPlanSchema = z.strictObject({
@@ -12,27 +8,24 @@ export const OverlapPlanSchema = z.strictObject({
   id: z.string().nullable(),
   protocol: ProtocolVersionSchema,
   status: z.string().nullable(),
-  errorCodes: z.array(ErrorCodeRangeSchema),
+  errorCodes: z.array(ErrorCodeDeclarationSchema),
 });
 
 export type IOverlapPlan = z.infer<typeof OverlapPlanSchema>;
 
-// one plan's declaration inside an overlap group
-export type IOverlapDeclaration = {
+// a distinct participating plan, without duplicating its complete declarations
+export type IOverlapPlanReference = {
   directory: string;
   id: string | null;
-  entry: IErrorCodeRange;
 };
 
 /**
- * A maximal run of declarations from at least two plans whose ranges chain together by
- * intersection in one registry of one repository. `first` and `last` span the run. An overlap is
- * an observation; it grants nothing.
+ * One canonical string code claimed by distinct active plans in one repository and registry.
+ * An overlap is an observation; it grants nothing.
  */
 export type IErrorCodeOverlap = {
   repository: string;
   registry: string;
-  first: number;
-  last: number;
-  plans: IOverlapDeclaration[];
+  code: string;
+  plans: IOverlapPlanReference[];
 };

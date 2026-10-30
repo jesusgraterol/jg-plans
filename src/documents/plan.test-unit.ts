@@ -5,6 +5,46 @@ import { describe, expect, it } from 'vitest';
 const metadata =
   'id: invented\ncreated_at: 2026-10-21T20:00:00Z\nupdated_at: 2026-10-21T16:00:00-04:00\nrevision: 1\nstatus: waiting-for-feedback';
 
+describe('corrected plan contracts', () => {
+  it.each([
+    ['1792612920_search-feedback-criteria', 'search-feedback-criteria'],
+    ['custom_plan', 'custom_plan'],
+    ['123_Name', '123_Name'],
+    ['', null],
+    [null, null],
+    [undefined, null],
+  ])('derives name from id %j as %j without changing source metadata', (id, expected) => {
+    const source = `---\n${id === undefined ? '' : `id: ${JSON.stringify(id)}\n`}name: project-owned\nprotocol: "0.2"\n---\n- AC-01: Keep source.\n`;
+    const parsed = parsePlan(source);
+    expect(parsed.name).toBe(expected);
+    expect(parsed.source).toBe(source);
+    expect(parsed.rawMetadata).toMatchObject({ name: 'project-owned' });
+  });
+
+  it('interprets unversioned documents as protocol 0.2', () => {
+    const source = `---\n${metadata.replace('waiting-for-feedback', 'pending')}\n---\n- AC-01: Use current rules.\n`;
+    const parsed = parsePlan(source);
+    expect(parsed.protocol).toBe('0.2');
+    expect(parsed.diagnostics).toStrictEqual([]);
+    expect(parsed.source).toBe(source);
+  });
+
+  it('retains unsupported declarations while diagnosing them under the current reader', () => {
+    const source = `---\n${metadata.replace('waiting-for-feedback', 'pending')}\nprotocol: "0.1"\n---\n- AC-01: Retain text.\n`;
+    const parsed = parsePlan(source);
+    expect(parsed.protocol).toBe('0.2');
+    expect(parsed.metadata.protocol).toBeUndefined();
+    expect(parsed.rawMetadata).toMatchObject({ protocol: '0.1' });
+    expect(parsed.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: 'UNSUPPORTED_PROTOCOL',
+        message: 'The declared plan protocol version is unsupported.',
+      }),
+    );
+    expect(parsed.source).toBe(source);
+  });
+});
+
 describe('built plan parser', () => {
   it('partitions the complete source into a preamble and unfenced heading/body spans', () => {
     const source =
@@ -51,8 +91,11 @@ describe('built plan parser', () => {
     expect(result.rawMetadata).toMatchObject({
       project: { label: 'café 😀', flags: [true, null, 3] },
     });
-    expect(result.diagnostics).toEqual([]);
-    expect(checkPlan({ plan: source }).conforms).toBe(true);
+    expect(result.diagnostics.map(({ code }) => code)).toStrictEqual([
+      'INVALID_STATUS',
+      'NO_CRITERIA',
+    ]);
+    expect(checkPlan({ plan: source }).conforms).toBe(false);
   });
 
   it('keeps invalid raw values independently of valid fields', () => {
@@ -158,7 +201,7 @@ describe('0.2 plan scope fields', () => {
   it('returns valid priority, repositories, and error codes in metadata', () => {
     const parsed = parsePlan(
       plan(
-        'priority: hotfix\nrepositories:\n  - acme/app\n  - Acme/api.v2\nerror_codes: [{ repository: acme/app, registry: errors/README.md, first: 100, last: 100 }]\n',
+        'priority: hotfix\nrepositories:\n  - acme/app\n  - Acme/api.v2\nerror_codes: [{ repository: acme/app, registry: errors/README.md, codes: [100, "100", SEARCH_FAILED] }]\n',
       ),
     );
     expect(parsed.diagnostics).toEqual([]);
@@ -166,7 +209,11 @@ describe('0.2 plan scope fields', () => {
       priority: 'hotfix',
       repositories: ['acme/app', 'Acme/api.v2'],
       error_codes: [
-        { repository: 'acme/app', registry: 'errors/README.md', first: 100, last: 100 },
+        {
+          repository: 'acme/app',
+          registry: 'errors/README.md',
+          codes: [100, '100', 'SEARCH_FAILED'],
+        },
       ],
     });
   });
@@ -181,27 +228,27 @@ describe('0.2 plan scope fields', () => {
     ['repositories: acme/app\n', 'INVALID_REPOSITORIES'],
     ['repositories:\n', 'INVALID_REPOSITORIES'],
     [
-      'error_codes: [{ repository: acme/app, registry: errors.md, first: 5, last: 4 }]\n',
+      'error_codes: [{ repository: acme/app, registry: errors.md, first: 4, last: 5 }]\n',
       'INVALID_ERROR_CODES',
     ],
     [
-      'error_codes: [{ repository: acme/app, registry: /errors.md, first: 1, last: 2 }]\n',
+      'error_codes: [{ repository: acme/app, registry: /errors.md, codes: [1, 2] }]\n',
       'INVALID_ERROR_CODES',
     ],
     [
-      'error_codes: [{ repository: acme/app, registry: docs/../errors.md, first: 1, last: 2 }]\n',
+      'error_codes: [{ repository: acme/app, registry: docs/../errors.md, codes: [1, 2] }]\n',
       'INVALID_ERROR_CODES',
     ],
     [
-      'error_codes: [{ repository: acme/app, registry: "docs\\\\errors.md", first: 1, last: 2 }]\n',
+      'error_codes: [{ repository: acme/app, registry: "docs\\\\errors.md", codes: [1, 2] }]\n',
       'INVALID_ERROR_CODES',
     ],
     [
-      'error_codes: [{ repository: acme/app, registry: errors.md, first: 1.5, last: 2 }]\n',
+      'error_codes: [{ repository: acme/app, registry: errors.md, codes: [null] }]\n',
       'INVALID_ERROR_CODES',
     ],
     [
-      'error_codes: [{ repository: acme/app, registry: errors.md, first: 1, last: 2, owner: me }]\n',
+      'error_codes: [{ repository: acme/app, registry: errors.md, codes: [1, 2], owner: me }]\n',
       'INVALID_ERROR_CODES',
     ],
   ])('parsePlan(%j) -> %s', (fields, code) => {
@@ -224,29 +271,42 @@ describe('0.2 plan scope fields', () => {
     expect(parsePlan(plan('error_codes: []\n')).metadata.error_codes).toEqual([]);
   });
 
-  it('keeps a 0.1 plan unchanged: no findings and no scope metadata', () => {
+  it('preserves decoded numeric values and quoted code spelling independently', () => {
+    const source = plan(
+      'error_codes: [{ repository: acme/app, registry: errors.md, codes: [0100, 1e3, "0100", "1e3", 1.5] }]\n',
+    );
+    const parsed = parsePlan(source);
+    expect(parsed.metadata.error_codes).toStrictEqual([
+      { repository: 'acme/app', registry: 'errors.md', codes: [100, 1000, '0100', '1e3', 1.5] },
+    ]);
+    expect(parsed.source).toBe(source);
+    expect(parsed.diagnostics).toStrictEqual([]);
+  });
+
+  it('applies scope rules to unversioned and unsupported declarations without hiding source', () => {
     for (const protocol of ["'0.1'", 'null']) {
       const source = plan(
-        'priority: urgent\nrepositories: []\nerror_codes: [{ first: 9, last: 1 }]\n',
+        'priority: urgent\nrepositories: []\nerror_codes: [{ codes: null }]\n',
         protocol,
       ).replace('protocol: null\n', '');
       const parsed = parsePlan(source);
-      expect(parsed.protocol).toBe('0.1');
-      expect(parsed.diagnostics.map((item) => item.code)).not.toEqual(
-        expect.arrayContaining(['INVALID_PRIORITY', 'INVALID_REPOSITORIES', 'INVALID_ERROR_CODES']),
-      );
+      expect(parsed.protocol).toBe('0.2');
+      expect(parsed.diagnostics.map(({ code }) => code)).toStrictEqual([
+        ...(protocol === "'0.1'" ? ['UNSUPPORTED_PROTOCOL'] : []),
+        'INVALID_PRIORITY',
+        'INVALID_REPOSITORIES',
+        'INVALID_ERROR_CODES',
+      ]);
       expect(parsed.metadata).not.toHaveProperty('priority');
-      expect(checkPlan({ plan: source }).diagnostics).toEqual(
-        checkPlan({ plan: source.replace(/priority[\s\S]*?(?=---)/, '') }).diagnostics.map(
-          (item) => ({ ...item }),
-        ),
-      );
+      expect(parsed.rawMetadata).toMatchObject({ priority: 'urgent', repositories: [] });
+      expect(parsed.source).toBe(source);
+      expect(checkPlan({ plan: source }).conforms).toBe(false);
     }
   });
 
-  it('reports nothing new when the metadata cannot be read as JSON', () => {
+  it('keeps unsafe numeric codes unavailable rather than presenting rounded values', () => {
     const source = plan(
-      'priority: urgent\nerror_codes: [{ repository: acme/app, registry: errors.md, first: 1, last: 9007199254740993 }]\n',
+      'priority: urgent\nerror_codes: [{ repository: acme/app, registry: errors.md, codes: [1, 9007199254740993] }]\n',
     );
     expect(parsePlan(source).rawMetadata).toBeNull();
     expect(codes(source)).toEqual(['YAML_VALUE_UNAVAILABLE']);

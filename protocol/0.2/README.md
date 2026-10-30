@@ -4,7 +4,7 @@
 
 A compact Markdown protocol for plans, their acceptance criteria, and optional milestones. People own their files and can edit, move, shorten, or delete them. The protocol describes documents and observations; projects decide how to approve and execute work.
 
-Protocol 0.2 adds identified acceptance criteria, milestone coverage, a fixed progress vocabulary, and derived criterion progress to [protocol 0.1](../0.1/README.md). A plan opts in by declaring `protocol: "0.2"`. Every other plan keeps the 0.1 rules, so existing documents read and check exactly as before.
+Protocol 0.2 is the only supported protocol. Readers apply its rules to unversioned Markdown as well. An explicit unsupported version receives a diagnostic while its source and raw metadata remain available; readers never rewrite the version marker automatically.
 
 ## Writers and readers
 
@@ -39,17 +39,19 @@ A newly generated preferred plan starts with YAML frontmatter containing:
 | updated_at | RFC 3339 timestamp                  | The author's latest recorded revision time. |
 | revision   | Positive integer                    | Author-maintained document revision.        |
 | status     | `pending`, `in progress`, or `done` | Progress of the whole plan.                 |
-| protocol   | The string `"0.2"`                  | Opts the plan into protocol 0.2.            |
+| protocol   | The string `"0.2"`                  | Declares the supported protocol.            |
 
 A 0.2 plan may also declare these optional fields:
 
-| Field        | Writer value                                              | Meaning                                    |
-| ------------ | --------------------------------------------------------- | ------------------------------------------ |
-| priority     | `low`, `medium`, `high`, or `hotfix`                      | How urgent the plan is.                    |
-| repositories | A nonempty list of unique `owner/name` identifiers        | The repositories the plan changes.         |
-| error_codes  | A list of `{ repository, registry, first, last }` entries | The ranges of numeric error codes it adds. |
+| Field        | Writer value                                        | Meaning                                             |
+| ------------ | --------------------------------------------------- | --------------------------------------------------- |
+| priority     | `low`, `medium`, `high`, or `hotfix`                | How urgent the plan is.                             |
+| repositories | A nonempty list of unique `owner/name` identifiers  | The repositories the plan changes.                  |
+| error_codes  | A list of `{ repository, registry, codes }` entries | The explicit string or numeric error codes it adds. |
 
-Each repository identifier is taken from the repository's remote, such as `acme/app` for `https://github.com/acme/app.git`, and identifiers compare without regard to case. In an `error_codes` entry, `repository` is such an identifier, `registry` is the repository-relative POSIX path of the error registry, without a leading `/`, a backslash, or an empty, `.`, or `..` segment, and `first` and `last` are safe integers with `first` at most `last`, an inclusive range.
+Each repository identifier is taken from the repository's remote, such as `acme/app` for `https://github.com/acme/app.git`, and identifiers compare without regard to case. In an `error_codes` entry, `repository` is such an identifier and `registry` is the repository-relative POSIX path of the error registry, without a leading `/`, a backslash, or an empty, `.`, or `..` segment. `codes` is an explicit list, for example `[100, "SEARCH_FILTER_INVALID"]`. Empty lists make no claims. Codes are nonblank strings or finite numbers; integer values must be safe JavaScript integers. Boolean, null, object, NaN, and infinite values are invalid. Entries accept no other fields.
+
+Readers retain decoded numeric values and exact string text. Original source retains YAML spelling. Quote numeric-looking identifiers when spelling matters: YAML `0100` decodes to number `100` and `1e3` to number `1000`, while `"0100"` and `"1e3"` remain strings. No trimming, case folding, or Unicode normalization is applied to codes.
 
 ```markdown
 ---
@@ -70,9 +72,11 @@ Explain empty search results and give people a useful next action.
 - AC-01: Empty search results explain why nothing matched.
 ```
 
-Quote the protocol value. An unquoted `0.2` is a YAML number, which readers report as an incompatible metadata value. A missing `protocol` field, or the value `"0.1"`, marks a 0.1 plan; readers never add the field, and 0.1 plans keep the 0.1 rules described under [Compatibility with 0.1](#compatibility-with-01). Only the version marker opts a plan in. Readers do not infer the version from criteria, milestones, or other content.
+Quote the protocol value. An unquoted `0.2` is a YAML number and receives INVALID_METADATA_FIELD. An unsupported string receives UNSUPPORTED_PROTOCOL: "The declared plan protocol version is unsupported." A missing marker uses current rules without adding a field to the document. New reference-library plans declare `"0.2"` by default, and creation rejects an explicitly unsupported declaration before filesystem mutation.
 
 Default ID generation uses Unix seconds plus a descriptive slug. Readers do not require that pattern, a UUID, or a project-specific identifier length.
+
+The reference reader exposes a derived top-level `name`, separate from frontmatter. Decimal timestamp plus `_` plus a lowercase kebab-case slug yields the slug: `1792612920_search-feedback-criteria` becomes `search-feedback-criteria`. Other valid IDs yield the full ID, and absent or invalid IDs yield null. Names need not be unique; `id` remains identity. A project-owned metadata field named `name` is preserved independently. Derivation changes neither bytes nor fingerprints.
 
 Do not invent an unknown historical creation time. A revision is not a digest, approval token, or execution permission. The reference library changes revision and timestamp fields only when callers explicitly request those edits.
 
@@ -188,13 +192,15 @@ Only valid IDs take part in coverage and progress. When an ID is defined more th
 
 ## Error code overlaps
 
-Two plans overlap when both are 0.2 plans whose status is `pending` or `in progress`, and an `error_codes` entry of each names the same repository, compared without regard to case, and the same registry, with intersecting ranges. Ranges are inclusive, so `100` to `109` and `109` to `120` overlap. Overlapping declarations from several plans chain into one group, which spans their lowest and highest codes. An overlap is an observation: it grants nothing and settles nothing. Choosing other codes, or deciding that two plans may share a range, stays with their authors and applications.
+Two distinct active plans overlap when both have status `pending` or `in progress` and claim a shared code in the same repository and exact registry. Compare `String(code)`: numeric `100` and string `"100"` collide, while `"0100"` differs. Duplicate canonical claims within one plan count once. Codes never imply an interval. Each overlap reports `{ repository, registry, code, plans: [{ directory, id }] }`, where code is the canonical string and each directory appears once. Sort by repository, registry, exact lexical code string, then plan directory and ID. Repository output uses lowercase identifiers.
 
-`jg-plans overlaps` reads the frontmatter of the plans in the folders of the roots the caller names. A plan it cannot read, or a call that reaches its folder limit, makes the result incomplete, and an incomplete result is never reported as free of overlaps.
+An overlap is advisory. Choosing other codes, or deciding that plans may share a code, stays with their authors and applications.
+
+`jg-plans overlaps` reads the frontmatter of the plans in the folders of the roots the caller names. Unsupported versions, malformed or legacy range declarations, and unreadable frontmatter make the scan incomplete. At most 1024 folders are selected for document reads, with 64 KiB per document. This caps document reads, not directory entries listed or listing memory: complete root listings are sorted before selection. A truncated result is never reported as free of overlaps.
 
 ## Diagnostics
 
-The 0.1 diagnostics continue to apply. A 0.2 plan adds the following. Each is an error and applies only to 0.2 plans. Messages describe the issue without quoting document text.
+Readers retain metadata/framing, YAML, encoding, milestone structure, and overview diagnostics. The following current-protocol rules also apply, including to unversioned plans. Each is an error. Messages describe the issue without quoting document text.
 
 | Code                      | Document           | Reported when                                                               |
 | ------------------------- | ------------------ | --------------------------------------------------------------------------- |
@@ -211,18 +217,9 @@ The 0.1 diagnostics continue to apply. A 0.2 plan adds the following. Each is an
 | INVALID_PRIORITY          | plan               | The `priority` field is not `low`, `medium`, `high`, or `hotfix`.           |
 | INVALID_REPOSITORIES      | plan               | The `repositories` field is not a nonempty list of unique identifiers.      |
 | INVALID_ERROR_CODES       | plan               | The `error_codes` field is not a list of valid entries.                     |
+| UNSUPPORTED_PROTOCOL      | plan               | An explicit string protocol version is unsupported.                         |
 
 Each diagnostic points at the line it concerns: the definition, the coverage line, the status field or marker, or the value of the optional field. A check of plan.md alone reports the plan rules. The milestone and coverage rules need both documents. An explicit check fails on any of these errors; inspection reports them without failing.
-
-## Compatibility with 0.1
-
-A plan without `protocol: "0.2"`, including one that declares `protocol: "0.1"`, is a 0.1 plan:
-
-- It receives no criteria, coverage, status, or optional-field diagnostics, so its check and inspection diagnostics match those of protocol 0.1. Fields named `priority`, `repositories`, or `error_codes` stay ordinary project metadata.
-- Its status values remain any nonempty string.
-- Readers may still observe `AC-` lines and coverage lines in it, and report their derived progress, without diagnosing them.
-
-Writers do not convert an existing plan to 0.2 unless its author asks. Converting is an explicit revision: add the version marker, give each criterion an ID, and add coverage lines to milestones.
 
 ## Source observations
 

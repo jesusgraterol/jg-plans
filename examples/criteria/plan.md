@@ -7,7 +7,7 @@ status: in progress
 protocol: "0.2"
 priority: medium
 repositories: [example/search]
-error_codes: [{ repository: example/search, registry: docs/errors.md, first: 4100, last: 4109 }]
+error_codes: [{ repository: example/search, registry: docs/errors.md, codes: [4100, "SEARCH_FILTER_INVALID"] }]
 ---
 
 # Search feedback

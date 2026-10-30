@@ -1,4 +1,11 @@
-import type { IProgress } from 'jg-plans';
+import type {
+  ICheckResult,
+  IPlanCreation,
+  IPlanDocumentWriteResult,
+  IPlanInspection,
+  IPlanUpdateResult,
+  IProgress,
+} from 'jg-plans';
 
 export interface ILifecycleStage {
   id: string;
@@ -7,7 +14,13 @@ export interface ILifecycleStage {
   description: string;
   code: string;
   source: string;
-  result: unknown;
+  call: string;
+  result: IPlanCreation | IPlanInspection;
+  operations: {
+    call: string;
+    result: IPlanUpdateResult | IPlanDocumentWriteResult | ICheckResult;
+  }[];
+  consumer: Record<string, unknown>;
 }
 
 // one criterion, the milestone ordinals that deliver it and its derived progress

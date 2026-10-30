@@ -28,6 +28,9 @@ import {
 
 import { parseArguments } from './arguments.ts';
 
+// the CLI envelope contract is independent of protocol and release receipt versions
+const CLI_SCHEMA_VERSION = 2;
+
 const HELP = `jg-plans — read and edit Markdown plans without enforcing a workflow
 
 Commands:
@@ -62,6 +65,7 @@ const projectInspection = (inspection: IPlanInspection, includeBody: boolean): o
       path: plan.path,
       ...(planValue
         ? {
+            name: planValue.name,
             metadata: planValue.metadata,
             sha256: plan.state === 'readable' ? plan.sha256 : undefined,
             rawMetadata: planValue.rawMetadata,
@@ -159,6 +163,7 @@ export const runCli = async (args: string[]): Promise<number> => {
       data = {
         directory: result.directory,
         plan: {
+          name: result.plan.name,
           sha256: result.plan.sha256,
           metadata: result.plan.metadata,
           rawMetadata: result.plan.rawMetadata,
@@ -261,7 +266,10 @@ export const runCli = async (args: string[]): Promise<number> => {
         exitCode = 2;
       }
     }
-    if (json) console.log(JSON.stringify({ schemaVersion: 1, command, data, diagnostics, error }));
+    if (json)
+      console.log(
+        JSON.stringify({ schemaVersion: CLI_SCHEMA_VERSION, command, data, diagnostics, error }),
+      );
     else {
       if ('help' in data) console.log(data.help);
       else if ('version' in data) console.log(data.version);
@@ -285,7 +293,13 @@ export const runCli = async (args: string[]): Promise<number> => {
     };
     if (json)
       console.log(
-        JSON.stringify({ schemaVersion: 1, command, data: null, diagnostics: [], error }),
+        JSON.stringify({
+          schemaVersion: CLI_SCHEMA_VERSION,
+          command,
+          data: null,
+          diagnostics: [],
+          error,
+        }),
       );
     else {
       console.error(`${error.code}: ${error.message}. Run jg-plans --help.`);

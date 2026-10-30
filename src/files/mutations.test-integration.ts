@@ -63,6 +63,45 @@ afterEach(async () => {
 });
 
 describe('exclusive creation through the built public API', () => {
+  it('defaults to the current protocol and derives names without storing them', async () => {
+    const root = await fixture();
+    const created = await createPlan({
+      root,
+      slug: 'search-feedback-criteria',
+      body: '# Work',
+      metadata: {
+        name: 'Project label',
+        error_codes: [
+          { repository: 'acme/app', registry: 'errors.md', codes: [100, '100', 'INPUT_INVALID'] },
+        ],
+      },
+    });
+    expect(created.plan.protocol).toBe('0.2');
+    expect(created.plan.metadata.protocol).toBe('0.2');
+    expect(created.plan.name).toBe('search-feedback-criteria');
+    expect(created.plan.rawMetadata).toMatchObject({ name: 'Project label' });
+    const observed = await inspectPlan(created.directory);
+    if (observed.plan.state !== 'readable') throw new Error('The plan is not readable.');
+    const { sha256, ...parsed } = created.plan;
+    expect(observed.plan.value).toStrictEqual(parsed);
+    expect(observed.plan.sha256).toBe(sha256);
+  });
+
+  it.each([
+    { protocol: '0.1' },
+    { protocol: 0.2 },
+    { error_codes: [{ repository: 'acme/app', registry: 'errors.md', first: 100, last: 101 }] },
+    { error_codes: [{ repository: 'acme/app', registry: 'errors.md', codes: [null] }] },
+  ])('rejects unsupported creation contracts before filesystem mutation: %o', async (metadata) => {
+    const root = await fixture();
+    await expectToRejectCode(
+      createPlan({ root, slug: 'invalid', body: '# Work', metadata }),
+      ERRORS.INVALID_INPUT,
+      'Invalid jg-plans input',
+    );
+    expect(await readdir(root)).toStrictEqual([]);
+  });
+
   it.each([false, true])(
     'cleans only recognizable partial milestone creation when user changed bytes: %j',
     async (intervening) => {
@@ -125,7 +164,7 @@ describe('exclusive creation through the built public API', () => {
     expect(await readFile(join(result.directory, 'milestones.md'))).toEqual(
       Buffer.from(milestones),
     );
-    expect(result.diagnostics).toEqual([]);
+    expect(result.diagnostics.map(({ code }) => code)).toStrictEqual(['NO_CRITERIA']);
   });
 
   it('does not overwrite existing destinations or require conforming supplied metadata', async () => {
@@ -520,29 +559,32 @@ describe('scope field updates through the built public API', () => {
         ].join(eol);
       const root = await put(lines());
       const read = async (): Promise<string> => readFile(join(root, 'plan.md'), 'utf8');
-      const range = { repository: 'acme/app', registry: 'errors/README.md', first: 1, last: 4 };
+      const declaration = { repository: 'acme/app', registry: 'errors/README.md', codes: [1, '1'] };
 
       await updatePlan(root, {
         document: 'plan',
-        set: { priority: 'low', repositories: ['acme/app'], error_codes: [range] },
+        set: { priority: 'low', repositories: ['acme/app'], error_codes: [declaration] },
       });
       expect(await read()).toBe(
         lines(
           'priority: "low"',
           'repositories: [ acme/app ]',
-          'error_codes: [ { repository: acme/app, registry: errors/README.md, first: 1, last: 4 } ]',
+          'error_codes: [ { repository: acme/app, registry: errors/README.md, codes: [ 1, "1" ] } ]',
         ),
       );
 
       await updatePlan(root, {
         document: 'plan',
-        set: { priority: 'hotfix', error_codes: [{ ...range, last: 9 }] },
+        set: {
+          priority: 'hotfix',
+          error_codes: [{ ...declaration, codes: [1, '1', 'NEW_INPUT'] }],
+        },
       });
       expect(await read()).toBe(
         lines(
           'priority: "hotfix"',
           'repositories: [ acme/app ]',
-          'error_codes: [ { repository: acme/app, registry: errors/README.md, first: 1, last: 9 } ]',
+          'error_codes: [ { repository: acme/app, registry: errors/README.md, codes: [ 1, "1", NEW_INPUT ] } ]',
         ),
       );
       const inspected = await inspectPlan(root);
@@ -550,7 +592,7 @@ describe('scope field updates through the built public API', () => {
       expect(inspected.plan.value.metadata).toMatchObject({
         priority: 'hotfix',
         repositories: ['acme/app'],
-        error_codes: [{ ...range, last: 9 }],
+        error_codes: [{ ...declaration, codes: [1, '1', 'NEW_INPUT'] }],
       });
 
       const { sha256 } = await updatePlan(root, {

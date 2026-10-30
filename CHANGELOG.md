@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.5.0 — Current contracts and complete examples
+
+- Breaking: replace numeric error-code ranges with explicit `{ repository, registry, codes }` string/number lists. Export ErrorCodeSchema/IErrorCode and ErrorCodeDeclarationSchema/IErrorCodeDeclaration; remove ErrorCodeRangeSchema/IErrorCodeRange. Overlaps report one canonical String(code) and distinct directory/ID references per shared code; IOverlapPlanReference replaces IOverlapDeclaration. Numeric 100 and string "100" collide.
+- Breaking: support only protocol 0.2, apply its rules to unversioned Markdown, and default creation to its marker. Unsupported declarations retain source/raw observations and receive diagnostics; unsupported creation inputs fail before filesystem mutation. Remove the 0.1 specification, page and registrations without compatibility routes.
+- Add derived top-level plan name from timestamp_slug or a custom ID, without storing metadata or changing source/fingerprints. Keep project-owned metadata.name independent.
+- Validate consumed observeCriteria fields so malformed input fails with JG_PLANS_INVALID_INPUT instead of a native TypeError.
+- Show complete API JSON in lifecycle, gallery and API-overview panels; separately label mutation/check returns, consumer summaries, and path substitutions. Audit current local/site references, remove obsolete routes, and regenerate the protocol 0.2 sharing image with a source parity check. Pin both published install examples to the verified version and retain their exact CDN guards.
+- Breaking: every CLI JSON envelope reports schemaVersion 2, including errors, help and version. Independent release receipt schemas stay 1. Refresh public examples and canonical references for the current contracts.
+
 ## 0.4.1 — protocol page example
 
 - The protocol's repository identifier example names an HTTPS remote, `https://github.com/acme/app.git`, so the website's protocol page shows it as written instead of an obfuscated email address. Nothing else changed.

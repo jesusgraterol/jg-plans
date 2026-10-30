@@ -17,6 +17,7 @@ import {
 } from 'jg-plans';
 
 import { ADMINISTRATIVE_KEYS, INITIAL_BODY, REVISED_CRITERION } from './constants.ts';
+import { presentDirectory, presentInspection } from './transformers.ts';
 import type { ILifecycle, ILifecycleCriterion } from './types.ts';
 
 /**
@@ -37,7 +38,7 @@ const summarizeCriteria = (planSource: string, milestoneSource?: string): ILifec
 
 /**
  * Builds a reproducible example through the public filesystem API in an owned temporary root.
- * Only selected document observations leave this function; no temporary path enters the site.
+ * Complete public results leave this function with disclosed filesystem path substitutions.
  * The sample metadata and milestone bytes come from registered public example documents.
  */
 export const buildLifecycle = async (
@@ -75,12 +76,12 @@ export const buildLifecycle = async (
       plan_content_sha256: originalFingerprint.sha256,
     };
     const boundMilestones = `---\njg_skills:\n  plan_id: ${JSON.stringify(binding.plan_id)}\n  plan_revision: ${binding.plan_revision}\n  plan_content_sha256: ${binding.plan_content_sha256}\n---\n\n${milestoneSource}`;
-    await updatePlan(directory, {
+    const updatedPlan = await updatePlan(directory, {
       document: 'plan',
       expectedSha256: created.plan.sha256,
       set: { status: 'in progress', updated_at: seed.metadata.updated_at },
     });
-    await writePlanDocument(directory, {
+    const writtenMilestones = await writePlanDocument(directory, {
       document: 'milestones',
       expectedSha256: null,
       source: boundMilestones,
@@ -92,7 +93,7 @@ export const buildLifecycle = async (
     assert.equal(beforeFingerprint.sha256, binding.plan_content_sha256);
     const progress = summarizeCriteria(before, boundMilestones);
     assert.ok(checkPlan({ plan: before, milestones: boundMilestones }).conforms);
-    await writePlanDocument(directory, {
+    const writtenRevision = await writePlanDocument(directory, {
       document: 'plan',
       expectedSha256: updated.plan.sha256,
       body: INITIAL_BODY + REVISED_CRITERION,
@@ -160,7 +161,10 @@ export const buildLifecycle = async (
             'Numbered acceptance criteria give every requirement a stable ID from the first draft.',
           code: `const created = await createPlan({\n  root: './jg-plans',\n  slug: 'search-feedback',\n  body, // the Markdown body shown below\n  metadata, // the displayed example metadata, including protocol: '0.2'\n});`,
           source: created.plan.source,
-          result: {
+          call: 'createPlan(options)',
+          result: presentDirectory(created),
+          operations: [],
+          consumer: {
             plan: 'readable',
             milestones: inspected.milestones.state,
             revision: created.plan.metadata.revision,
@@ -176,7 +180,10 @@ export const buildLifecycle = async (
             'One selected directory returns metadata, criteria and diagnostics without recreating anything.',
           code: 'const observed = await inspectPlan(created.directory);',
           source: created.plan.source,
-          result: {
+          call: 'inspectPlan(directory)',
+          result: presentInspection(inspected),
+          operations: [],
+          consumer: {
             plan: inspected.plan.state,
             milestones: inspected.milestones.state,
             metadata: created.plan.metadata,
@@ -189,9 +196,18 @@ export const buildLifecycle = async (
           title: 'Make an explicit, guarded edit.',
           description:
             "Milestones name the criteria they deliver, and each criterion's progress follows their status.",
-          code: `if (observed.plan.state === 'readable') {\n  await updatePlan(directory, {\n    document: 'plan',\n    expectedSha256: observed.plan.sha256,\n    set: { status: 'in progress', updated_at },\n  });\n}\n// Add the explicitly prepared milestone source as a separate guarded write.\nawait writePlanDocument(directory, {\n  document: 'milestones',\n  expectedSha256: null,\n  source: milestoneSource,\n});`,
+          code: `if (observed.plan.state === 'readable') {\n  await updatePlan(directory, {\n    document: 'plan',\n    expectedSha256: observed.plan.sha256,\n    set: { status: 'in progress', updated_at },\n  });\n}\n// Add the explicitly prepared milestone source as a separate guarded write.\nawait writePlanDocument(directory, {\n  document: 'milestones',\n  expectedSha256: null,\n  source: milestoneSource,\n});\nconst current = await inspectPlan(directory);`,
           source: before,
-          result: {
+          call: 'inspectPlan(directory)',
+          result: presentInspection(updated),
+          operations: [
+            { call: 'updatePlan(directory, patch)', result: presentDirectory(updatedPlan) },
+            {
+              call: 'writePlanDocument(directory, input)',
+              result: presentDirectory(writtenMilestones),
+            },
+          ],
+          consumer: {
             revision: updated.plan.value.metadata.revision,
             status: updated.plan.value.metadata.status,
             milestones: retained,
@@ -205,9 +221,19 @@ export const buildLifecycle = async (
           title: 'Change the intent. Keep the context.',
           description:
             'A new criterion stays flagged by check until a milestone delivers it; existing IDs stay byte-for-byte.',
-          code: `if (current.plan.state === 'readable') {\n  await writePlanDocument(directory, {\n    document: 'plan',\n    expectedSha256: current.plan.sha256,\n    body: revisedBody,\n    set: { revision: 2 },\n  });\n}\nconst { conforms, diagnostics } = checkPlan({ plan, milestones });`,
+          code: `if (current.plan.state === 'readable') {\n  await writePlanDocument(directory, {\n    document: 'plan',\n    expectedSha256: current.plan.sha256,\n    body: revisedBody,\n    set: { revision: 2 },\n  });\n}\nconst revised = await inspectPlan(directory);\nif (revised.plan.state === 'readable' && revised.milestones.state === 'readable') {\n  const check = checkPlan({\n    plan: revised.plan.value.source,\n    milestones: revised.milestones.value.source,\n  });\n}`,
+
           source: revised.plan.value.source,
-          result: {
+          call: 'inspectPlan(directory)',
+          result: presentInspection(revised),
+          operations: [
+            {
+              call: 'writePlanDocument(directory, input)',
+              result: presentDirectory(writtenRevision),
+            },
+            { call: 'checkPlan(documents)', result: check },
+          ],
+          consumer: {
             revision: revised.plan.value.metadata.revision,
             status: revised.plan.value.metadata.status,
             milestones: retained,

@@ -1,6 +1,7 @@
 {
   "conforms": false,
   "protocol": "0.2",
+  "name": "export-reports-criteria",
   "criteria": [
     {
       "id": "AC-01",

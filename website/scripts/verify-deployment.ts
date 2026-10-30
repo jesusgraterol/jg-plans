@@ -8,7 +8,7 @@ import { SiteReleaseSchema, type IAvailability } from '../src/availability.ts';
 import { SITE } from '../src/site.config.ts';
 import { readSiteFiles } from './verify-build.ts';
 
-/** Accept exact bytes or the observed CDN consumption of the published homepage's single guard. */
+/** Accept exact bytes or CDN consumption of one guard on either published install page. */
 export const matchesServedFile = (
   path: string,
   expected: Buffer,
@@ -16,7 +16,7 @@ export const matchesServedFile = (
   state: IAvailability['state'],
 ): boolean => {
   if (received.equals(expected)) return true;
-  if (path !== 'index.html' || state !== 'published') return false;
+  if (!['index.html', 'docs/index.html'].includes(path) || state !== 'published') return false;
   const opening = Buffer.from('<!--email_off-->');
   const closing = Buffer.from('<!--/email_off-->');
   const start = expected.indexOf(opening);
@@ -36,7 +36,7 @@ export const matchesServedFile = (
   return received.equals(served);
 };
 
-/** Verify the unchanged checked artifact, allowing only explicit homepage CDN guard consumption. */
+/** Verify the checked artifact, allowing only the two explicit install-page CDN guards. */
 export const verifyDeployment = async (
   directory = resolve(import.meta.dirname, '../dist'),
   signal?: AbortSignal,

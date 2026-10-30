@@ -1,6 +1,7 @@
 {
   "conforms": true,
   "protocol": "0.2",
+  "name": "search-feedback-criteria",
   "metadata": {
     "priority": "medium",
     "repositories": ["example/search"],
@@ -8,8 +9,7 @@
       {
         "repository": "example/search",
         "registry": "docs/errors.md",
-        "first": 4100,
-        "last": 4109
+        "codes": [4100, "SEARCH_FILTER_INVALID"]
       }
     ]
   },

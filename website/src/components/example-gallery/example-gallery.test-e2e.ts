@@ -1,7 +1,57 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expectNoHorizontalOverflow, waitForPageAssets } from 'jg-playwright';
+import { parsePlan, parseMilestones } from 'jg-plans';
 
 import { expect, test } from '../../../testing/index.ts';
+
+test('complete parser results copy every field across the gallery and API overview', async ({
+  page,
+  context,
+}) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await page.goto('/examples/');
+  await waitForPageAssets(page);
+  for (const [label, directory, documents] of [
+    ['Small plan', 'small', ['plan']],
+    ['With milestones', 'with-milestones', ['plan', 'milestones']],
+    ['Project extensions', 'extensions', ['plan']],
+    ['Partly deleted', 'incomplete', ['plan']],
+    ['Plan removed', 'orphan', ['milestones']],
+    ['Acceptance criteria', 'criteria', ['plan', 'milestones']],
+  ] as const) {
+    await page
+      .getByRole('tablist', { name: 'Planning examples', exact: true })
+      .getByRole('tab', { name: label, exact: true })
+      .click();
+    const example = page.getByRole('tabpanel', { name: label, exact: true });
+    for (const document of documents) {
+      await example.getByRole('tab', { name: `${document}.md`, exact: true }).click();
+      const panel = example.getByRole('tabpanel', { name: `${document}.md`, exact: true });
+      const figure = panel.getByRole('figure').filter({
+        has: page.getByRole('region', { name: 'Structured observation source', exact: true }),
+      });
+      await figure.getByRole('button', { name: 'Copy code', exact: true }).click();
+      await expect(figure.getByRole('button')).toHaveAttribute('data-copy-state', 'success');
+      const source = await (
+        await page.request.get(`/downloads/examples/${directory}/${document}.md`)
+      ).text();
+      const actual = JSON.parse(await page.evaluate(() => navigator.clipboard.readText()));
+      expect(actual).toStrictEqual(
+        document === 'plan' ? parsePlan(source) : parseMilestones(source),
+      );
+    }
+  }
+  await page.goto('/docs/api/');
+  await waitForPageAssets(page);
+  const figure = page.getByRole('figure').filter({
+    has: page.getByRole('region', { name: 'Structured observation source', exact: true }),
+  });
+  await figure.getByRole('button', { name: 'Copy code', exact: true }).click();
+  const source = await (await page.request.get('/downloads/examples/small/plan.md')).text();
+  expect(JSON.parse(await page.evaluate(() => navigator.clipboard.readText()))).toStrictEqual(
+    parsePlan(source),
+  );
+});
 
 for (const colorScheme of ['light', 'dark'] as const) {
   for (const width of [320, 1440]) {
@@ -101,7 +151,7 @@ test('examples offer readable source and JSON without download controls', async 
     await document.activeViewTransition?.finished;
   });
   const panel = page.getByRole('tabpanel', { name: 'Small plan', exact: true });
-  await expect(panel.getByText('JSON · selected result fields', { exact: true })).toBeVisible();
+  await expect(panel.getByText('JSON · complete result', { exact: true })).toBeVisible();
   await expect(page.locator('a[download], a[href^="/downloads/"]')).toHaveCount(0);
   await page.getByText('About these examples and their expected results', { exact: true }).click();
   const source = page
@@ -141,7 +191,9 @@ test.describe('without JavaScript', () => {
         await expect(
           page.getByText('plan.md is deliberately absent. No file is restored.', { exact: true }),
         ).toBeVisible();
-        const criteria = page.getByRole('list', { name: 'Observed criterion progress' });
+        const criteria = page
+          .getByRole('region', { name: 'Acceptance criteria', exact: true })
+          .getByRole('list', { name: 'Observed criterion progress' });
         await expect(criteria.getByRole('listitem')).toHaveCount(3);
         await expect(criteria.getByRole('listitem').first()).toContainText(
           'Progress: done · Milestones: 1',
@@ -155,7 +207,9 @@ test.describe('without JavaScript', () => {
           await page
             .getByRole('heading', { level: 2, name: 'Small plan', exact: true })
             .scrollIntoViewIfNeeded();
-          await page.screenshot({ path: testInfo.outputPath('examples-no-js-dark-320.png') });
+          await page.screenshot({
+            path: testInfo.outputPath(`examples-no-js-${colorScheme}-320.png`),
+          });
         }
       },
     );
