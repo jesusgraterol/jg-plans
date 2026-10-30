@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.0 — Plan metadata and error-code overlaps
+
+- Add optional `priority` (`low`, `medium`, `high`, or `hotfix`), `repositories` (unique `owner/name` identifiers), and `error_codes` (`{ repository, registry, first, last }` ranges) to protocol 0.2 plan metadata. A 0.2 plan reports INVALID_PRIORITY, INVALID_REPOSITORIES, or INVALID_ERROR_CODES at an invalid value, and valid values join `metadata`. 0.1 plans read and check exactly as before.
+- `update` and `write` set, change, and remove the three fields, null removing one, and write lists as one YAML flow line while every other byte stays.
+- Add `findErrorCodeOverlaps`, which groups the error code ranges that active 0.2 plans declare over each other, and the `overlaps --root <dir> [--root <dir> ...]` command, which reads the frontmatter of the plans in each root, at most 64 KiB of each and 1024 folders per call. It exits 1 for an overlap, 0 only for a complete read without one, and 2 for an incomplete one.
+- `--root` repeats for `overlaps`; `create` still takes one. Export PRIORITY_VALUES, PrioritySchema, RepositoryIdSchema, ErrorCodeRangeSchema, and their types. The CLI reference states that `schemaVersion` changes whenever a command's input or output changes incompatibly; it stays 1.
+
 ## 0.3.0 — protocol 0.2 acceptance criteria
 
 - Add protocol 0.2. A plan that declares `protocol: "0.2"` lists acceptance criteria as `AC-NN:` list items under any heading, milestones name the criteria they deliver in one `**Acceptance criteria:**` coverage line, and plan and milestone statuses use pending, in progress, or done.

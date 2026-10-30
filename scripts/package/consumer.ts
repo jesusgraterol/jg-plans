@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp, realpath, rm, writeFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
-import { join, posix } from 'node:path';
+import { dirname, join, posix } from 'node:path';
 import { isPathWithin, readBoundedFile } from 'jg-fs';
 import { resolvePackageManagerCommand, runProcess } from 'jg-process';
 import { parse, stringify } from 'yaml';
@@ -148,7 +148,7 @@ export const verifyPackedConsumer = async (
       import { createRequire } from 'node:module';
       import * as plans from 'jg-plans';
       assert.equal(plans.PROTOCOL_VERSION, '0.2');
-      assert.deepEqual(Object.keys(plans).sort(), ['CreatePlanOptionsSchema','CriterionIdSchema','DiagnosticSchema','ERRORS','InspectPlanOptionsSchema','MilestoneSelectorSchema','MilestoneSetSchema','PROGRESS_VALUES','PROTOCOL_VERSION','PROTOCOL_VERSIONS','ProgressSchema','ProtocolVersionSchema','PlanDocumentsSchema','PlanDocumentWriteSchema','RemoveMilestonesSchema','PlanFingerprintOptionsSchema','PlanFingerprintSchema','PlanMetadataSchema','PlanSetSchema','PlanUpdateSchema','ReadOptionsSchema','SourceLocationSchema','checkPlan','createPlan','fingerprintPlan','inspectPlan','observeCriteria','parseMilestones','parsePlan','updatePlan','preparePlanUpdate','preparePlanDocumentWrite','writePlanDocument','removeMilestones','withPlanDocumentLocks'].sort());
+      assert.deepEqual(Object.keys(plans).sort(), ['CreatePlanOptionsSchema','CriterionIdSchema','DiagnosticSchema','ERRORS','ErrorCodeRangeSchema','InspectPlanOptionsSchema','MilestoneSelectorSchema','MilestoneSetSchema','PRIORITY_VALUES','PROGRESS_VALUES','PROTOCOL_VERSION','PROTOCOL_VERSIONS','ProgressSchema','ProtocolVersionSchema','PlanDocumentsSchema','PlanDocumentWriteSchema','RemoveMilestonesSchema','PlanFingerprintOptionsSchema','PlanFingerprintSchema','PlanMetadataSchema','PlanSetSchema','PlanUpdateSchema','PrioritySchema','ReadOptionsSchema','RepositoryIdSchema','SourceLocationSchema','checkPlan','createPlan','fingerprintPlan','findErrorCodeOverlaps','inspectPlan','observeCriteria','parseMilestones','parsePlan','updatePlan','preparePlanUpdate','preparePlanDocumentWrite','writePlanDocument','removeMilestones','withPlanDocumentLocks'].sort());
       assert.equal(plans.parsePlan('# Useful document').body, '# Useful document');
       assert.match(plans.fingerprintPlan('# Work').sha256, /^[a-f0-9]{64}$/);
       assert.equal(plans.parseMilestones('## Milestone 1: Work\\n**Status:** custom').milestones[0].status, 'custom');
@@ -179,7 +179,7 @@ export const verifyPackedConsumer = async (
 
     await writeFile(
       join(directory, 'types.mts'),
-      `import { parsePlan, inspectPlan, createPlan, updatePlan, fingerprintPlan, preparePlanUpdate, preparePlanDocumentWrite, writePlanDocument, removeMilestones, withPlanDocumentLocks, type IPreparedPlanEdit, type IAssignedMilestoneId, type IPlanDocumentWrite, type IPlanDocumentWriteResult, type IRemoveMilestones, type IRemoveMilestonesResult, type IPlanUpdate, type IPlanCreation, type IParsedPlan, type IPlanInspection, type IDiagnostic, type ISourceSpan, type IHeadingSection, type IPlanFingerprint, type IInspectPlanOptions, type IPlanFingerprintOptions } from 'jg-plans';
+      `import { parsePlan, inspectPlan, createPlan, updatePlan, fingerprintPlan, preparePlanUpdate, preparePlanDocumentWrite, writePlanDocument, removeMilestones, withPlanDocumentLocks, findErrorCodeOverlaps, type IErrorCodeOverlap, type IOverlapPlan, type IPreparedPlanEdit, type IAssignedMilestoneId, type IPlanDocumentWrite, type IPlanDocumentWriteResult, type IRemoveMilestones, type IRemoveMilestonesResult, type IPlanUpdate, type IPlanCreation, type IParsedPlan, type IPlanInspection, type IDiagnostic, type ISourceSpan, type IHeadingSection, type IPlanFingerprint, type IInspectPlanOptions, type IPlanFingerprintOptions } from 'jg-plans';
 const plan: IParsedPlan = parsePlan('# Work');
 const inspection: IPlanInspection = await inspectPlan('.');
 const diagnostics: IDiagnostic[] = plan.diagnostics;
@@ -199,7 +199,9 @@ const written: IPlanDocumentWriteResult = await writePlanDocument(created.direct
 const removal: IRemoveMilestones = {expectedSha256: prepared.sha256};
 const removed: IRemoveMilestonesResult = await removeMilestones(created.directory, removal);
 const locked: number = await withPlanDocumentLocks(created.directory, ['milestones', 'plan'], () => 1);
-void [inspection, diagnostics, changed, fingerprint, preamble, sections, inspectOptions, narrow, assignments, written, removed, locked];\n`,
+const declared: IOverlapPlan = {directory: created.directory, id: null, protocol: '0.2', status: 'pending', errorCodes: [{repository: 'acme/app', registry: 'errors.md', first: 1, last: 2}]};
+const overlaps: IErrorCodeOverlap[] = findErrorCodeOverlaps([declared, {...declared, directory: 'other'}]);
+void [inspection, overlaps, diagnostics, changed, fingerprint, preamble, sections, inspectOptions, narrow, assignments, written, removed, locked];\n`,
     );
     const require = createRequire(import.meta.url);
     const typecheck = await runProcess({
@@ -395,6 +397,10 @@ void [inspection, diagnostics, changed, fingerprint, preamble, sections, inspect
       .parse(await runCli(['write', '--directory', created.data.directory, '--input', writeInput]));
     assert.equal(assigned.data.assignedMilestoneIds.length, 1);
     await runCli(['check', '--directory', created.data.directory]);
+    const overlapRead = z
+      .object({ data: z.object({ overlaps: z.array(z.unknown()), isComplete: z.literal(true) }) })
+      .parse(await runCli(['overlaps', '--root', dirname(created.data.directory)]));
+    assert.equal(overlapRead.data.overlaps.length, 0);
     const lockSmoke = await runProcess({
       ...cancellation,
       command: process.execPath,

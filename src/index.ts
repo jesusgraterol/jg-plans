@@ -12,6 +12,8 @@ export type {
   IPlanFingerprint,
 } from './documents/index.ts';
 export { observeCriteria } from './criteria/index.ts';
+export { findErrorCodeOverlaps } from './overlaps/index.ts';
+export type { IErrorCodeOverlap, IOverlapDeclaration, IOverlapPlan } from './overlaps/index.ts';
 export type { ICriteriaObservation, ICriterion, ICriterionCoverage } from './criteria/index.ts';
 export { ERRORS } from './errors/index.ts';
 export { inspectPlan } from './files/index.ts';
@@ -32,16 +34,20 @@ export type {
   IRemoveMilestonesResult,
 } from './files/index.ts';
 export {
+  PRIORITY_VALUES,
   PROGRESS_VALUES,
   PROTOCOL_VERSION,
   PROTOCOL_VERSIONS,
   CriterionIdSchema,
   DiagnosticSchema,
+  ErrorCodeRangeSchema,
   PlanDocumentsSchema,
   PlanMetadataSchema,
+  PrioritySchema,
   ProgressSchema,
   ProtocolVersionSchema,
   ReadOptionsSchema,
+  RepositoryIdSchema,
   PlanFingerprintOptionsSchema,
   PlanFingerprintSchema,
   InspectPlanOptionsSchema,
@@ -49,11 +55,15 @@ export {
 } from './protocol/index.ts';
 export type {
   IDiagnostic,
+  IErrorCodeRange,
   IPlanDocuments,
   IPlanMetadata,
+  IPlanScopeMetadata,
+  IPriority,
   IProgress,
   IProtocolVersion,
   IReadOptions,
+  IRepositoryId,
   IPlanFingerprintOptions,
   IInspectPlanOptions,
   ISourceLocation,

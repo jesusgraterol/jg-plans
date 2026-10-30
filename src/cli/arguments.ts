@@ -23,7 +23,7 @@ export const parseArguments = (args: string[]): IArguments => {
       directory: { type: 'string' },
       input: { type: 'string' },
       slug: { type: 'string' },
-      root: { type: 'string' },
+      root: { type: 'string', multiple: true },
       'max-bytes': { type: 'string' },
       'include-body': { type: 'boolean' },
       'fingerprint-exclude': { type: 'string' },
@@ -39,8 +39,26 @@ export const parseArguments = (args: string[]): IArguments => {
   if (flags.help || args.length === 0)
     return { command: 'help', json: flags.json, includeBody: false };
   if (flags.version) return { command: 'version', json: flags.json, includeBody: false };
-  if (!['inspect', 'check', 'create', 'update', 'write', 'remove-milestones'].includes(first!))
+  if (
+    !['inspect', 'check', 'create', 'update', 'write', 'remove-milestones', 'overlaps'].includes(
+      first!,
+    )
+  )
     throw planErrors.create('invalidInput');
+  if (first === 'overlaps') {
+    // overlaps reads fixed bounds from each root and takes nothing else
+    if (
+      !flags.root.length ||
+      flags.directory ||
+      flags.input ||
+      flags.slug ||
+      flags['include-body'] ||
+      flags['fingerprint-exclude'] !== undefined ||
+      flags['max-bytes'] !== undefined
+    )
+      throw planErrors.create('invalidInput');
+    return { command: 'overlaps', roots: flags.root, json: flags.json, includeBody: false };
+  }
   let fingerprint: IPlanFingerprintOptions | undefined;
   if (flags['fingerprint-exclude'] !== undefined) {
     if (first !== 'inspect') throw planErrors.create('invalidInput');
@@ -53,10 +71,17 @@ export const parseArguments = (args: string[]): IArguments => {
     }
   }
   if (first === 'create') {
-    if (!flags.slug || !flags.input || flags.directory || flags['include-body'])
+    if (
+      !flags.slug ||
+      !flags.input ||
+      flags.directory ||
+      flags['include-body'] ||
+      flags.root.length > 1
+    )
       throw planErrors.create('invalidInput');
   } else {
-    if (!flags.directory || flags.root || flags.slug) throw planErrors.create('invalidInput');
+    if (!flags.directory || flags.root.length || flags.slug)
+      throw planErrors.create('invalidInput');
     if (
       first === 'update' || first === 'write' || first === 'remove-milestones'
         ? !flags.input || flags['include-body']
@@ -73,7 +98,7 @@ export const parseArguments = (args: string[]): IArguments => {
     ...(flags.directory ? { directory: flags.directory } : {}),
     ...(flags.input ? { input: flags.input } : {}),
     ...(flags.slug ? { slug: flags.slug } : {}),
-    ...(flags.root ? { root: flags.root } : {}),
+    ...(flags.root[0] ? { root: flags.root[0] } : {}),
     includeBody: flags['include-body'],
     ...(fingerprint ? { fingerprint } : {}),
     json: flags.json,

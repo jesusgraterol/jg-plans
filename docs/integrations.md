@@ -6,7 +6,7 @@ Applications that show plans read acceptance criteria, their covering milestones
 
 ## Skills: explicit runtime and freshness policy
 
-Persisted planning workflows use the separately installed supported CLI, with explicit selected paths and structured JSON. Preflight the package version and envelope; never install it automatically. New skill plans use jg-plans/; an explicitly supplied custom path remains valid. Readers do not discover old roots or reconstruct deleted documents.
+Persisted planning workflows use the separately installed supported CLI, with explicit selected paths and structured JSON. Preflight the package version and envelope; never install it automatically. New skill plans use jg-plans/; an explicitly supplied custom path remains valid. Readers do not discover old roots or reconstruct deleted documents. The one read beyond the selected folder is `overlaps`, over the planning roots the caller names.
 
 Keep one identical compact **jg-plans protocol 0.2** section in the seven planning reader/writer skills. Role-specific rules stay outside it. jg-plan owns substantive revisions and explicit updated_at/revision changes; jg-breakdown owns semantic coverage and sequence binding; jg-execute owns authorized work and progress. Reviews/challenges remain read-only. No missing/custom status is coerced into permission or completion.
 
@@ -14,11 +14,11 @@ Inspect before each mutation and supply the observed expectedSha256. Use write f
 
 The skills bind a milestone sequence to plan id, revision, and structural content fingerprint, excluding exactly created_at, updated_at, revision, and status from that fingerprint. Other metadata and exact body remain covered. Revalidate coverage after revisions before stamping a fresh binding. A stale/unavailable binding cannot authorize sequence execution. Whole-plan execution without an expected sequence stays a supported single unit; disappearance of an expected sequence is a loss to report.
 
-## HQ: one engine, application-owned authority
+## HQ: one engine, application-owned policy
 
-Use public jg-plans observations/ranges, fingerprints, and pure preparation instead of another Markdown grammar. Retain HQ's strict project profile, host parser hook, approval digests, execution gates, limits, resource/error allocations, coordination journal, and reconciliation. Unknown contractual metadata and shared/trailing requirements must remain part of execution identity.
+Use public jg-plans observations instead of another Markdown grammar. Read status, priority, repositories, and error code declarations from each plan's frontmatter, and report collisions with `findErrorCodeOverlaps` over the active plans of every repository HQ knows. These are observations: approvals, allocation services, locks, and reconciliation stay HQ's own policy and never become fields the protocol requires.
 
-For journaled writes, prepare once and persist the exact resulting source, generated IDs, and timestamps before applying it. Acquire HQ metadata ownership before shared document locks. Inside withPlanDocumentLocks, use pure preparation and HQ persistence; do not nest filesystem mutation entry points. Release shared locks successfully before completing the HQ ledger. Release failures can follow durable writes and require reconciliation with admission closed.
+A writer that edits plan documents prepares once and persists the exact resulting source. Inside withPlanDocumentLocks, use pure preparation and its own persistence; do not nest filesystem mutation entry points.
 
 ## Coordinating participating writers
 
@@ -26,4 +26,4 @@ The CLI and every filesystem mutation share canonical local document lock names 
 
 File hashes guard exact bytes; structural fingerprints cover caller-selected content; approval digests are application policy. Preserve this distinction. There is no cross-document transaction and nonparticipating editors retain the documented comparison-to-replacement/deletion race. Partial outcomes must be reported honestly rather than rolled back over newer content.
 
-See the [API](../api/README.md), [CLI](../cli/README.md), and [errors](../errors/README.md) for exact contracts. Protocol conformance is optional during inspection; stricter application admission remains consumer-owned.
+See the [API](../api/README.md), [CLI](../cli/README.md), and [errors](../errors/README.md) for exact contracts. Protocol conformance is optional during inspection; stricter application admission remains consumer-owned. Priority, repositories, and error code declarations are protocol fields; approvals, allocation services, locks, and reconciliation stay with applications.

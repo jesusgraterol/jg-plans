@@ -5,13 +5,39 @@ import { checkDefinitions, readCriteria } from '../criteria/index.ts';
 import { planErrors } from '../errors/index.ts';
 import {
   CORE_METADATA_KEYS,
+  ErrorCodesSchema,
   PlanMetadataSchema,
+  PrioritySchema,
   ProgressSchema,
+  RepositoriesSchema,
   type ISourceLocation,
 } from '../protocol/index.ts';
 
 import type { IParsedPlan } from './types.ts';
 import { diagnostic, headingSections, readFrontmatter, sourceLocation } from './utilities.ts';
+
+// the optional 0.2 fields, each with its schema and the diagnostic an invalid value reports
+const SCOPE_METADATA_RULES = [
+  {
+    key: 'priority',
+    schema: PrioritySchema,
+    code: 'INVALID_PRIORITY',
+    message: 'The plan priority is not low, medium, high, or hotfix.',
+  },
+  {
+    key: 'repositories',
+    schema: RepositoriesSchema,
+    code: 'INVALID_REPOSITORIES',
+    message: 'The plan repositories are not a nonempty list of unique owner/name identifiers.',
+  },
+  {
+    key: 'error_codes',
+    schema: ErrorCodesSchema,
+    code: 'INVALID_ERROR_CODES',
+    message:
+      'The plan error codes are not a list of repository, registry, first, and last entries with first at most last.',
+  },
+] as const;
 
 /**
  * Observe a plan without requiring valid metadata. Source and body remain unchanged.
@@ -107,6 +133,32 @@ export const parsePlan = (source: string): IParsedPlan => {
         ),
       );
     for (const item of checkDefinitions(result.criteria)) result.diagnostics.push(item);
+    const raw = result.rawMetadata;
+    if (
+      document &&
+      frontmatter &&
+      isMap(document.contents) &&
+      raw !== null &&
+      typeof raw === 'object'
+    )
+      for (const { key, schema, code, message } of SCOPE_METADATA_RULES) {
+        const node = document.get(key, true);
+        if (node === undefined || !Object.hasOwn(raw, key)) continue;
+        const parsed = schema.safeParse(Reflect.get(raw, key));
+        if (parsed.success) Object.assign(result.metadata, { [key]: parsed.data });
+        else
+          result.diagnostics.push(
+            diagnostic(
+              'plan',
+              code,
+              message,
+              sourceLocation(
+                lines,
+                frontmatter.contentStart + (isNode(node) ? (node.range?.[0] ?? 0) : 0),
+              ),
+            ),
+          );
+      }
   }
   return result;
 };

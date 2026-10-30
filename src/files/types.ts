@@ -1,6 +1,7 @@
 import type { ICriteriaObservation } from '../criteria/index.ts';
 import type { IParsedMilestones, IParsedPlan, IPlanFingerprint } from '../documents/index.ts';
 import type { IPreparedPlanEdit } from '../edits/index.ts';
+import type { IOverlapPlan } from '../overlaps/index.ts';
 import type { IDiagnostic } from '../protocol/index.ts';
 
 /** Availability is independent per document; absence never implies approval or completion. */
@@ -42,4 +43,23 @@ export type IRemoveMilestonesResult = {
   changed: true;
   sha256: null;
   diagnostics: IDiagnostic[];
+};
+
+/** A plan folder whose frontmatter an overlap read couldn't use, and why. */
+export type IUnreadablePlan = {
+  directory: string;
+  reason:
+    | 'not-a-file'
+    | 'frontmatter-too-large'
+    | 'invalid-frontmatter'
+    | 'invalid-error-codes'
+    | 'invalid-encoding'
+    | 'read-failed';
+};
+
+/** What an overlap read covered; it is complete only when every folder under the limit was read. */
+export type IOverlapRead = {
+  plans: IOverlapPlan[];
+  unreadable: IUnreadablePlan[];
+  isComplete: boolean;
 };

@@ -9,6 +9,7 @@ export type IArguments = {
     | 'update'
     | 'write'
     | 'remove-milestones'
+    | 'overlaps'
     | 'help'
     | 'version';
   directory?: string;
@@ -16,6 +17,8 @@ export type IArguments = {
   input?: string;
   slug?: string;
   root?: string;
+  // the overlaps command's planning roots, in the order given
+  roots?: string[];
   includeBody: boolean;
   fingerprint?: IPlanFingerprintOptions;
   json: boolean;

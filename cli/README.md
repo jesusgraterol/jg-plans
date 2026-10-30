@@ -8,6 +8,7 @@ jg-plans inspect --directory ./custom-root/example --json
 jg-plans inspect --directory ./jg-plans/example --fingerprint-exclude '["created_at","updated_at","revision","status"]' --json
 jg-plans inspect --directory ./coding-agent-planning/example --include-body --json
 jg-plans check --directory ./jg-plans/example --json
+jg-plans overlaps --root ./jg-plans --root ../api/jg-plans --json
 jg-plans --help
 jg-plans --version
 ```
@@ -61,7 +62,7 @@ Select by ordinal or UUID id, with one change per target. Set status and/or UUID
 
 Input comes from a file or `-` for stdin and must be valid UTF-8 JSON, at most 1 MiB by default. `--max-bytes` overrides both mutation-input and selected-document limits. Unknown JSON fields, nonconforming requested core values, invalid encoding, unsupported YAML, ambiguous edits, destination collisions, detected source changes, and I/O failures exit 2. Unsupported edits explain the case in error.data.reason; cleanup failures report owned paths. See [the API](../api/README.md) for precise preservation and unsupported-edit limits.
 
-All mutations share local document locks with library/HQ consumers. Busy and dead owners fail immediately; recovery requires explicit operator inspection. A prior-content check detects observed intervening changes, but nonparticipating writers retain a comparison-to-rename race. Release failures report uncertain mutation outcomes even when bytes were written. There is no cross-document transaction, automatic retry, or history service.
+All mutations share local document locks with the library and other participating consumers. Busy and dead owners fail immediately; recovery requires explicit operator inspection. A prior-content check detects observed intervening changes, but nonparticipating writers retain a comparison-to-rename race. Release failures report uncertain mutation outcomes even when bytes were written. There is no cross-document transaction, automatic retry, or history service.
 
 ## Write and remove milestones
 
@@ -77,6 +78,14 @@ For complete milestone replacement use `{ "document": "milestones", "expectedSha
 Remove input is `{ "expectedSha256": "<observed milestone hash>" }`. Only matching regular UTF-8 milestones.md is removed; absent/stale targets fail SOURCE_CHANGED. Successful data contains directory, document milestones, changed true, and sha256 null. No plan, directory, or coordination file is removed.
 
 The placeholders above must be replaced with actual hashes returned by inspect/create or a preceding mutation. Every command uses the same input limits, safe errors, envelope, and exits. See [the API](../api/README.md#pure-preparation-and-guarded-document-writes) for source preservation and [shared document locks](../api/README.md#shared-document-locks).
+
+## Overlaps
+
+`overlaps --root <dir> [--root <dir> ...]` checks whether active 0.2 plans declare the same error codes. Repeat `--root` for each planning root, such as every `jg-plans` folder of the repositories a plan changes. It lists the immediate child folders of each root without following links, reads only the frontmatter in the first 65536 bytes of each `plan.md`, and stops at 1024 folders per call. A folder without `plan.md` is not a plan. It takes no other flag.
+
+Its data is `{ plans, overlaps, unreadable, isComplete }`. `plans` holds each plan read, with its directory, id, protocol, status, and `errorCodes`. `overlaps` holds groups of declarations from at least two plans whose ranges chain by intersection in one registry of one repository, each as `{ repository, registry, first, last, plans: [{ directory, id, entry }] }`; a declaration is in at most one group. `unreadable` lists each plan whose frontmatter couldn't be used, as `{ directory, reason }`, with the reason `not-a-file`, `frontmatter-too-large`, `invalid-frontmatter`, `invalid-error-codes`, `invalid-encoding`, or `read-failed`. `isComplete` is true only when every plan under the limit was read and the limit wasn't reached.
+
+It exits 1 when it finds an overlap, 0 only when the result is complete and holds none, and 2 when the result is incomplete, a root can't be listed, or the arguments are invalid, so an incomplete check never reads as clean. Only `create` takes `--root` otherwise, once.
 
 ## Limits and output
 
@@ -94,14 +103,14 @@ Human output uses stdout for data and stderr for diagnostics. `--json` emits exa
 }
 ```
 
-Inspect data includes the resolved directory, per-document observations, and criteria; check also includes conforms. Mutation results are described above. Diagnostics have stable codes, severity, document, message, and an optional source location. Error is null or a safe code/message pair with optional data for a reason, affected core field, or cleanupFailedPaths. Causes are not emitted. Operational inspection failure can retain partial data. Source locations use UTF-16 character offsets and one-based lines/columns. The JSON contract is versioned independently of the protocol.
+Inspect data includes the resolved directory, per-document observations, and criteria; check also includes conforms. Mutation results are described above. Diagnostics have stable codes, severity, document, message, and an optional source location. Error is null or a safe code/message pair with optional data for a reason, affected core field, or cleanupFailedPaths. Causes are not emitted. Operational inspection failure can retain partial data. Source locations use UTF-16 character offsets and one-based lines/columns. The JSON contract is versioned independently of the protocol: `schemaVersion` changes whenever a command's input or output changes incompatibly, so a consumer that understands version 1 can use any jg-plans release that still reports 1.
 
-| Exit | Meaning                                                                                                                       |
-| ---- | ----------------------------------------------------------------------------------------------------------------------------- |
-| 0    | Inspection completed, including absence or document-format/encoding findings; a mutation succeeded; or check found no errors. |
-| 1    | Explicit check found conformance errors.                                                                                      |
-| 2    | Invalid command/arguments or operational failure, including unreadable nonregular files and exceeded byte limits.             |
+| Exit | Meaning                                                                                                                                                                |
+| ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0    | Inspection completed, including absence or document-format/encoding findings; a mutation succeeded; check found no errors; or overlaps read every plan and found none. |
+| 1    | Explicit check found conformance errors, or overlaps found an error code overlap.                                                                                      |
+| 2    | Invalid command/arguments or operational failure, including unreadable nonregular files and exceeded byte limits, or an incomplete overlaps result.                    |
 
-Unknown/repeated flags, unsupported positionals, empty option values, and unsafe byte limits fail rather than silently changing the command. `--include-body` applies only to inspect.
+Unknown/repeated flags, unsupported positionals, empty option values, and unsafe byte limits fail rather than silently changing the command. `--include-body` applies only to inspect, and `--root` to create, once, and to overlaps.
 
 See the [library API](../api/README.md), [error reference](../errors/README.md), and [protocol](../protocol/0.1/README.md).

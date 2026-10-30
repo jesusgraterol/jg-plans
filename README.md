@@ -29,7 +29,7 @@ Protocol 0.2 is provisional. The [website](https://jg-plans.jesusgraterol.dev) p
 
 Users own their documents and can edit or delete them. No history store, metadata field, CLI, or website is required to read Markdown. Optional conformance checks do not authorize execution or become a prerequisite to inspection.
 
-The protocol stays separate from application schemas, approvals, resource allocations, coordination journals and reconciliation. Future jg-skills and HQ adoption are independent integrations.
+Plans declare their priority, the repositories they change, and the error codes they add, and `jg-plans overlaps` reports declarations that collide. Approvals, allocation services, locks and reconciliation stay with applications, and jg-skills and HQ integrate independently.
 
 ## Development
 

@@ -44,8 +44,9 @@ test('the lifecycle uses real guarded operations and retains optional absence, I
     { id: 'AC-02', milestones: [2], progress: 'in progress' },
     { id: 'AC-03', milestones: [2], progress: 'in progress' },
   ]);
-  // eight frontmatter lines (six keys and two delimiters), then AC-04 on the body's tenth line
-  expect(result.finding).toEqual({ code: 'UNASSIGNED_CRITERION', criterion: 'AC-04', line: 18 });
+  // sixteen frontmatter lines (six core keys, the example's priority, its repositories and error
+  // codes written as block lists, and two delimiters), then AC-04 on the body's tenth line
+  expect(result.finding).toEqual({ code: 'UNASSIGNED_CRITERION', criterion: 'AC-04', line: 26 });
   expect(result.stages[3]!.result).toMatchObject({
     binding: 'stale',
     check: { conforms: false, findings: [result.finding] },

@@ -501,3 +501,71 @@ describe('targeted updates through the built public API', () => {
     );
   });
 });
+
+describe('scope field updates through the built public API', () => {
+  it.each(['\n', '\r\n'])(
+    'sets, changes, and removes each field, leaving every other byte, with %j',
+    async (eol) => {
+      const lines = (...fields: string[]): string =>
+        [
+          '﻿---',
+          "id: 'scoped' # keep",
+          'revision: 3',
+          "protocol: '0.2'",
+          'project: { flags: [one, two] }',
+          ...fields,
+          '---',
+          '',
+          '# Body 😀',
+        ].join(eol);
+      const root = await put(lines());
+      const read = async (): Promise<string> => readFile(join(root, 'plan.md'), 'utf8');
+      const range = { repository: 'acme/app', registry: 'errors/README.md', first: 1, last: 4 };
+
+      await updatePlan(root, {
+        document: 'plan',
+        set: { priority: 'low', repositories: ['acme/app'], error_codes: [range] },
+      });
+      expect(await read()).toBe(
+        lines(
+          'priority: "low"',
+          'repositories: [ acme/app ]',
+          'error_codes: [ { repository: acme/app, registry: errors/README.md, first: 1, last: 4 } ]',
+        ),
+      );
+
+      await updatePlan(root, {
+        document: 'plan',
+        set: { priority: 'hotfix', error_codes: [{ ...range, last: 9 }] },
+      });
+      expect(await read()).toBe(
+        lines(
+          'priority: "hotfix"',
+          'repositories: [ acme/app ]',
+          'error_codes: [ { repository: acme/app, registry: errors/README.md, first: 1, last: 9 } ]',
+        ),
+      );
+      const inspected = await inspectPlan(root);
+      if (inspected.plan.state !== 'readable') throw new Error('The plan is not readable.');
+      expect(inspected.plan.value.metadata).toMatchObject({
+        priority: 'hotfix',
+        repositories: ['acme/app'],
+        error_codes: [{ ...range, last: 9 }],
+      });
+
+      const { sha256 } = await updatePlan(root, {
+        document: 'plan',
+        set: { priority: null, repositories: null, error_codes: null },
+      });
+      expect(await read()).toBe(lines());
+      const write = await writePlanDocument(root, {
+        document: 'plan',
+        expectedSha256: sha256!,
+        body: `${eol}# Body 😀`,
+        set: { repositories: ['acme/api'] },
+      });
+      expect(write.changed).toBe(true);
+      expect(await read()).toBe(lines('repositories: [ acme/api ]'));
+    },
+  );
+});
