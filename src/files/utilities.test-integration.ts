@@ -69,7 +69,7 @@ describe('built selected-directory inspection', () => {
     );
   });
 
-  it('matches independent public-example observations', async () => {
+  it('matches independent public-example observations', { tags: ['full'] }, async () => {
     const root = resolve(import.meta.dirname, '../../examples');
     const small = await inspectPlan(join(root, 'small'));
     expect(small.plan.state).toBe('readable');

@@ -98,15 +98,19 @@ describe('corrected plan contracts', () => {
 });
 
 describe('criterion definitions', () => {
-  it('recognizes every list marker form with up to three spaces of indentation', () => {
-    expect(
-      ids(
-        plan02(
-          '- AC-01: Dash.\n* AC-02: Star.\n+ AC-03: Plus.\n1. AC-04: Dot.\n2) AC-05: Paren.\n   - AC-06: Three spaces.\n123456789. AC-07: Nine digits.\n',
+  it(
+    'recognizes every list marker form with up to three spaces of indentation',
+    { tags: ['full'] },
+    () => {
+      expect(
+        ids(
+          plan02(
+            '- AC-01: Dash.\n* AC-02: Star.\n+ AC-03: Plus.\n1. AC-04: Dot.\n2) AC-05: Paren.\n   - AC-06: Three spaces.\n123456789. AC-07: Nine digits.\n',
+          ),
         ),
-      ),
-    ).toStrictEqual(['AC-01', 'AC-02', 'AC-03', 'AC-04', 'AC-05', 'AC-06', 'AC-07']);
-  });
+      ).toStrictEqual(['AC-01', 'AC-02', 'AC-03', 'AC-04', 'AC-05', 'AC-06', 'AC-07']);
+    },
+  );
 
   it('ignores fences, frontmatter, quotes, deep indentation, prose, lowercase, and spaced colons', () => {
     const source = plan02(
@@ -148,33 +152,37 @@ describe('criterion definitions', () => {
     expect(criterion?.id).toBe(expected);
   });
 
-  it('joins indented continuation lines until a blank line, list item, heading, or outdent', () => {
-    const source = plan02(
-      [
-        '- AC-01: First line,',
-        '  second line,',
-        '\tthird line.',
-        '- AC-02: Stops at a nested item.',
-        '  - A nested detail.',
-        '- AC-03: Stops at a heading.',
-        '  ## Not part of it',
-        '- AC-04: Stops at an outdent.',
-        'Unindented prose.',
-        '- AC-05: Stops at a blank line.',
-        '',
-        '  Indented after blank.',
-      ].join('\n'),
-    );
-    expect(parsePlan(source).criteria.map((criterion) => criterion.text)).toStrictEqual([
-      'First line, second line, third line.',
-      'Stops at a nested item.',
-      'Stops at a heading.',
-      'Stops at an outdent.',
-      'Stops at a blank line.',
-    ]);
-  });
+  it(
+    'joins indented continuation lines until a blank line, list item, heading, or outdent',
+    { tags: ['full'] },
+    () => {
+      const source = plan02(
+        [
+          '- AC-01: First line,',
+          '  second line,',
+          '\tthird line.',
+          '- AC-02: Stops at a nested item.',
+          '  - A nested detail.',
+          '- AC-03: Stops at a heading.',
+          '  ## Not part of it',
+          '- AC-04: Stops at an outdent.',
+          'Unindented prose.',
+          '- AC-05: Stops at a blank line.',
+          '',
+          '  Indented after blank.',
+        ].join('\n'),
+      );
+      expect(parsePlan(source).criteria.map((criterion) => criterion.text)).toStrictEqual([
+        'First line, second line, third line.',
+        'Stops at a nested item.',
+        'Stops at a heading.',
+        'Stops at an outdent.',
+        'Stops at a blank line.',
+      ]);
+    },
+  );
 
-  it('keeps exact offsets and ranges with a BOM and CRLF line endings', () => {
+  it('keeps exact offsets and ranges with a BOM and CRLF line endings', { tags: ['full'] }, () => {
     const source = '\uFEFF- AC-01: Starts the file,\r\n  then continues.\r\n';
     const [criterion] = parsePlan(source).criteria;
     expect(criterion).toMatchObject({
@@ -380,7 +388,7 @@ describe('unsupported protocol observations', () => {
   });
 });
 
-describe('large plans near the 1 MiB inspection bound', () => {
+describe('large plans near the 1 MiB inspection bound', { tags: ['full'] }, () => {
   it('reads tens of thousands of criteria without quadratic work', () => {
     const count = 40_000;
     const body = Array.from(

@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 const metadata =
   'id: invented\ncreated_at: 2026-10-21T20:00:00Z\nupdated_at: 2026-10-21T16:00:00-04:00\nrevision: 1\nstatus: waiting-for-feedback';
 
-describe('corrected plan contracts', () => {
+describe('corrected plan contracts', { tags: ['full'] }, () => {
   it.each([
     ['1792612920_search-feedback-criteria', 'search-feedback-criteria'],
     ['custom_plan', 'custom_plan'],
@@ -76,27 +76,31 @@ describe('built plan parser', () => {
     );
   });
 
-  it('retains BOM, CRLF, Unicode, unknown nested values, and exact body text', () => {
-    const source = `\uFEFF---\r\n${metadata.replaceAll('\n', '\r\n')}\r\nproject:\r\n  label: café 😀\r\n  flags: [true, null, 3]\r\n---\r\n\r\n# A useful plan 😀`;
-    const result = parsePlan(source);
-    expect(result.source).toBe(source);
-    expect(result.body).toBe('\r\n# A useful plan 😀');
-    expect(result.metadata).toEqual({
-      id: 'invented',
-      created_at: '2026-10-21T20:00:00Z',
-      updated_at: '2026-10-21T16:00:00-04:00',
-      revision: 1,
-      status: 'waiting-for-feedback',
-    });
-    expect(result.rawMetadata).toMatchObject({
-      project: { label: 'café 😀', flags: [true, null, 3] },
-    });
-    expect(result.diagnostics.map(({ code }) => code)).toStrictEqual([
-      'INVALID_STATUS',
-      'NO_CRITERIA',
-    ]);
-    expect(checkPlan({ plan: source }).conforms).toBe(false);
-  });
+  it(
+    'retains BOM, CRLF, Unicode, unknown nested values, and exact body text',
+    { tags: ['full'] },
+    () => {
+      const source = `\uFEFF---\r\n${metadata.replaceAll('\n', '\r\n')}\r\nproject:\r\n  label: café 😀\r\n  flags: [true, null, 3]\r\n---\r\n\r\n# A useful plan 😀`;
+      const result = parsePlan(source);
+      expect(result.source).toBe(source);
+      expect(result.body).toBe('\r\n# A useful plan 😀');
+      expect(result.metadata).toEqual({
+        id: 'invented',
+        created_at: '2026-10-21T20:00:00Z',
+        updated_at: '2026-10-21T16:00:00-04:00',
+        revision: 1,
+        status: 'waiting-for-feedback',
+      });
+      expect(result.rawMetadata).toMatchObject({
+        project: { label: 'café 😀', flags: [true, null, 3] },
+      });
+      expect(result.diagnostics.map(({ code }) => code)).toStrictEqual([
+        'INVALID_STATUS',
+        'NO_CRITERIA',
+      ]);
+      expect(checkPlan({ plan: source }).conforms).toBe(false);
+    },
+  );
 
   it('keeps invalid raw values independently of valid fields', () => {
     const result = parsePlan(
@@ -149,11 +153,15 @@ describe('built plan parser', () => {
     expect(result.diagnostics.map((item) => item.code)).toContain('ORPHAN_MILESTONES');
   });
 
-  it('reads ordinary YAML aliases while retaining their original source', () => {
-    const result = parsePlan('---\nid: &identity shared-value\nstatus: *identity\n---\n# Work');
-    expect(result.metadata).toMatchObject({ id: 'shared-value', status: 'shared-value' });
-    expect(result.source).toContain('status: *identity');
-  });
+  it(
+    'reads ordinary YAML aliases while retaining their original source',
+    { tags: ['full'] },
+    () => {
+      const result = parsePlan('---\nid: &identity shared-value\nstatus: *identity\n---\n# Work');
+      expect(result.metadata).toMatchObject({ id: 'shared-value', status: 'shared-value' });
+      expect(result.source).toContain('status: *identity');
+    },
+  );
 
   it('does not present an unsafe extension integer as a rounded raw observation', () => {
     const source = '---\nid: safe-identity\nexternal_number: 9007199254740993\n---\n# Work';
@@ -256,7 +264,7 @@ describe('0.2 plan scope fields', () => {
     expect(parsePlan(plan(fields)).metadata).not.toHaveProperty(fields.split(':')[0]!);
   });
 
-  it('reports each invalid field at its value', () => {
+  it('reports each invalid field at its value', { tags: ['full'] }, () => {
     const source = plan('priority: urgent\nerror_codes: oops\n');
     const diagnostics = parsePlan(source).diagnostics;
     expect(diagnostics.map((item) => [item.code, item.location?.line])).toEqual([

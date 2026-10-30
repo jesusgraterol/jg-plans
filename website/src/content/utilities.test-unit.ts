@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { resolveSourceLink, sourceLinksPlugin } from './utilities.ts';
 
-describe('canonical Markdown links', () => {
+describe('canonical Markdown links', { tags: ['full'] }, () => {
   it('routes canonical documentation locally and examples to readable Markdown', () => {
     expect(resolveSourceLink('0.2/README.md')).toBe('/protocol/0.2/');
     expect(resolveSourceLink('../../api/README.md#shared-document-locks')).toBe(

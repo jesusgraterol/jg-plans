@@ -53,6 +53,7 @@ describe('findErrorCodeOverlaps', () => {
     [['é'], ['e\u0301'], []],
   ] satisfies [IErrorCode[], IErrorCode[], string[]][])(
     'compares explicit %j and %j as %j',
+    { tags: ['full'] },
     (first, second, expected) => {
       expect(
         memberships([plan('a', first), plan('b', second)]).map(({ code }) => code),
@@ -130,13 +131,17 @@ describe('findErrorCodeOverlaps', () => {
     ]);
   });
 
-  it('sorts canonical code strings lexically regardless of their original types', () => {
-    expect(memberships([plan('b', [2, '10', 'A']), plan('a', ['2', 10, 'A'])])).toStrictEqual([
-      { code: '10', directories: ['a', 'b'] },
-      { code: '2', directories: ['a', 'b'] },
-      { code: 'A', directories: ['a', 'b'] },
-    ]);
-  });
+  it(
+    'sorts canonical code strings lexically regardless of their original types',
+    { tags: ['full'] },
+    () => {
+      expect(memberships([plan('b', [2, '10', 'A']), plan('a', ['2', 10, 'A'])])).toStrictEqual([
+        { code: '10', directories: ['a', 'b'] },
+        { code: '2', directories: ['a', 'b'] },
+        { code: 'A', directories: ['a', 'b'] },
+      ]);
+    },
+  );
 
   it('keeps registry and code boundaries distinct when strings contain newlines', () => {
     const one = plan('a', [], {
@@ -148,24 +153,28 @@ describe('findErrorCodeOverlaps', () => {
     expect(findErrorCodeOverlaps([one, two])).toStrictEqual([]);
   });
 
-  it('reports 1024 plans once each for a single shared code', () => {
+  it('reports 1024 plans once each for a single shared code', { tags: ['full'] }, () => {
     const plans = Array.from({ length: 1024 }, (_, index) => plan(`p${index}`, [1, '1', 1]));
     const overlaps = findErrorCodeOverlaps(plans);
     expect(overlaps).toHaveLength(1);
     expect(overlaps[0]!.plans).toHaveLength(1024);
   });
 
-  it('indexes 10,000 plans without multiplying unrelated declaration payloads', () => {
-    const plans = Array.from({ length: 10_000 }, (_, index) =>
-      plan(`p${index}`, [`shared-${Math.floor(index / 2)}`, `unique-${index}`]),
-    );
-    const overlaps = findErrorCodeOverlaps(plans);
-    expect(overlaps).toHaveLength(5000);
-    expect(overlaps.every(({ plans }) => plans.length === 2)).toBe(true);
-    expect(
-      new Set(overlaps.flatMap(({ plans }) => plans.map(({ directory }) => directory))).size,
-    ).toBe(10_000);
-  });
+  it(
+    'indexes 10,000 plans without multiplying unrelated declaration payloads',
+    { tags: ['full'] },
+    () => {
+      const plans = Array.from({ length: 10_000 }, (_, index) =>
+        plan(`p${index}`, [`shared-${Math.floor(index / 2)}`, `unique-${index}`]),
+      );
+      const overlaps = findErrorCodeOverlaps(plans);
+      expect(overlaps).toHaveLength(5000);
+      expect(overlaps.every(({ plans }) => plans.length === 2)).toBe(true);
+      expect(
+        new Set(overlaps.flatMap(({ plans }) => plans.map(({ directory }) => directory))).size,
+      ).toBe(10_000);
+    },
+  );
 
   it.each([
     [{}],

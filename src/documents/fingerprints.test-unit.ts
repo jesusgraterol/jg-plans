@@ -15,25 +15,30 @@ const source =
   '---\nid: invented\ncreated_at: 2026-10-21T20:00:00Z\nupdated_at: 2026-10-21T20:00:00Z\nrevision: 1\nstatus: pending\nscope: {paths: [src], owner: example}\n---\n# Work 😀\n';
 
 describe('built structural fingerprints', () => {
-  it('validates the actual available/unavailable JSON results through the public result schema', () => {
-    expect(PlanFingerprintSchema.safeParse(fingerprintPlan(source)).success).toBe(true);
-    expect(PlanFingerprintSchema.safeParse(fingerprintPlan('---\nunterminated')).success).toBe(
-      true,
-    );
-    expect(
-      PlanFingerprintSchema.safeParse({ sha256: null, excludeMetadataKeys: [], diagnostics: [] })
-        .success,
-    ).toBe(false);
-    expect(
-      PlanFingerprintSchema.safeParse({
-        ...fingerprintPlan(source),
-        excludeMetadataKeys: ['status', 'status'],
-      }).success,
-    ).toBe(false);
-    expect(
-      PlanFingerprintSchema.safeParse({ ...fingerprintPlan(source), sha256: 'not-a-hash' }).success,
-    ).toBe(false);
-  });
+  it(
+    'validates the actual available/unavailable JSON results through the public result schema',
+    { tags: ['full'] },
+    () => {
+      expect(PlanFingerprintSchema.safeParse(fingerprintPlan(source)).success).toBe(true);
+      expect(PlanFingerprintSchema.safeParse(fingerprintPlan('---\nunterminated')).success).toBe(
+        true,
+      );
+      expect(
+        PlanFingerprintSchema.safeParse({ sha256: null, excludeMetadataKeys: [], diagnostics: [] })
+          .success,
+      ).toBe(false);
+      expect(
+        PlanFingerprintSchema.safeParse({
+          ...fingerprintPlan(source),
+          excludeMetadataKeys: ['status', 'status'],
+        }).success,
+      ).toBe(false);
+      expect(
+        PlanFingerprintSchema.safeParse({ ...fingerprintPlan(source), sha256: 'not-a-hash' })
+          .success,
+      ).toBe(false);
+    },
+  );
 
   it('hashes independently specified deterministic JSON without requiring metadata conformance', () => {
     const expected = createHash('sha256')
@@ -114,21 +119,29 @@ describe('built structural fingerprints', () => {
     '---\n? [a, b]\n: value\n---\n# Work',
     '---\nproject: {true: value}\n---\n# Work',
     '---\nbase: &key name\n? *key\n: value\n---\n# Work',
-  ])('reports an unavailable fingerprint while preserving observations: %j', (value) => {
-    const result = fingerprintPlan(value, { excludeMetadataKeys: ['extension'] });
-    expect(result.sha256).toBeNull();
-    expect(result.diagnostics.length).toBeGreaterThan(0);
-    expect(parsePlan(value).source).toBe(value);
-    expect(JSON.stringify(result)).not.toContain(value);
-  });
+  ])(
+    'reports an unavailable fingerprint while preserving observations: %j',
+    { tags: ['full'] },
+    (value) => {
+      const result = fingerprintPlan(value, { excludeMetadataKeys: ['extension'] });
+      expect(result.sha256).toBeNull();
+      expect(result.diagnostics.length).toBeGreaterThan(0);
+      expect(parsePlan(value).source).toBe(value);
+      expect(JSON.stringify(result)).not.toContain(value);
+    },
+  );
 
-  it('hashes expanded nonrecursive aliases and integer-like keys deterministically', () => {
-    const one = '---\nbase: &value {"10": ten, "9": nine}\nother: *value\n---\n# Work';
-    const two = '---\nother: {"9": nine, "10": ten}\nbase: {"9": nine, "10": ten}\n---\n# Work';
-    const result = fingerprintPlan(one);
-    expect(result.sha256).not.toBeNull();
-    expect(result.sha256).toBe(fingerprintPlan(two).sha256);
-  });
+  it(
+    'hashes expanded nonrecursive aliases and integer-like keys deterministically',
+    { tags: ['full'] },
+    () => {
+      const one = '---\nbase: &value {"10": ten, "9": nine}\nother: *value\n---\n# Work';
+      const two = '---\nother: {"9": nine, "10": ten}\nbase: {"9": nine, "10": ten}\n---\n# Work';
+      const result = fingerprintPlan(one);
+      expect(result.sha256).not.toBeNull();
+      expect(result.sha256).toBe(fingerprintPlan(two).sha256);
+    },
+  );
 
   it('validates closed public options and never silently accepts an exclusion typo', () => {
     expect(

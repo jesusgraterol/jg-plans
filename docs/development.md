@@ -25,11 +25,39 @@ Use pnpm format to format editable source/docs. Protected instruction files, pla
 
 The [website guide](../website/README.md) describes the production pages, canonical content, browser checks, and retained screenshots. Website checks build once and test that artifact.
 
+## Essential and full suites
+
+CI selects essential coverage on pull requests, main pushes, and existing manual runs. Full suites run locally only when explicitly requested. There is no full CI input, schedule, or recurring manual routine. Complete focused checks still cover changed behavior and consumers, including affected full-only cases; reuse successful evidence while its relevant inputs remain unchanged.
+
+Essential protects guarded document writes, byte preservation, stale-source rejection, lock ownership and cleanup, bounded file/process/archive operations, private-body omission, correct milestone/criterion progress, and actual error-code collision membership. Package installation and release identity/provenance checks remain essential. Website essentials protect verified package availability, private-path/source-download rejection, and exact deployed-artifact comparisons.
+
+Full adds derived names, additional source-format/diagnostic observations, overview presentation, alternate fingerprint encodings, criteria text formatting, sorting permutations, large-input qualifications, public-example inventories, CLI help/version output, website link/lifecycle demonstrations, and every browser case. Browser accessibility, keyboard/focus, responsive layout, themes, and motion assertions remain complete in full and focused commands; add no essential browser smoke.
+
+Classify each new or materially changed scenario by its concrete failure consequence. Speed, test level, and frontend/backend location do not determine membership. Unassessed cases remain essential until assessed. Keep mixed families co-located and mark useful secondary cases with the declared Vitest `full` tag. Entirely full-only files must also be excluded before imports; entirely full-only categories omit their preparation. Unexpectedly empty required selections must fail.
+
+### Current published-version boundary
+
+The root `package.json` and `README.md` ship in the already published package. Their command edits wait for the next normal release; this testing cleanup introduces no version or publication. Until then, root `test` and `check:package` retain complete package coverage. Root `check` runs that package boundary followed by the website's essential check. Complete granular commands remain unchanged by default.
+
+CI temporarily composes the existing native package commands, with one build:
+
+```sh
+pnpm build && pnpm test:unit --tagsFilter='!full' && pnpm test:integration --tagsFilter='!full' && pnpm typecheck && pnpm lint && pnpm format:check
+```
+
+The package and all six runtime jobs use this selection. Website `test`/`check` select essential; `test:full`/`check:full` retain complete website coverage. Essential website aggregates use native `--mode essential` for file exclusions and `--tagsFilter=!full` for mixed cases. They exclude `src/content/utilities.test-unit.ts` and `scripts/lifecycle/lifecycle.test-integration.ts` before loading them and omit browser E2E. Default `test` mode keeps complete granular/focused discovery; unsupported modes fail. Vitest 5.0.5 does not forward CLI `--exclude` into inline projects, so those exclusions live in the owning configuration. Granular/focused commands include those cases by default; invocation-local flags cannot affect later commands.
+
+At the next normal release, root `test`/`check:package`/`check` will select essential and corresponding `:full` commands will select complete coverage. Replace CI's temporary package composition with `pnpm check:package` in the same change, retaining one authoritative command path.
+
+Release packing, qualification, consumer checks, receipt verification, and delivery prerequisites remain complete and unchanged. Before delivering package-neutral testing changes independently, verify an actual consumer-tested archive against the registry: the result must be `published` with identical shipped paths/bytes. Keep owned archives outside any pre-existing `.release/` output and remove disposable evidence after successful verification.
+
+## Package checks
+
 Root `test` builds before running unit and integration categories. Public-library unit tests import the built root, not implementation source; development-tool tests exercise their owning modules. Integration tests use real temporary files and compiled CLI processes. The packed-consumer test checks the actual archive payload against the allowlist, installs it with scripts disabled, compares every installed payload file byte-for-byte, compiles a TypeScript consumer, checks ESM/require imports and private-path rejection, and invokes the installed executable. Its temporary login/config/cache and filesystem resources are removed in finally blocks.
 
 Archive inspection uses tar as a development-only parser, with no extraction: at most 8 MiB compressed, 16 MiB expanded, 1 MiB per file, and 4096 file entries. Unsafe paths, links, duplicate entries, and nested compression fail verification. Package-manager-generated binary wrappers are tested by invocation and are distinct from the archive payload. Public error, getting-started, and integration references ship with the API/CLI documentation; the consumer check also verifies their relative document links. Development, release, and website source guides remain repository-only.
 
-`check:package` composes those tests with type, lint, and format checks. Root `check` runs that package boundary followed by the website's production checks, in an explicit order; the root public package and private website share a pnpm workspace/lockfile. The website declares jg-plans through workspace:\* and builds the root before reading its exports. `release:pack` builds, writes a local archive under ignored .release/, and verifies that exact retained archive through the installed consumer; it does not publish. Build and archive scripts bound child processes and forward shutdown signals. Check qualifies Node 24.15.0 and 24.22.1 across Linux, macOS, and Windows; website/browser checks run once on Linux at 24.22.1.
+`check:package` composes complete package tests with type, lint, and format checks. Root `check` runs that package boundary followed by the website's essential production checks, in an explicit order; the root public package and private website share a pnpm workspace/lockfile. The website declares jg-plans through workspace:\* and builds the root before reading its exports. `release:pack` builds, writes a local archive under ignored .release/, and verifies that exact retained archive through the installed consumer; it does not publish. Build and archive scripts bound child processes and forward shutdown signals. CI qualifies essential package guarantees on Node 24.15.0 and 24.22.1 across Linux, macOS, and Windows; essential website checks run once on Linux at 24.22.1. Full browser checks run locally on request.
 
 The installed executable performs create → inspect → update → write → check → remove → create-milestones against its real bin shim, and the shipped examples/library.mjs is run from the installed archive. Creation failures exercise actual prefix writes and cleanup; conflict tests control only the external write boundary before invoking the real atomic comparison. Byte-preservation expectations are independent literal buffers, not parser-generated expected output.
 

@@ -4,29 +4,37 @@ import { describe, expect, it } from 'vitest';
 const id = '5a148c73-7d38-4a2f-9c0f-903d93b9b764';
 
 describe('built milestone parser', () => {
-  it('keeps Unicode line-separator characters inside headings and fenced info strings', () => {
-    const source =
-      '```markdown\u2028example\n## Milestone 9: Fenced\n**Status:** done\n```\n## Milestone 1: Work\u2028details\n**Status:** pending';
-    const parsed = parseMilestones(source);
-    expect(parsed.milestones.map((entry) => entry.title)).toEqual(['Work\u2028details']);
-    expect(parsed.sections.map((section) => section.title)).toEqual([
-      'Milestone 1: Work\u2028details',
-    ]);
-    expect(parsed.diagnostics).toEqual([]);
-  });
+  it(
+    'keeps Unicode line-separator characters inside headings and fenced info strings',
+    { tags: ['full'] },
+    () => {
+      const source =
+        '```markdown\u2028example\n## Milestone 9: Fenced\n**Status:** done\n```\n## Milestone 1: Work\u2028details\n**Status:** pending';
+      const parsed = parseMilestones(source);
+      expect(parsed.milestones.map((entry) => entry.title)).toEqual(['Work\u2028details']);
+      expect(parsed.sections.map((section) => section.title)).toEqual([
+        'Milestone 1: Work\u2028details',
+      ]);
+      expect(parsed.diagnostics).toEqual([]);
+    },
+  );
 
-  it('retains long heading whitespace and nonclosing hash suffixes without ambiguous boundaries', () => {
-    const padding = ' '.repeat(20_000);
-    const title = `Work${padding}x###`;
-    const source = `## Milestone 1: ${title}\n**Status:** pending\n## Requirements\nKeep this.`;
-    const parsed = parseMilestones(source);
-    expect(parsed.milestones[0]!.title).toBe(title);
-    expect(parsed.sections.map((section) => section.title)).toEqual([
-      `Milestone 1: ${title}`,
-      'Requirements',
-    ]);
-    expect(parsed.diagnostics).toEqual([]);
-  });
+  it(
+    'retains long heading whitespace and nonclosing hash suffixes without ambiguous boundaries',
+    { tags: ['full'] },
+    () => {
+      const padding = ' '.repeat(20_000);
+      const title = `Work${padding}x###`;
+      const source = `## Milestone 1: ${title}\n**Status:** pending\n## Requirements\nKeep this.`;
+      const parsed = parseMilestones(source);
+      expect(parsed.milestones[0]!.title).toBe(title);
+      expect(parsed.sections.map((section) => section.title)).toEqual([
+        `Milestone 1: ${title}`,
+        'Requirements',
+      ]);
+      expect(parsed.diagnostics).toEqual([]);
+    },
+  );
 
   it('observes optional frontmatter once without scanning its Markdown-looking values or requiring plan fields', () => {
     const source =
@@ -59,21 +67,25 @@ describe('built milestone parser', () => {
     expect(parsed.diagnostics).toEqual([]);
   });
 
-  it('returns exact overview table ranges without adjacent prose or fenced tables', () => {
-    const table = '| Milestone | Name | Status |\n| --- | --- | --- |\n| 1 | Work | pending |\n';
-    const source =
-      '## Overview\nProse before.\n' +
-      table +
-      'Prose after.\n```md\n' +
-      table +
-      '```\n## Milestone 1: Work\n**Status:** pending\n';
-    const parsed = parseMilestones(source);
-    expect(parsed.overviewTables.map((span) => source.slice(span.start, span.end))).toEqual([
-      table,
-    ]);
-    expect(parsed.overview).toHaveLength(1);
-    expect(parsed.diagnostics).toEqual([]);
-  });
+  it(
+    'returns exact overview table ranges without adjacent prose or fenced tables',
+    { tags: ['full'] },
+    () => {
+      const table = '| Milestone | Name | Status |\n| --- | --- | --- |\n| 1 | Work | pending |\n';
+      const source =
+        '## Overview\nProse before.\n' +
+        table +
+        'Prose after.\n```md\n' +
+        table +
+        '```\n## Milestone 1: Work\n**Status:** pending\n';
+      const parsed = parseMilestones(source);
+      expect(parsed.overviewTables.map((span) => source.slice(span.start, span.end))).toEqual([
+        table,
+      ]);
+      expect(parsed.overview).toHaveLength(1);
+      expect(parsed.diagnostics).toEqual([]);
+    },
+  );
 
   it('retains malformed milestone metadata and suppresses scanning inside unterminated frontmatter', () => {
     const malformed = parseMilestones(
@@ -178,14 +190,18 @@ describe('built milestone parser', () => {
     expect(parseMilestones('').diagnostics[0]?.code).toBe('NO_MILESTONES');
   });
 
-  it('recognizes a BOM and considers fenced prose when checking canonical marker placement', () => {
-    const result = parseMilestones(
-      '\uFEFF## Milestone 1: First\n```text\nexample\n```\n**Status:** pending',
-    );
-    expect(result.milestones).toHaveLength(1);
-    expect(result.milestones[0]?.location.offset).toBe(1);
-    expect(result.diagnostics.map((item) => item.code)).toContain('MISPLACED_STATUS');
-  });
+  it(
+    'recognizes a BOM and considers fenced prose when checking canonical marker placement',
+    { tags: ['full'] },
+    () => {
+      const result = parseMilestones(
+        '\uFEFF## Milestone 1: First\n```text\nexample\n```\n**Status:** pending',
+      );
+      expect(result.milestones).toHaveLength(1);
+      expect(result.milestones[0]?.location.offset).toBe(1);
+      expect(result.diagnostics.map((item) => item.code)).toContain('MISPLACED_STATUS');
+    },
+  );
 
   it('retains oversized ordinal text instead of exposing Infinity or rounded identity', () => {
     for (const text of ['9007199254740993', '9'.repeat(500)]) {
@@ -210,19 +226,29 @@ describe('built milestone parser', () => {
     expect(result.diagnostics.map((item) => item.code)).toContain('DUPLICATE_ID_MARKER');
   });
 
-  it('diagnoses an explicitly empty overview instead of treating it as absent', () => {
-    const source =
-      '## Overview\n| Milestone | Name | Status |\n| --- | --- | --- |\n\n## Milestone 1: First\n**Status:** pending';
-    const result = parseMilestones(source);
-    expect(result).toMatchObject({ source, overviewPresent: true, overview: [] });
-    expect(result.diagnostics.map((item) => item.code)).toContain('OVERVIEW_MISMATCH');
-  });
+  it(
+    'diagnoses an explicitly empty overview instead of treating it as absent',
+    { tags: ['full'] },
+    () => {
+      const source =
+        '## Overview\n| Milestone | Name | Status |\n| --- | --- | --- |\n\n## Milestone 1: First\n**Status:** pending';
+      const result = parseMilestones(source);
+      expect(result).toMatchObject({ source, overviewPresent: true, overview: [] });
+      expect(result.diagnostics.map((item) => item.code)).toContain('OVERVIEW_MISMATCH');
+    },
+  );
 
-  it('detects duplicate overview rows and rows without a remaining milestone', () => {
-    const result = parseMilestones(
-      '## Overview\n| Milestone | Name | Status |\n| --- | --- | --- |\n| 1 | First | pending |\n| 1 | Duplicate | done |\n| 7 | Removed | done |\n\n## Milestone 1: First\n**Status:** pending',
-    );
-    expect(result.overview).toHaveLength(3);
-    expect(result.diagnostics.filter((item) => item.code === 'AMBIGUOUS_OVERVIEW')).toHaveLength(2);
-  });
+  it(
+    'detects duplicate overview rows and rows without a remaining milestone',
+    { tags: ['full'] },
+    () => {
+      const result = parseMilestones(
+        '## Overview\n| Milestone | Name | Status |\n| --- | --- | --- |\n| 1 | First | pending |\n| 1 | Duplicate | done |\n| 7 | Removed | done |\n\n## Milestone 1: First\n**Status:** pending',
+      );
+      expect(result.overview).toHaveLength(3);
+      expect(result.diagnostics.filter((item) => item.code === 'AMBIGUOUS_OVERVIEW')).toHaveLength(
+        2,
+      );
+    },
+  );
 });

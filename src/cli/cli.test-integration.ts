@@ -198,26 +198,35 @@ describe('compiled CLI read contract', () => {
     });
   });
 
-  it('validates flags strictly and supports help/version without reading selected documents', async ({
+  it(
+    'supports help/version without reading selected documents',
+    { tags: ['full'] },
+    async ({ cli: { fixture, run } }) => {
+      const root = await fixture();
+      await mkdir(join(root, 'plan.md'));
+      expect((await run(['--help', '--directory', root])).exitCode).toBe(0);
+      const version = await run(['--version', '--directory', root, '--json']);
+      expect(JSON.parse((await run(['--help', '--json'])).stdout)).toMatchObject({
+        schemaVersion: 2,
+        command: 'help',
+        error: null,
+      });
+      expect(version.exitCode).toBe(0);
+      expect(JSON.parse(version.stdout)).toMatchObject({
+        schemaVersion: 2,
+        command: 'version',
+        data: { version: manifest.version },
+        diagnostics: [],
+        error: null,
+      });
+    },
+  );
+
+  it('rejects unsupported invocation arguments before reading selected documents', async ({
     cli: { fixture, run },
   }) => {
     const root = await fixture();
     await mkdir(join(root, 'plan.md'));
-    expect((await run(['--help', '--directory', root])).exitCode).toBe(0);
-    const version = await run(['--version', '--directory', root, '--json']);
-    expect(JSON.parse((await run(['--help', '--json'])).stdout)).toMatchObject({
-      schemaVersion: 2,
-      command: 'help',
-      error: null,
-    });
-    expect(version.exitCode).toBe(0);
-    expect(JSON.parse(version.stdout)).toMatchObject({
-      schemaVersion: 2,
-      command: 'version',
-      data: { version: manifest.version },
-      diagnostics: [],
-      error: null,
-    });
     for (const args of [
       ['inspect'],
       ['bogus'],
