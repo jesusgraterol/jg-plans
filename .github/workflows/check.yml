@@ -89,6 +89,8 @@ jobs:
           node-version: 24.22.1
           package-manager-cache: false
       - run: pnpm install --frozen-lockfile
+      # the website's integration and browser tests launch Chromium
+      - run: pnpm --dir website exec playwright install --with-deps chromium
       - run: pnpm --dir website check
         env:
           JG_PLANS_PUBLISHED_VERSION: ${{ inputs.published_version }}
