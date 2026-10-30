@@ -420,7 +420,7 @@ describe('compiled CLI mutation contract', () => {
     expect(JSON.parse(encoding.stdout).error.code).toBe('JG_PLANS_UNSUPPORTED_ENCODING');
   });
 
-  it('applies byte bounds to stdin and target documents, with an explicit larger override', async ({
+  it('applies byte bounds to stdin, with an explicit larger override', async ({
     cli: { fixture, run },
   }) => {
     const root = await fixture();
@@ -447,11 +447,23 @@ describe('compiled CLI mutation contract', () => {
       input,
     );
     expect(created.exitCode).toBe(0);
-    const directory: string = JSON.parse(created.stdout).data.directory;
+  });
+
+  it('applies byte bounds to target documents, with an explicit larger override', async ({
+    cli: { fixture, run },
+  }) => {
+    const directory = await fixture();
+    await writeFile(
+      join(directory, 'plan.md'),
+      '---\nid: large\nstatus: pending\n---\n' + 'x'.repeat(1024 * 1024 + 1),
+    );
     const patch = JSON.stringify({ document: 'plan', set: { status: 'done' } });
-    expect(
-      (await run(['update', '--directory', directory, '--input', '-', '--json'], patch)).exitCode,
-    ).toBe(2);
+    const limited = await run(
+      ['update', '--directory', directory, '--input', '-', '--json'],
+      patch,
+    );
+    expect(limited.exitCode).toBe(2);
+    expect(JSON.parse(limited.stdout).error.code).toBe('JG_PLANS_READ_FAILED');
     const updated = await run(
       ['update', '--directory', directory, '--input', '-', '--max-bytes', '2097152', '--json'],
       patch,
