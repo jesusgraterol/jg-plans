@@ -49,7 +49,7 @@ A 0.2 plan may also declare these optional fields:
 | repositories | A nonempty list of unique `owner/name` identifiers        | The repositories the plan changes.         |
 | error_codes  | A list of `{ repository, registry, first, last }` entries | The ranges of numeric error codes it adds. |
 
-Each repository identifier is taken from the repository's remote, such as `acme/app` for `git@github.com:acme/app.git`, and identifiers compare without regard to case. In an `error_codes` entry, `repository` is such an identifier, `registry` is the repository-relative POSIX path of the error registry, without a leading `/`, a backslash, or an empty, `.`, or `..` segment, and `first` and `last` are safe integers with `first` at most `last`, an inclusive range.
+Each repository identifier is taken from the repository's remote, such as `acme/app` for `https://github.com/acme/app.git`, and identifiers compare without regard to case. In an `error_codes` entry, `repository` is such an identifier, `registry` is the repository-relative POSIX path of the error registry, without a leading `/`, a backslash, or an empty, `.`, or `..` segment, and `first` and `last` are safe integers with `first` at most `last`, an inclusive range.
 
 ```markdown
 ---
