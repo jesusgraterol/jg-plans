@@ -46,6 +46,14 @@ The [development guide](https://github.com/jesusgraterol/jg-plans/blob/main/docs
 
 The [runnable library example](examples/library.mjs) creates, inspects, updates, and checks documents in an owned temporary directory. Guarded mutations and pure preparation preserve unaffected bytes and share local document locks; unsupported edits fail without rewriting it. The [API](api/README.md) describes the exact preservation and concurrency limits.
 
+<!-- testing-commands:start -->
+
+## Testing
+
+`pnpm test` and `pnpm check` select essential coverage. `pnpm test:full`, `pnpm check:package:full`, and `pnpm check:full` retain complete package or package/website checks. Granular test commands remain complete by default. See the [testing policy](https://github.com/jesusgraterol/jg-plans/blob/main/docs/development.md#essential-and-full-suites) for placement, affected-consumer verification, and the explicit-request full trigger.
+
+<!-- testing-commands:end -->
+
 ## License
 
 [MIT](LICENSE), copyright Jesus Graterol.

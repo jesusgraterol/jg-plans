@@ -46,7 +46,12 @@ export const RegistryPackageSchema = z.object({
   'dist-tags': z.object({ latest: z.string().optional() }),
 });
 
-export type IRegistryOptions = { registry?: string; signal?: AbortSignal };
+export type IRegistryOptions = {
+  registry?: string;
+  signal?: AbortSignal;
+  // raw candidate identity remains independently checked against its unchanged receipt format.
+  candidateArchive?: Uint8Array;
+};
 export type IPublishedObservation =
   | { state: 'missing' }
   | { state: 'pending'; reason: 'tarball-unavailable' | 'metadata-unavailable' }

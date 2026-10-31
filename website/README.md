@@ -12,7 +12,7 @@ pnpm --dir website dev
 pnpm --dir website check
 ```
 
-`check` builds once, typechecks, runs essential unit/integration tests against that artifact, then verifies its registered pages. It needs no browser installation. `test` uses essential coverage against a prepared build; `test:full` includes every unit, integration, and browser case against that build. Granular and focused commands remain complete by default. The [development guide](../docs/development.md#essential-and-full-suites) owns classification and the current root-package command boundary.
+`check` builds once, typechecks, runs essential unit/integration tests against that artifact, then verifies its registered pages. It needs no browser installation. `test` uses essential coverage against a prepared build; `test:full` includes every unit, integration, and browser case against that build. Granular and focused commands remain complete by default. The [development guide](../docs/development.md#essential-and-full-suites) owns classification and the root package’s essential/full commands.
 
 Full runs locally only when explicitly requested:
 
@@ -35,7 +35,7 @@ Code windows use jg-personal-astro-ui 0.5.0’s supported icon-only copy display
 
 Package versions appear with installation instructions and in documentation metadata. There is no global release-status banner. Documentation links to a verified npm version, or identifies an unverified preview; protocol maturity is shown separately.
 
-Local builds default to an offline development preview. Set JG_PLANS_PUBLISHED_VERSION only when asking the build to verify that matching source version against npm. The wrapper packs the already built package in an owned temporary directory and compares complete registry payload paths/bytes. Only a match enables release labels and exact-version install commands on the homepage and Getting started. Both commands retain Cloudflare email-obfuscation guards; live verification allows only their exact single-pair consumption on those two published pages. Missing, pending, mismatching, or unavailable evidence keeps preview presentation; registry errors are distinguished from absence. There is no alternate-registry build flag.
+Local builds default to an offline development preview. Set JG_PLANS_PUBLISHED_VERSION only when asking the build to verify that matching source version against npm. The wrapper packs the already built package in an owned temporary directory and compares protected registry payload paths/bytes, allowing only the testing-metadata exception in the development guide. Only a match enables release labels and exact-version install commands on the homepage and Getting started. Both commands retain Cloudflare email-obfuscation guards; live verification allows only their exact single-pair consumption on those two published pages. Missing, pending, mismatching, or unavailable evidence keeps preview presentation; registry errors are distinguished from absence. There is no alternate-registry build flag.
 
 `assets:generate` renders the sharing image with local fonts and pinned Chromium. Inspect public/social.png, then commit it with assets/manifest.json. `assets:check` rejects stale inputs or altered output. See [the asset sources](assets/README.md) and [website ownership/delivery](../docs/website.md).
 

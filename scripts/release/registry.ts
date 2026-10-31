@@ -4,7 +4,7 @@ import { request } from 'jg-fetch';
 import { ARCHIVE_LIMITS } from '../package/index.ts';
 
 import { REGISTRY, releaseErrors } from './constants.ts';
-import { archiveIntegrity, payloadHashes, samePayload } from './manifest.ts';
+import { archiveIntegrity, samePublishedPayload } from './manifest.ts';
 import {
   RegistryVersionSchema,
   RegistryPackageSchema,
@@ -68,8 +68,8 @@ export const observePublished = async (
   }
   if (archiveIntegrity(archive.data) !== metadata.dist.integrity)
     throw releaseErrors.create('integrityMismatch');
-  const published = await payloadHashes(archive.data);
-  if (!samePayload(published, manifest.files)) throw releaseErrors.create('contentsChanged');
+  if (!(await samePublishedPayload(archive.data, manifest, options.candidateArchive)))
+    throw releaseErrors.create('contentsChanged');
   return { state: 'published', metadata, bytes: archive.data };
 };
 
@@ -92,7 +92,7 @@ export const compareVersions = (left: string, right: string): number => {
 };
 
 /**
- * An already published identity may be reused only with the exact same shipped paths and bytes.
+ * An already published identity requires matching protected contents; only verified development metadata may differ.
  * @throws
  * - RELEASE_REGISTRY_UNAVAILABLE: The registry could not be verified
  * - RELEASE_INTEGRITY_MISMATCH: Release archive integrity does not match

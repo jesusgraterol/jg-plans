@@ -32,7 +32,10 @@ export const verifyAvailability = async (
     await writeReleaseManifest(archive, options.signal);
     const release = await readRelease(directory);
     try {
-      const observed = await observePublished(release.manifest, options);
+      const observed = await observePublished(release.manifest, {
+        ...options,
+        candidateArchive: release.bytes,
+      });
       return observed.state === 'published'
         ? { state: 'published', version: manifest.version, reason: 'verified' }
         : { ...preview, reason: observed.state };

@@ -16,7 +16,7 @@ Plain Markdown destinations do not opt into native page transitions. The base la
 
 ## Availability is evidence
 
-Offline local builds show development preview. With JG_PLANS_PUBLISHED_VERSION, the build first requires the requested version to match the root source version, then compares the downloadable npm archive's complete paths/content hashes with a fresh pack of the built source. A match permits an exact-version install action. Missing/pending releases, differing contents, and unavailable registry evidence suppress it. A registry error never proves absence.
+Offline local builds show development preview. With JG_PLANS_PUBLISHED_VERSION, the build first requires the requested version to match the root source version, then compares the downloadable npm archive's protected paths/content with a fresh pack of the built source, allowing only the testing-metadata exception in the development guide. A match permits an exact-version install action. Missing/pending releases, differing contents, and unavailable registry evidence suppress it. A registry error never proves absence.
 
 Package availability belongs beside installation instructions and in documentation metadata, not in a site-wide banner. Verified documentation links name the npm version; unverified documentation identifies a development preview or unavailable evidence. Protocol maturity remains separate from package availability.
 

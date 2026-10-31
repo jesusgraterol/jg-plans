@@ -50,13 +50,16 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "build": "node scripts/package/build.ts",
-    "test": "pnpm build && pnpm test:unit && pnpm test:integration",
+    "test": "pnpm build && pnpm test:unit --tagsFilter=!full && pnpm test:integration --tagsFilter=!full",
+    "test:full": "pnpm build && pnpm test:unit && pnpm test:integration",
     "test:unit": "vitest run --project unit",
     "test:integration": "vitest run --project integration",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src scripts vitest.config.ts eslint.config.js",
     "check:package": "pnpm test && pnpm typecheck && pnpm lint && pnpm format:check",
+    "check:package:full": "pnpm test:full && pnpm typecheck && pnpm lint && pnpm format:check",
     "check": "pnpm check:package && pnpm --dir website check",
+    "check:full": "pnpm check:package:full && pnpm --dir website check:full",
     "release:pack": "pnpm build && node scripts/package/pack.ts"
   },
   "devDependencies": {
