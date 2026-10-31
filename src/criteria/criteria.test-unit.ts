@@ -380,8 +380,8 @@ describe('unsupported protocol observations', () => {
   });
 });
 
-describe('large plans near the 1 MiB inspection bound', { tags: ['full'] }, () => {
-  it('reads tens of thousands of criteria without quadratic work', () => {
+describe('large plans near the 1 MiB inspection bound', () => {
+  it('reads tens of thousands of criteria without quadratic work', { tags: ['full'] }, () => {
     const count = 40_000;
     const body = Array.from(
       { length: count },
