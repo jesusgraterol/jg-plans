@@ -24,7 +24,7 @@ try {
     (flags.bootstrap && command !== 'verify')
   )
     throw releaseErrors.create('invalidInput');
-  const { manifest, archive } = await readRelease(resolve(flags.from ?? '.release'));
+  const { manifest, archive, bytes } = await readRelease(resolve(flags.from ?? '.release'));
   if (
     command === 'publish' &&
     (process.env.GITHUB_REF !== 'refs/heads/main' ||
@@ -33,7 +33,7 @@ try {
     throw releaseErrors.create('sourceMismatch');
   if (process.env.CI && (manifest.sourceDirty || manifest.sourceCommit !== process.env.GITHUB_SHA))
     throw releaseErrors.create('sourceMismatch');
-  const context = { signal: shutdown.signal };
+  const context = { signal: shutdown.signal, candidateArchive: bytes };
   let result: unknown;
   if (command === 'consumer') {
     await verifyPackedConsumer(archive, shutdown.signal);
@@ -56,6 +56,7 @@ try {
   } else {
     result = await publishRelease(manifest, {
       ready: process.env.NPM_TRUSTED_PUBLISHING_READY === 'true',
+      candidateArchive: bytes,
       signal: shutdown.signal,
       publish: async (signal) => {
         const published = await runProcess({

@@ -7,6 +7,7 @@ import { runProcess } from 'jg-process';
 import { ARCHIVE_LIMITS, inspectPackageArchive, packageRoot } from '../package/index.ts';
 
 import { releaseErrors } from './constants.ts';
+import { sameDevelopmentMetadata } from './development-metadata/index.ts';
 import { PackageIdentitySchema, ReleaseManifestSchema, type IReleaseManifest } from './types.ts';
 
 const parseReleaseJson = (text: string): unknown => {
@@ -47,6 +48,43 @@ export const payloadHashes = async (bytes: Uint8Array): Promise<Record<string, s
 export const samePayload = (left: Record<string, string>, right: Record<string, string>): boolean =>
   Object.keys(left).length === Object.keys(right).length &&
   Object.entries(left).every(([path, hash]) => Object.hasOwn(right, path) && right[path] === hash);
+
+/**
+ * Compare a registry payload with the independently verified candidate receipt.
+ * Development exceptions require the actual candidate bytes, never only claimed file hashes.
+ * @returns Whether every protected shipped path and content still matches.
+ * @throws
+ * - RELEASE_INTEGRITY_MISMATCH: Release archive integrity does not match
+ */
+export const samePublishedPayload = async (
+  publishedBytes: Uint8Array,
+  manifest: IReleaseManifest,
+  candidateBytes?: Uint8Array,
+): Promise<boolean> => {
+  const published = await readPayload(publishedBytes);
+  if (samePayload(hashPayload(published), manifest.files)) return true;
+  if (candidateBytes === undefined) return false;
+  if (
+    hashValue(candidateBytes) !== manifest.sha256 ||
+    archiveIntegrity(candidateBytes) !== manifest.integrity
+  )
+    throw releaseErrors.create('integrityMismatch');
+  const candidate = await readPayload(candidateBytes);
+  if (!samePayload(hashPayload(candidate), manifest.files))
+    throw releaseErrors.create('integrityMismatch');
+  if (published.size !== candidate.size) return false;
+  for (const [path, bytes] of candidate) {
+    const previous = published.get(path);
+    if (previous === undefined) return false;
+    if (bytes.equals(previous)) continue;
+    if (
+      (path !== 'package.json' && path !== 'README.md') ||
+      !sameDevelopmentMetadata(path, previous, bytes)
+    )
+      return false;
+  }
+  return true;
+};
 
 export const archiveIntegrity = (bytes: Uint8Array): string =>
   `sha512-${Buffer.from(hashValue(bytes, 'sha512'), 'hex').toString('base64')}`;

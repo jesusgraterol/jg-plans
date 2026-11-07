@@ -87,6 +87,18 @@ it(
       changed[offset] = 'B'.charCodeAt(0);
       state.bytes = gzipSync(changed);
       expect((await verifyAvailability(manifest.version, options)).reason).toBe('contents-differ');
+      const testingChange = gunzipSync(original, { maxOutputLength: 16 * 1024 * 1024 });
+      const testingOffset = testingChange.indexOf(
+        Buffer.from('retain complete package or package/website checks'),
+      );
+      expect(testingOffset).toBeGreaterThan(0);
+      testingChange[testingOffset] = 'R'.charCodeAt(0);
+      state.bytes = gzipSync(testingChange);
+      expect(await verifyAvailability(manifest.version, options)).toStrictEqual({
+        state: 'published',
+        version: manifest.version,
+        reason: 'verified',
+      });
       state.bytes = original;
       const published = await verifyAvailability(manifest.version, options);
       expect(published).toEqual({

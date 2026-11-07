@@ -1,6 +1,6 @@
 {
   "name": "jg-plans",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "description": "A compact planning protocol for people and coding agents.",
   "type": "module",
   "sideEffects": false,
@@ -50,20 +50,23 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "build": "node scripts/package/build.ts",
-    "test": "pnpm build && pnpm test:unit && pnpm test:integration",
+    "test": "pnpm build && pnpm test:unit --tagsFilter=!full && pnpm test:integration --tagsFilter=!full",
+    "test:full": "pnpm build && pnpm test:unit && pnpm test:integration",
     "test:unit": "vitest run --project unit",
     "test:integration": "vitest run --project integration",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src scripts vitest.config.ts eslint.config.js",
     "check:package": "pnpm test && pnpm typecheck && pnpm lint && pnpm format:check",
+    "check:package:full": "pnpm test:full && pnpm typecheck && pnpm lint && pnpm format:check",
     "check": "pnpm check:package && pnpm --dir website check",
+    "check:full": "pnpm check:package:full && pnpm --dir website check:full",
     "release:pack": "pnpm build && node scripts/package/pack.ts"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
     "@types/node": "24.10.1",
     "eslint": "10.12.0",
-    "jg-fetch": "0.5.0",
+    "jg-fetch": "0.5.1",
     "prettier": "3.8.3",
     "prettier-plugin-astro": "1.1.1",
     "prettier-plugin-tailwindcss": "0.8.1",
@@ -85,10 +88,10 @@
   },
   "dependencies": {
     "jg-crypto": "0.3.0",
-    "jg-exception": "1.7.0",
+    "jg-exception": "1.7.1",
     "jg-fs": "1.7.0",
-    "jg-process": "1.6.1",
-    "jg-utilities": "1.7.0",
+    "jg-process": "1.7.0",
+    "jg-utilities": "1.8.0",
     "yaml": "2.9.1",
     "zod": "4.6.7"
   }

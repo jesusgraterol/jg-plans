@@ -22,10 +22,15 @@ afterEach(async () => {
   }
 });
 
-const archive = (body = 'Original docs'): Buffer => {
+const archive = (
+  body = 'Original docs',
+  fields: Record<string, unknown> = {},
+  additional: Record<string, string> = {},
+): Buffer => {
   const blocks = Object.entries({
-    'package/package.json': JSON.stringify({ name: 'jg-plans', version: '0.1.1' }),
+    'package/package.json': JSON.stringify({ name: 'jg-plans', version: '0.1.1', ...fields }),
     'package/README.md': body,
+    ...additional,
   });
   return gzipSync(
     Buffer.concat([
@@ -361,4 +366,89 @@ describe('publication reconciliation', () => {
     );
     expect(attempts).toBe(0);
   });
+});
+
+// real candidate receipts and local registry bytes exercise the exception without a publication.
+it('reuses a published runtime after verified testing-metadata changes without publishing', async () => {
+  const { state, manifest, registry } = await fixture();
+  const candidate = archive(
+    '<!-- testing-commands:start -->\nTesting commands.\n<!-- testing-commands:end -->\nOriginal docs',
+    { scripts: { test: 'essential', 'test:full': 'complete' } },
+  );
+  const next = {
+    ...manifest,
+    sha256: hashValue(candidate),
+    integrity: archiveIntegrity(candidate),
+    files: await payloadHashes(candidate),
+  };
+  expect((await qualifyVersion(next, { registry, candidateArchive: candidate })).state).toBe(
+    'published',
+  );
+  let publications = 0;
+  expect(
+    await publishRelease(next, {
+      ready: true,
+      registry,
+      candidateArchive: candidate,
+      publish: async () => {
+        publications++;
+      },
+      verifyProvenance: async (metadata, bytes) => {
+        expect(Buffer.from(bytes)).toStrictEqual(state.bytes);
+        expect(await readProvenanceCommit(metadata, bytes, { registry })).toBe(
+          manifest.sourceCommit,
+        );
+      },
+    }),
+  ).toStrictEqual({ state: 'already-published', version: manifest.version });
+  expect(publications).toBe(0);
+  await expectToRejectCode(observePublished(next, { registry }), 'RELEASE_CONTENTS_CHANGED');
+  await expectToRejectCode(
+    observePublished(next, { registry, candidateArchive: state.bytes }),
+    'RELEASE_INTEGRITY_MISMATCH',
+  );
+});
+
+it.each([
+  ['runtime bytes', 'Original docs', {}, { 'package/dist/index.js': 'changed' }],
+  ['dependencies', 'Original docs', { dependencies: { library: '2.0.0' } }, {}],
+  ['installation hooks', 'Original docs', { scripts: { postinstall: 'changed' } }, {}],
+  ['unmarked documentation', 'Changed docs', {}, {}],
+])('testing metadata cannot hide changed %s', async (_name, readme, fields, additional) => {
+  const { manifest, registry } = await fixture();
+  const candidate = archive(readme, fields, additional);
+  const next = {
+    ...manifest,
+    sha256: hashValue(candidate),
+    integrity: archiveIntegrity(candidate),
+    files: await payloadHashes(candidate),
+  };
+  await expectToRejectCode(
+    observePublished(next, { registry, candidateArchive: candidate }),
+    'RELEASE_CONTENTS_CHANGED',
+  );
+});
+
+it('a newly submitted release still requires its complete tested payload', async () => {
+  const { state, manifest, registry } = await fixture();
+  state.exists = false;
+  state.latest = '0.1.0';
+  await expectToRejectCode(
+    publishRelease(manifest, {
+      ready: true,
+      registry,
+      candidateArchive: state.bytes,
+      publish: async () => {
+        state.exists = true;
+        state.latest = manifest.version;
+        state.bytes = archive('Original docs', { scripts: { test: 'other commands' } });
+      },
+      verifyProvenance: async () => {
+        throw new Error('Changed submitted bytes reached provenance');
+      },
+      timeoutMs: 2000,
+      pollMs: 1,
+    }),
+    'RELEASE_CONTENTS_CHANGED',
+  );
 });

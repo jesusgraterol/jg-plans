@@ -2,7 +2,7 @@
 
 A compact planning protocol for people and coding agents. Keep the plan in Markdown, add milestones when they help, and let projects choose their workflows.
 
-Protocol 0.2 is provisional and is the only supported version; unversioned Markdown uses its rules. The 0.5.0 library/CLI uses CLI JSON schema 2. The [website](https://jg-plans.jesusgraterol.dev) presents the specification, documentation, and examples, with package availability verified independently of the protocol draft.
+Protocol 0.2 is provisional and is the only supported version; unversioned Markdown uses its rules. The current library/CLI uses CLI JSON schema 2. The [website](https://jg-plans.jesusgraterol.dev) presents the specification, documentation, and examples, with package availability verified independently of the protocol draft.
 
 - [Protocol 0.2](protocol/0.2/README.md)
 - [Examples](examples/README.md)
@@ -45,6 +45,14 @@ pnpm check
 The [development guide](https://github.com/jesusgraterol/jg-plans/blob/main/docs/development.md) owns checks and package/site boundaries. Root tests build first, exercise public compiled exports, and install the actual tarball in an isolated consumer. Website tests verify production output in both themes and narrow layouts.
 
 The [runnable library example](examples/library.mjs) creates, inspects, updates, and checks documents in an owned temporary directory. Guarded mutations and pure preparation preserve unaffected bytes and share local document locks; unsupported edits fail without rewriting it. The [API](api/README.md) describes the exact preservation and concurrency limits.
+
+<!-- testing-commands:start -->
+
+## Testing
+
+`pnpm test` and `pnpm check` select essential coverage. `pnpm test:full`, `pnpm check:package:full`, and `pnpm check:full` retain complete package or package/website checks. Granular test commands remain complete by default. See the [testing policy](https://github.com/jesusgraterol/jg-plans/blob/main/docs/development.md#essential-and-full-suites) for placement, affected-consumer verification, and the explicit-request full trigger.
+
+<!-- testing-commands:end -->
 
 ## License
 

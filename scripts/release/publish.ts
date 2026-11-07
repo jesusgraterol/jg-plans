@@ -39,7 +39,11 @@ export const publishRelease = async (
   try {
     const signal = AbortSignal.any([deadline.signal, ...(options.signal ? [options.signal] : [])]);
     const context = { ...(options.registry ? { registry: options.registry } : {}), signal };
-    let observed = await qualifyVersion(manifest, context);
+    const comparison = {
+      ...context,
+      ...(options.candidateArchive ? { candidateArchive: options.candidateArchive } : {}),
+    };
+    let observed = await qualifyVersion(manifest, comparison);
     const existed = observed.state !== 'missing';
     let publishCause: unknown;
     if (observed.state === 'missing') {
@@ -51,7 +55,7 @@ export const publishRelease = async (
     }
     while (!signal.aborted) {
       try {
-        observed = await observePublished(manifest, context);
+        observed = await observePublished(manifest, existed ? comparison : context);
         if (observed.state === 'published' && (await readLatest(context)) === manifest.version) {
           await options.verifyProvenance(observed.metadata, observed.bytes, signal);
           return { state: existed ? 'already-published' : 'published', version: manifest.version };

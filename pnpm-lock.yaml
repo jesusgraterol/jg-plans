@@ -170,17 +170,17 @@ importers:
         specifier: 0.3.0
         version: 0.3.0
       jg-exception:
-        specifier: 1.7.0
-        version: 1.7.0
+        specifier: 1.7.1
+        version: 1.7.1
       jg-fs:
         specifier: 1.7.0
         version: 1.7.0
       jg-process:
-        specifier: 1.6.1
-        version: 1.6.1
-      jg-utilities:
         specifier: 1.7.0
         version: 1.7.0
+      jg-utilities:
+        specifier: 1.8.0
+        version: 1.8.0
       yaml:
         specifier: 2.9.1
         version: 2.9.1
@@ -198,8 +198,8 @@ importers:
         specifier: 10.12.0
         version: 10.12.0(jiti@2.7.0)
       jg-fetch:
-        specifier: 0.5.0
-        version: 0.5.0
+        specifier: 0.5.1
+        version: 0.5.1
       prettier:
         specifier: 3.8.3
         version: 3.8.3
@@ -234,8 +234,8 @@ importers:
         specifier: 7.4.2
         version: 7.4.2(@types/node@24.10.1)(jiti@2.7.0)(yaml@2.9.1)
       jg-personal-astro-ui:
-        specifier: 0.5.0
-        version: 0.5.0(astro@7.4.2(@types/node@24.10.1)(jiti@2.7.0)(yaml@2.9.1))(tailwindcss@4.3.3)
+        specifier: 0.6.0
+        version: 0.6.0(astro@7.4.2(@types/node@24.10.1)(jiti@2.7.0)(yaml@2.9.1))(tailwindcss@4.3.3)
       jg-plans:
         specifier: workspace:*
         version: link:..
@@ -262,20 +262,20 @@ importers:
         specifier: 0.3.0
         version: 0.3.0
       jg-exception:
+        specifier: 1.7.1
+        version: 1.7.1
+      jg-fetch:
+        specifier: 0.5.1
+        version: 0.5.1
+      jg-fs:
         specifier: 1.7.0
         version: 1.7.0
-      jg-fetch:
-        specifier: 0.5.0
-        version: 0.5.0
-      jg-fs:
-        specifier: 1.6.0
-        version: 1.6.0
       jg-playwright:
-        specifier: 0.1.0
-        version: 0.1.0(@axe-core/playwright@4.14.0(playwright-core@1.64.1))(@playwright/test@1.64.1)
+        specifier: 0.2.0
+        version: 0.2.0(@axe-core/playwright@4.14.0(playwright-core@1.64.1))(@playwright/test@1.64.1)
       jg-process:
-        specifier: 1.6.1
-        version: 1.6.1
+        specifier: 1.7.0
+        version: 1.7.0
       typescript:
         specifier: 6.0.3
         version: 6.0.3
@@ -1729,35 +1729,33 @@ packages:
     resolution: {integrity: sha512-S7Bq9kmAK43xZeNQ41iubJ2LYxxyW3yMEoh2ciFkmm0/LAD3i2OgKOV4YPUL4j8NVGdjFuyJ5L8Ew6ti3wwVIQ==}
     engines: {node: '>=22.17.0'}
 
-  jg-exception@1.7.0:
-    resolution: {integrity: sha512-EmhkDdWxunZdYt+xjqe1G9tPbaSkVqF6xu/TxxChz7yVI+vXiWk8K5D+0J+masNL4MJwJv1sTDPC2x3QYMbJxA==}
-    engines: {node: '>=22.17.0'}
-
   jg-exception@1.7.1:
     resolution: {integrity: sha512-bi5yn3rtvFLlhjOiJJAREVE1mYXnENW3zoRcMOymNlgr09Z+Hy7ECgqGvIkqvINy+QDpki0u8XbmWSZpWpuwVQ==}
     engines: {node: '>=22.17.0'}
 
-  jg-fetch@0.5.0:
-    resolution: {integrity: sha512-F2f0WmwhrMTZj7QutWWchTQSmb9P3zwAGFVniHoV+8Xj6xB6pahW+IR0EuqwSuTtkqG9K6e7JKHUVUQd5d2usQ==}
-    engines: {node: '>=22.17.0'}
-
-  jg-fs@1.6.0:
-    resolution: {integrity: sha512-+x9Y7YW4tn4HIYIU+6LUAiScgA1Y2ay0I41NYnLjfe6CBCXDqb5DpzKffSWGGNG0EmpRUBBdQYnYCyMla3iiMg==}
+  jg-fetch@0.5.1:
+    resolution: {integrity: sha512-vmBVqAPzqsyIyVUgOxiTjm9vpXiA6NpUorb2CosG+XzwLAOI0nnuqs+MuImVNVC7x3E2havMV5QxHxGtaFUPhg==}
     engines: {node: '>=22.17.0'}
 
   jg-fs@1.7.0:
     resolution: {integrity: sha512-LEttOq6o3dqpim3v20IPF3bx+gWH7BHGels1hLTugpIghbnjycw+IgMMmSigrmpUVkBxhiwpLLMXsQliVfKfdQ==}
     engines: {node: '>=22.17.0'}
 
-  jg-personal-astro-ui@0.5.0:
-    resolution: {integrity: sha512-52f0WXqk8n1JMmIl6p6bHuJF9ngkFE7dVEgEU7u/LyP8Z00REbEqtbUABJ+k81s7nolpr8p1A/vPoQyCm7AG5g==}
+  jg-personal-astro-ui@0.6.0:
+    resolution: {integrity: sha512-WVC8hQ/m40n6O1tzPkrkb2erDfZDslEs0HIu3n+pyjcvQHyFVFiknWau7vKxm/NVY9OxXDYmXPVC/GCtiIjpmg==}
     engines: {node: '>=24'}
     peerDependencies:
       astro: ^7.4.0
-      tailwindcss: ^4.3.0
+      tailwindcss: ^4.3.3
 
-  jg-playwright@0.1.0:
-    resolution: {integrity: sha512-z45It3kyIc1TShbnQprALft/4dQeKo9lHHphLhagR7IZcEADDaB0RVxj0KAjgVG1EyXl/NhtotaV4mSsWAr4rA==}
+  jg-personal-ui@0.2.0:
+    resolution: {integrity: sha512-YqgsmV+qRZms4VDTNjCvM3WzcgRW9KA0j+7c10ycbHfH2VDAMAhR8GIvic34BgHrfBobfbrNDwGPPitLpfjXFA==}
+    engines: {node: '>=22.17.0'}
+    peerDependencies:
+      tailwindcss: ^4.3.3
+
+  jg-playwright@0.2.0:
+    resolution: {integrity: sha512-WywX0texZg7QC4u6lqyoT7CMGXG8QdFbtT7deEa3+gTJe6PgIuEAbjp0h/S4YmzTmWWf6KLVf4wVlNCMhTS24Q==}
     engines: {node: '>=22.17.0'}
     peerDependencies:
       '@axe-core/playwright': ^4.13.0
@@ -1766,16 +1764,16 @@ packages:
       '@axe-core/playwright':
         optional: true
 
-  jg-process@1.6.1:
-    resolution: {integrity: sha512-F75AiEaJLTRcPNvH/LEC1neSA6wa316W6O++lJYWsObdghBl3p18q5ueDxFZ8C8HnY/kLTdgHpdaC18SF3/gQg==}
+  jg-process@1.7.0:
+    resolution: {integrity: sha512-U+hM01+3L6nf9EfTz7kp3Qo+5nrRZGXmbYOTE1Iw01Qz4mIFZxjG8+GAnIQnGnKK8bNLSDo38gQoj/vUeS0Q5Q==}
     engines: {node: '>=22.17.0'}
 
   jg-site@0.1.0:
     resolution: {integrity: sha512-wHL9HvqU+mzECiqKwVB0iiln5C/mP3EdIW43KfFFFf/Kk4zWSIEfXg6W0Iq6VjRFMfRFAOaFr4unSbf2/X/Nig==}
     engines: {node: '>=22.17.0'}
 
-  jg-utilities@1.7.0:
-    resolution: {integrity: sha512-Cdec4v/QW7TPaY68/McjGxLCvrwH7aKI9H0DsXoo3qi27R81DTbxVZpsg7/LVZ3Ah3Kai1OHiUgpju2rmF2VEA==}
+  jg-utilities@1.8.0:
+    resolution: {integrity: sha512-808zXcTf7x4peGNHz/q2/25p41BtTI5RrpNm1syH9itQbYej9m88/PdO4VG+YW2pKBSOIfEAWAsAoRU5QL2AOw==}
     engines: {node: '>=22.17.0'}
 
   jiti@2.7.0:
@@ -4189,66 +4187,64 @@ snapshots:
 
   jg-api-response@1.2.0:
     dependencies:
-      jg-exception: 1.7.0
+      jg-exception: 1.7.1
 
   jg-clipboard@0.3.0:
     dependencies:
-      jg-exception: 1.7.0
+      jg-exception: 1.7.1
 
   jg-crypto@0.3.0:
     dependencies:
-      jg-exception: 1.7.0
-
-  jg-exception@1.7.0: {}
+      jg-exception: 1.7.1
 
   jg-exception@1.7.1: {}
 
-  jg-fetch@0.5.0:
+  jg-fetch@0.5.1:
     dependencies:
       jg-api-response: 1.2.0
-      jg-exception: 1.7.0
-      jg-utilities: 1.7.0
-
-  jg-fs@1.6.0:
-    dependencies:
-      jg-exception: 1.7.0
-      jg-utilities: 1.7.0
+      jg-exception: 1.7.1
+      jg-utilities: 1.8.0
 
   jg-fs@1.7.0:
     dependencies:
-      jg-exception: 1.7.0
-      jg-utilities: 1.7.0
+      jg-exception: 1.7.1
+      jg-utilities: 1.8.0
 
-  jg-personal-astro-ui@0.5.0(astro@7.4.2(@types/node@24.10.1)(jiti@2.7.0)(yaml@2.9.1))(tailwindcss@4.3.3):
+  jg-personal-astro-ui@0.6.0(astro@7.4.2(@types/node@24.10.1)(jiti@2.7.0)(yaml@2.9.1))(tailwindcss@4.3.3):
     dependencies:
-      '@fontsource-variable/ubuntu-sans': 5.3.0
-      '@fontsource-variable/ubuntu-sans-mono': 5.3.0
       '@lucide/astro': 1.60.0(astro@7.4.2(@types/node@24.10.1)(jiti@2.7.0)(yaml@2.9.1))
       astro: 7.4.2(@types/node@24.10.1)(jiti@2.7.0)(yaml@2.9.1)
       diff: 9.0.0
       jg-clipboard: 0.3.0
       jg-exception: 1.7.1
+      jg-personal-ui: 0.2.0(tailwindcss@4.3.3)
       jg-site: 0.1.0
       shiki: 4.5.0
       tailwindcss: 4.3.3
 
-  jg-playwright@0.1.0(@axe-core/playwright@4.14.0(playwright-core@1.64.1))(@playwright/test@1.64.1):
+  jg-personal-ui@0.2.0(tailwindcss@4.3.3):
+    dependencies:
+      '@fontsource-variable/ubuntu-sans': 5.3.0
+      '@fontsource-variable/ubuntu-sans-mono': 5.3.0
+      tailwindcss: 4.3.3
+
+  jg-playwright@0.2.0(@axe-core/playwright@4.14.0(playwright-core@1.64.1))(@playwright/test@1.64.1):
     dependencies:
       '@playwright/test': 1.64.1
-      jg-exception: 1.7.0
+      jg-exception: 1.7.1
     optionalDependencies:
       '@axe-core/playwright': 4.14.0(playwright-core@1.64.1)
 
-  jg-process@1.6.1:
+  jg-process@1.7.0:
     dependencies:
-      jg-exception: 1.7.0
-      jg-utilities: 1.7.0
+      jg-exception: 1.7.1
+      jg-utilities: 1.8.0
 
   jg-site@0.1.0: {}
 
-  jg-utilities@1.7.0:
+  jg-utilities@1.8.0:
     dependencies:
-      jg-exception: 1.7.0
+      jg-exception: 1.7.1
       uuid: 14.0.3
 
   jiti@2.7.0: {}
