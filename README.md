@@ -2,7 +2,7 @@
 
 A compact planning protocol for people and coding agents. Keep the plan in Markdown, add milestones when they help, and let projects choose their workflows.
 
-Protocol 0.2 is provisional and is the only supported version; unversioned Markdown uses its rules. The 0.5.0 library/CLI uses CLI JSON schema 2. The [website](https://jg-plans.jesusgraterol.dev) presents the specification, documentation, and examples, with package availability verified independently of the protocol draft.
+Protocol 0.2 is provisional and is the only supported version; unversioned Markdown uses its rules. The current library/CLI uses CLI JSON schema 2. The [website](https://jg-plans.jesusgraterol.dev) presents the specification, documentation, and examples, with package availability verified independently of the protocol draft.
 
 - [Protocol 0.2](protocol/0.2/README.md)
 - [Examples](examples/README.md)

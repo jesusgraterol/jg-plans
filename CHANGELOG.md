@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.2 — dependency and website maintenance
+
+- Update jg-exception to 1.7.1, jg-process to 1.7.0, and jg-utilities to 1.8.0, preserving protocol 0.2, CLI schema 2, and the public library contracts.
+- Refresh the website's JG dependencies and delegate inline page-transition opt-in and its reduced-motion opt-out to the shared DocumentHead. Retain the site-specific raw Markdown navigation handler.
+- Correct current-implementation documentation and include the existing essential-testing commands and qualified testing-metadata comparison in this release.
+
 ## 0.5.1 — consumer-neutral documentation
 
 - The documentation no longer names a particular consumer application: the integration guide describes any application that tracks plans across repositories, and the README, API reference, getting-started guide and protocol overview speak of consumers in general. The protocol's list of state readers never depend on drops `coordination.json`. Nothing else changed.
