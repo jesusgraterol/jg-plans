@@ -158,7 +158,7 @@ describe('compiled CLI read contract', () => {
     expect(inspection.stdout).not.toContain('SECRET_BODY_MARKER');
     expect(inspection.stdout).not.toContain('SECRET_MILESTONE_BODY');
     expect(JSON.parse(inspection.stdout)).toMatchObject({
-      schemaVersion: 2,
+      schemaVersion: 3,
       command: 'inspect',
       error: null,
       data: {
@@ -210,13 +210,13 @@ describe('compiled CLI read contract', () => {
       expect((await run(['--help', '--directory', root])).exitCode).toBe(0);
       const version = await run(['--version', '--directory', root, '--json']);
       expect(JSON.parse((await run(['--help', '--json'])).stdout)).toMatchObject({
-        schemaVersion: 2,
+        schemaVersion: 3,
         command: 'help',
         error: null,
       });
       expect(version.exitCode).toBe(0);
       expect(JSON.parse(version.stdout)).toMatchObject({
-        schemaVersion: 2,
+        schemaVersion: 3,
         command: 'version',
         data: { version: manifest.version },
         diagnostics: [],
@@ -242,7 +242,7 @@ describe('compiled CLI read contract', () => {
       expect(result.exitCode).toBe(2);
       expect(result.stderr).toBe('');
       expect(JSON.parse(result.stdout)).toMatchObject({
-        schemaVersion: 2,
+        schemaVersion: 3,
         error: { code: 'JG_PLANS_INVALID_INPUT' },
       });
     }
@@ -346,7 +346,7 @@ describe('compiled CLI mutation contract', () => {
         ['create', '--slug', 'cli-task', '--root', root, '--input', '-', '--json'],
         JSON.stringify({
           body: '# PRIVATE_BODY\n\n- AC-01: Work is done.',
-          metadata: { project: { label: 'invented' } },
+          metadata: { delivery: {}, project: { label: 'invented' } },
           milestones: '## Milestone 1: Work\n**Status:** pending\n**Acceptance criteria:** AC-01',
         }),
       );
@@ -364,7 +364,7 @@ describe('compiled CLI mutation contract', () => {
       );
       expect(updated.exitCode).toBe(0);
       expect(JSON.parse(updated.stdout)).toMatchObject({
-        schemaVersion: 2,
+        schemaVersion: 3,
         command: 'update',
         data: { changed: true, document: 'milestones' },
         error: null,
@@ -378,7 +378,7 @@ describe('compiled CLI mutation contract', () => {
   }) => {
     const root = await fixture();
     const input = join(root, 'input.json');
-    await writeFile(input, JSON.stringify({ body: '# Local default' }));
+    await writeFile(input, JSON.stringify({ metadata: { delivery: {} }, body: '# Local default' }));
     const result = await run(
       ['create', '--slug', 'default-root', '--input', input, '--json'],
       undefined,
@@ -394,8 +394,14 @@ describe('compiled CLI mutation contract', () => {
     const root = await fixture();
     for (const [input, code] of [
       ['{ PRIVATE_SECRET_BODY', 'JG_PLANS_INVALID_INPUT'],
-      [JSON.stringify({ body: '\uD800' }), 'JG_PLANS_UNSUPPORTED_ENCODING'],
-      [JSON.stringify({ body: '# Work', root: 'injected' }), 'JG_PLANS_INVALID_INPUT'],
+      [
+        JSON.stringify({ metadata: { delivery: {} }, body: '\uD800' }),
+        'JG_PLANS_UNSUPPORTED_ENCODING',
+      ],
+      [
+        JSON.stringify({ metadata: { delivery: {} }, body: '# Work', root: 'injected' }),
+        'JG_PLANS_INVALID_INPUT',
+      ],
     ]) {
       const result = await run(
         ['create', '--slug', 'bad', '--root', root, '--input', '-', '--json'],
@@ -436,7 +442,7 @@ describe('compiled CLI mutation contract', () => {
     cli: { fixture, run },
   }) => {
     const root = await fixture();
-    const input = JSON.stringify({ body: 'x'.repeat(1024 * 1024 + 1) });
+    const input = JSON.stringify({ metadata: { delivery: {} }, body: 'x'.repeat(1024 * 1024 + 1) });
     const limited = await run(
       ['create', '--slug', 'large', '--root', root, '--input', '-', '--json'],
       input,
@@ -502,7 +508,7 @@ describe('compiled CLI overlaps', () => {
     const clean = await run(['overlaps', '--root', first, '--json']);
     expect(clean.exitCode).toBe(0);
     expect(JSON.parse(clean.stdout)).toMatchObject({
-      schemaVersion: 2,
+      schemaVersion: 3,
       command: 'overlaps',
       data: { overlaps: [], unreadable: [], isComplete: true },
       diagnostics: [],

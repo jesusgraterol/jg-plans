@@ -21,7 +21,7 @@ The [API reference](../api/README.md) describes pure parsing, checking, selected
 
 ## Make an explicit edit
 
-Create input is ordinary JSON, for example `{ "body": "# Small change\n", "metadata": { "project": "example" } }` in create.json. From a built checkout:
+Create input is ordinary JSON, for example `{ "body": "# Small change\n", "metadata": { "delivery": {}, "project": "example" } }` in create.json. From a built checkout:
 
 ```sh
 node dist/cli/cli.js create --slug small-change --input create.json --json

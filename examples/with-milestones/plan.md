@@ -5,6 +5,7 @@ updated_at: 2026-10-21T20:02:00Z
 revision: 2
 status: in progress
 protocol: "0.2"
+delivery: {}
 ---
 
 # Example gallery

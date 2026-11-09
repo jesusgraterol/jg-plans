@@ -29,7 +29,7 @@ import {
 import { parseArguments } from './arguments.ts';
 
 // the CLI envelope contract is independent of protocol and release receipt versions
-const CLI_SCHEMA_VERSION = 2;
+const CLI_SCHEMA_VERSION = 3;
 
 const HELP = `jg-plans — read and edit Markdown plans without enforcing a workflow
 

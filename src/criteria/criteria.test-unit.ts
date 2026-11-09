@@ -11,7 +11,7 @@ import {
 import { describe, expect, it } from 'vitest';
 
 const frontmatter = (status = 'pending', protocol = '"0.2"'): string =>
-  `---\nid: invented\ncreated_at: 2026-10-21T20:00:00Z\nupdated_at: 2026-10-21T20:00:00Z\nrevision: 1\nstatus: ${status}\nprotocol: ${protocol}\n---\n`;
+  `---\nid: invented\ncreated_at: 2026-10-21T20:00:00Z\nupdated_at: 2026-10-21T20:00:00Z\nrevision: 1\nstatus: ${status}\nprotocol: ${protocol}\ndelivery: {}\n---\n`;
 
 const plan02 = (body: string, status?: string): string => `${frontmatter(status)}\n${body}`;
 
@@ -198,7 +198,7 @@ describe('protocol 0.2 plan rules', () => {
     expect(unquoted.protocol).toBe('0.2');
     expect(codes(unquoted.diagnostics)).toStrictEqual(['INVALID_METADATA_FIELD']);
     const absent = parsePlan(
-      '---\nid: invented\ncreated_at: 2026-10-21T20:00:00Z\nupdated_at: 2026-10-21T20:00:00Z\nrevision: 1\nstatus: pending\n---\n',
+      '---\nid: invented\ncreated_at: 2026-10-21T20:00:00Z\nupdated_at: 2026-10-21T20:00:00Z\nrevision: 1\nstatus: pending\ndelivery: {}\n---\n',
     );
     expect(absent.protocol).toBe('0.2');
     expect(codes(absent.diagnostics)).toStrictEqual(['NO_CRITERIA']);
@@ -214,10 +214,10 @@ describe('protocol 0.2 plan rules', () => {
     ]);
     const parsed = parsePlan(plan02('- AC-01: One.\n- AC-01: Again.\n- AC-02:\n- AC-x:\n'));
     expect(parsed.diagnostics.map((item) => [item.code, item.location?.line])).toStrictEqual([
-      ['DUPLICATE_CRITERION', 11],
-      ['EMPTY_CRITERION', 12],
-      ['INVALID_CRITERION_ID', 13],
+      ['DUPLICATE_CRITERION', 12],
       ['EMPTY_CRITERION', 13],
+      ['INVALID_CRITERION_ID', 14],
+      ['EMPTY_CRITERION', 14],
     ]);
   });
 
@@ -267,7 +267,7 @@ describe('milestone coverage', () => {
     const result = checkPlan({ plan, milestones });
     expect(
       result.diagnostics.map((item) => [item.code, item.document, item.location?.line]),
-    ).toStrictEqual([['UNASSIGNED_CRITERION', 'plan', 11]]);
+    ).toStrictEqual([['UNASSIGNED_CRITERION', 'plan', 12]]);
   });
 
   it('requires shared progress statuses on milestones', () => {
@@ -330,7 +330,7 @@ describe('criterion progress', () => {
       {
         id: 'AC-01',
         text: 'First.',
-        location: { offset: 134, line: 10, column: 3 },
+        location: { offset: 147, line: 11, column: 3 },
         milestones: [
           { ordinal: 1, id: '5a148c73-7d38-4a2f-9c0f-901e93829022' },
           { ordinal: 2, id: '5a148c73-7d38-4a2f-9c0f-902e93829022' },

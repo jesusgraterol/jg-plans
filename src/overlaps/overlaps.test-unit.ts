@@ -86,7 +86,7 @@ describe('findErrorCodeOverlaps', () => {
     ]);
   });
 
-  it('counts pending and in-progress plans while retaining null identities', () => {
+  it('counts pending, in-progress and done plans while retaining null identities', () => {
     expect(
       findErrorCodeOverlaps([
         plan('a', ['X']),
@@ -94,6 +94,7 @@ describe('findErrorCodeOverlaps', () => {
         plan('c', ['X'], { status: 'done' }),
         plan('d', ['X'], { status: 'waiting' }),
         plan('e', ['X'], { status: null }),
+        plan('f', ['X'], { status: 'delivered' }),
       ]),
     ).toStrictEqual([
       {
@@ -103,6 +104,7 @@ describe('findErrorCodeOverlaps', () => {
         plans: [
           { directory: 'a', id: 'a' },
           { directory: 'b', id: null },
+          { directory: 'c', id: 'c' },
         ],
       },
     ]);

@@ -5,6 +5,7 @@ updated_at: 2026-10-21T20:00:00Z
 revision: 1
 status: pending
 protocol: "0.2"
+delivery: {}
 ---
 
 # Search feedback

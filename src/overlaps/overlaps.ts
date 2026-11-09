@@ -10,7 +10,7 @@ import {
 } from './types.ts';
 
 // the statuses whose declarations can still collide
-const ACTIVE_STATUSES = new Set(['pending', 'in progress']);
+const ACTIVE_STATUSES = new Set(['pending', 'in progress', 'done']);
 
 // one registry's canonical codes and distinct participating directories
 type IRegistryClaims = {

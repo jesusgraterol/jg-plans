@@ -269,7 +269,9 @@ export const observeCriteria = (
       milestones: covered.map((milestone) => ({ ordinal: milestone.ordinal, id: milestone.id })),
       progress:
         milestones === undefined
-          ? progressOf([plan.metadata.status ?? null])
+          ? progressOf([
+              plan.metadata.status === 'delivered' ? 'done' : (plan.metadata.status ?? null),
+            ])
           : progressOf(covered.map((milestone) => milestone.status)),
     };
   });

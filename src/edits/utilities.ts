@@ -53,17 +53,17 @@ type IPlanSet = Extract<IPlanUpdate, { document: 'plan' }>['set'];
 type IPlanSetValue = NonNullable<IPlanSet[keyof IPlanSet]>;
 
 const isScopeKey = (key: string): boolean =>
-  (SCOPE_METADATA_KEYS as readonly string[]).includes(key);
+  key === 'delivery' || (SCOPE_METADATA_KEYS as readonly string[]).includes(key);
 
 // a list written as one YAML flow line, such as `[ acme/app, acme/api ]`
-const flowText = (value: readonly unknown[]): string => {
+const flowText = (value: readonly unknown[] | Record<string, string>): string => {
   const text = stringify(value, { flow: true, lineWidth: 0 }).replace(/\n$/, '');
   encodeSource(text);
   return text;
 };
 
 const valueText = (value: IPlanSetValue, style?: string): string =>
-  Array.isArray(value) ? flowText(value) : scalarText(value, style);
+  typeof value === 'object' ? flowText(value) : scalarText(value, style);
 
 // the offset of the line that holds an index
 const lineStart = (text: string, index: number): number => {
@@ -197,7 +197,7 @@ export const planEdits = (
       continue;
     }
     // core fields are scalars, which the schema keeps from being null or lists
-    if (value === null || Array.isArray(value))
+    if (value === null || typeof value === 'object')
       throw planErrors.create('unsafeEdit', {
         data: { reason: 'unsupported-metadata-value', field: key },
       });

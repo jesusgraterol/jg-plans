@@ -15,6 +15,7 @@ import {
 const root = await mkdtemp(join(tmpdir(), 'jg-plans-example-'));
 try {
   const created = await createPlan({
+    metadata: { delivery: {} },
     root,
     slug: 'example',
     body: '# A small change\n\n- AC-01: Keep the intent close to the work.\n',

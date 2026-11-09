@@ -7,9 +7,10 @@ import {
   CORE_METADATA_KEYS,
   PROTOCOL_VERSION,
   ErrorCodesSchema,
+  DeliveryMetadataSchema,
   PlanMetadataSchema,
   PrioritySchema,
-  ProgressSchema,
+  PlanStatusSchema,
   RepositoriesSchema,
   type ISourceLocation,
 } from '../protocol/index.ts';
@@ -79,6 +80,8 @@ export const parsePlan = (source: string): IParsedPlan => {
       const node = document.get(key, true);
       if (node === undefined) continue;
       const raw = result.rawMetadata;
+      // A whole-document YAML value failure cannot establish this collection's value.
+      if (key === 'delivery' && raw === null) continue;
       const value: unknown =
         raw !== null && typeof raw === 'object' && Object.hasOwn(raw, key)
           ? Reflect.get(raw, key)
@@ -105,7 +108,7 @@ export const parsePlan = (source: string): IParsedPlan => {
         result.diagnostics.push(
           diagnostic(
             'plan',
-            'INVALID_METADATA_FIELD',
+            key === 'delivery' ? 'INVALID_DELIVERY' : 'INVALID_METADATA_FIELD',
             `Metadata field '${key}' has an incompatible value.`,
             location,
           ),
@@ -120,6 +123,10 @@ export const parsePlan = (source: string): IParsedPlan => {
   for (const key of CORE_METADATA_KEYS) {
     if (
       !(key in result.metadata) &&
+      !(key === 'delivery' && document?.has('delivery')) &&
+      !(
+        key === 'delivery' && result.diagnostics.some((item) => item.code === 'INVALID_DELIVERY')
+      ) &&
       !invalid.has(`Metadata field '${key}' has an incompatible value.`)
     )
       result.diagnostics.push(
@@ -133,12 +140,12 @@ export const parsePlan = (source: string): IParsedPlan => {
   result.name = result.metadata.id?.replace(/^\d+_([a-z0-9]+(?:-[a-z0-9]+)*)$/, '$1') ?? null;
   result.criteria = readCriteria(lines);
   const { status } = result.metadata;
-  if (status !== undefined && !ProgressSchema.safeParse(status).success)
+  if (status !== undefined && !PlanStatusSchema.safeParse(status).success)
     result.diagnostics.push(
       diagnostic(
         'plan',
         'INVALID_STATUS',
-        'The plan status is not pending, in progress, or done.',
+        'The plan status is not pending, in progress, done, or delivered.',
         statusLocation,
       ),
     );
@@ -169,5 +176,26 @@ export const parsePlan = (source: string): IParsedPlan => {
           ),
         );
     }
+  if (
+    raw !== null &&
+    result.metadata.delivery !== undefined &&
+    !DeliveryMetadataSchema.safeParse(raw).success
+  ) {
+    delete result.metadata.delivery;
+    const node = document?.get('delivery', true);
+    result.diagnostics.push(
+      diagnostic(
+        'plan',
+        'INVALID_DELIVERY',
+        'Delivery must map exactly the declared repositories to nonempty stop names, without case-duplicate keys.',
+        frontmatter
+          ? sourceLocation(
+              lines,
+              frontmatter.contentStart + (isNode(node) ? (node.range?.[0] ?? 0) : 0),
+            )
+          : undefined,
+      ),
+    );
+  }
   return result;
 };

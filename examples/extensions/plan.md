@@ -10,6 +10,7 @@ project:
   labels:
     - accessibility
     - documentation
+delivery: {}
 ---
 
 # Gallery accessibility review

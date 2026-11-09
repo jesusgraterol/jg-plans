@@ -2,6 +2,7 @@
   "conforms": false,
   "protocol": "0.2",
   "name": "export-reports-criteria",
+  "metadata": { "delivery": {} },
   "criteria": [
     {
       "id": "AC-01",
@@ -18,9 +19,9 @@
   ],
   "diagnostics": [
     { "code": "INVALID_STATUS", "document": "plan", "line": 6 },
-    { "code": "DUPLICATE_CRITERION", "document": "plan", "line": 17 },
-    { "code": "INVALID_CRITERION_ID", "document": "plan", "line": 18 },
-    { "code": "UNASSIGNED_CRITERION", "document": "plan", "line": 19 },
+    { "code": "DUPLICATE_CRITERION", "document": "plan", "line": 18 },
+    { "code": "INVALID_CRITERION_ID", "document": "plan", "line": 19 },
+    { "code": "UNASSIGNED_CRITERION", "document": "plan", "line": 20 },
     { "code": "UNKNOWN_CRITERION", "document": "milestones", "line": 4 }
   ]
 }

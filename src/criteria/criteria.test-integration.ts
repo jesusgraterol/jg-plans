@@ -76,9 +76,9 @@ describe('shipped criteria examples', { tags: ['full'] }, () => {
       }) => ({
         protocol: envelope.data.criteria.protocol,
         name: envelope.data.plan.name,
-        // the optional scope fields the example declares
+        // delivery and the optional scope fields the example declares
         metadata: Object.fromEntries(
-          ['priority', 'repositories', 'error_codes']
+          ['delivery', 'priority', 'repositories', 'error_codes']
             .filter((key) => key in envelope.data.plan.metadata)
             .map((key) => [key, envelope.data.plan.metadata[key]]),
         ),
@@ -116,7 +116,7 @@ describe('writing protocol 0.2 documents', () => {
       ['create', '--slug', 'criteria', '--root', root, '--input', '-'],
       JSON.stringify({
         body: '# Work\n\n## Acceptance criteria\n\n- AC-01: The work is done.\n',
-        metadata: { protocol: '0.2' },
+        metadata: { delivery: {}, protocol: '0.2' },
       }),
     );
     expect(created.exitCode).toBe(0);
@@ -139,7 +139,7 @@ describe('writing protocol 0.2 documents', () => {
       ['create', '--slug', 'covered', '--root', root, '--input', '-'],
       JSON.stringify({
         body: '# Work\n\n- AC-01: First.\n- AC-02: Second.\n',
-        metadata: { protocol: '0.2' },
+        metadata: { delivery: {}, protocol: '0.2' },
       }),
     );
     const directory = created.envelope.data.directory;
