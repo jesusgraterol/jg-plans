@@ -5,6 +5,7 @@ updated_at: 2026-10-21T20:03:00Z
 revision: 1
 status: blocked
 protocol: "0.2"
+delivery: {}
 ---
 
 # Export reports

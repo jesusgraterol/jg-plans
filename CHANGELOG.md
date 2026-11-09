@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.6.0 — defined task delivery
+
+- Breaking: required delivery metadata maps exactly the declared repositories to repository-defined stops. Creation requires an explicit mapping; guarded updates validate the complete repository/delivery pair.
+- Add the plan-only delivered status. Done plans retain error-code claims; delivered plans release them. Criterion progress remains done after delivery.
+- Breaking: every CLI envelope reports schemaVersion 3. Protocol 0.2 is amended in place as a provisional draft.
+- Export delivery and plan-status schemas and types. Update examples and the six-key skill fingerprint profile without changing the generic fingerprint default.
+
 ## 0.5.2 — dependency and website maintenance
 
 - Update jg-exception to 1.7.1, jg-process to 1.7.0, and jg-utilities to 1.8.0, preserving protocol 0.2, CLI schema 2, and the public library contracts.

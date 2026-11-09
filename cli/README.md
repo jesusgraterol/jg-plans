@@ -5,7 +5,7 @@ The executable is tested from the packed archive. Check the [website's availabil
 ```sh
 jg-plans inspect --directory ./jg-plans/example
 jg-plans inspect --directory ./custom-root/example --json
-jg-plans inspect --directory ./jg-plans/example --fingerprint-exclude '["created_at","updated_at","revision","status"]' --json
+jg-plans inspect --directory ./jg-plans/example --fingerprint-exclude '["created_at","updated_at","revision","status","priority","delivery"]' --json
 jg-plans inspect --directory ./coding-agent-planning/example --include-body --json
 jg-plans check --directory ./jg-plans/example --json
 jg-plans overlaps --root ./jg-plans --root ../api/jg-plans --json
@@ -29,7 +29,7 @@ Acceptance criteria are ordinary observations too. `data.plan.protocol` reports 
 
 Check is an optional assessment against the preferred protocol writer format. Missing required metadata, malformed structures, duplicate markers, and overview discrepancies produce findings. Milestone IDs and overview tables remain optional. A missing milestone file is valid for a plan-only task. A checker result is never an execution approval or a restriction on manual editing.
 
-For every plan, check also reports missing, invalid, duplicate, or empty criteria, statuses other than pending, in progress, or done, malformed or misplaced coverage lines, unknown IDs, and criteria no milestone covers. Explicit unsupported string versions receive UNSUPPORTED_PROTOCOL; non-string versions receive INVALID_METADATA_FIELD. Original text and raw values remain available. Inspect reports the same criteria findings without failing.
+For every plan, check also reports missing, invalid, duplicate, or empty criteria, plan statuses other than pending, in progress, done, or delivered, milestone statuses outside the three progress values, malformed or misplaced coverage lines, unknown IDs, and criteria no milestone covers. Explicit unsupported string versions receive UNSUPPORTED_PROTOCOL; non-string versions receive INVALID_METADATA_FIELD. Original text and raw values remain available. Inspect reports the same criteria findings without failing.
 
 ## Create and update
 
@@ -39,19 +39,19 @@ jg-plans create --slug small-change --root ./custom-root --input - --json
 jg-plans update --directory ./jg-plans/example --input update.json --json
 ```
 
-Create input is a closed JSON object with body, optional metadata, and optional milestones text:
+Create input is a closed JSON object with body, required metadata containing delivery, and optional milestones text:
 
 ```json
 {
   "body": "# Intent\n\n- AC-01: Keep this prose.\n",
-  "metadata": { "project": { "owner": "example" } },
+  "metadata": { "delivery": {}, "project": { "owner": "example" } },
   "milestones": "## Milestone 1: Implement\n**Status:** pending\n**Acceptance criteria:** AC-01\n"
 }
 ```
 
-Slug and root are command flags, not JSON fields. Creation uses ./jg-plans relative to the working directory by default, without root discovery or migration. It creates an exclusive timestamp_slug directory, defaults missing metadata including protocol "0.2", preserves supplied body/milestones, and never overwrites. Unsupported creation protocols and invalid explicit-code declarations fail before filesystem mutation. Slugs use lowercase ASCII kebab case; the generated component must fit 64 characters. Returned create data contains directory, plan name/metadata/rawMetadata/sha256, and milestones as { sha256, milestones: summaries } or null. No body is emitted.
+Slug and root are command flags, not JSON fields. Creation uses ./jg-plans relative to the working directory by default, without root discovery or migration. It creates an exclusive timestamp_slug directory, defaults missing metadata including protocol "0.2", preserves supplied body/milestones, and never overwrites. Missing or invalid delivery, unsupported creation protocols and invalid explicit-code declarations fail before filesystem mutation. Slugs use lowercase ASCII kebab case; the generated component must fit 64 characters. Returned create data contains directory, plan name/metadata/rawMetadata/sha256, and milestones as { sha256, milestones: summaries } or null. No body is emitted.
 
-Update input selects one document and optionally expectedSha256 from a fresh inspection; a stale or deleted guarded target fails before preparation. For a plan, use `{ "document": "plan", "set": { "status": "done", "revision": 2 } }`. The allowed fields are id, created_at, updated_at, revision, status, protocol, priority, repositories, and error_codes. Null removes an optional protocol or scope field. Name is derived, never an editable metadata field. For milestones:
+Update input selects one document and optionally expectedSha256 from a fresh inspection; a stale or deleted guarded target fails before preparation. For a plan, use `{ "document": "plan", "set": { "status": "done", "revision": 2 } }`. The allowed fields are id, created_at, updated_at, revision, status, delivery, protocol, priority, repositories, and error_codes. Null removes an optional scope field; delivery and protocol cannot be null. Name is derived, never an editable metadata field. For milestones:
 
 ```json
 {
@@ -97,7 +97,7 @@ Human output uses stdout for data and stderr for diagnostics. `--json` emits exa
 
 ```json
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "command": "inspect",
   "data": {},
   "diagnostics": [],
@@ -105,7 +105,7 @@ Human output uses stdout for data and stderr for diagnostics. `--json` emits exa
 }
 ```
 
-Inspect data includes the resolved directory, per-document observations, and criteria; check also includes conforms. Mutation results are described above. Diagnostics have stable codes, severity, document, message, and an optional source location. Error is null or a safe code/message pair with optional data for a reason, affected core field, or cleanupFailedPaths. Causes are not emitted. Operational inspection failure can retain partial data. Source locations use UTF-16 character offsets and one-based lines/columns. The JSON contract is versioned independently of the protocol: `schemaVersion` changes whenever a command's input or output changes incompatibly, so jg-plans 0.5.0 reports schemaVersion 2 for every command, including help, version and failures. Consumers must verify the envelope before using the changed code-list, overlap and name contracts. Release receipts use their independent schemaVersion 1.
+Inspect data includes the resolved directory, per-document observations, and criteria; check also includes conforms. Mutation results are described above. Diagnostics have stable codes, severity, document, message, and an optional source location. Error is null or a safe code/message pair with optional data for a reason, affected core field, or cleanupFailedPaths. Causes are not emitted. Operational inspection failure can retain partial data. Source locations use UTF-16 character offsets and one-based lines/columns. The JSON contract is versioned independently of the protocol: `schemaVersion` changes whenever a command's input or output changes incompatibly, so jg-plans 0.6.0 reports schemaVersion 3 for every command, including help, version and failures. Consumers must verify the envelope before using the changed code-list, overlap and name contracts. Release receipts use their independent schemaVersion 1.
 
 | Exit | Meaning                                                                                                                                                                |
 | ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

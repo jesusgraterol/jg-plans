@@ -32,14 +32,19 @@ The reference implementation supports UTF-8 Markdown, with an optional UTF-8 BOM
 
 A newly generated preferred plan starts with YAML frontmatter containing:
 
-| Field      | Writer value                        | Meaning                                     |
-| ---------- | ----------------------------------- | ------------------------------------------- |
-| id         | Nonempty stable string              | Document identity independent of its path.  |
-| created_at | RFC 3339 timestamp                  | Known creation time.                        |
-| updated_at | RFC 3339 timestamp                  | The author's latest recorded revision time. |
-| revision   | Positive integer                    | Author-maintained document revision.        |
-| status     | `pending`, `in progress`, or `done` | Progress of the whole plan.                 |
-| protocol   | The string `"0.2"`                  | Declares the supported protocol.            |
+| Field      | Writer value                                     | Meaning                                                 |
+| ---------- | ------------------------------------------------ | ------------------------------------------------------- |
+| id         | Nonempty stable string                           | Document identity independent of its path.              |
+| created_at | RFC 3339 timestamp                               | Known creation time.                                    |
+| updated_at | RFC 3339 timestamp                               | The author's latest recorded revision time.             |
+| revision   | Positive integer                                 | Author-maintained document revision.                    |
+| status     | `pending`, `in progress`, `done`, or `delivered` | Implementation and delivery state of the whole plan.    |
+| delivery   | Repository-to-stop mapping                       | Required delivery target for every declared repository. |
+| protocol   | The string `"0.2"`                               | Declares the supported protocol.                        |
+
+A plan always declares `delivery`, for example `{acme/app: development}`. Its keys must match `repositories` exactly without regard to case, with no case-duplicate keys. Every value is a nonblank stop name defined by that repository; the protocol does not interpret stops. With no repositories, delivery is explicitly `{}`. Missing delivery receives MISSING_METADATA_FIELD; malformed or mismatched delivery receives INVALID_DELIVERY. Creation rejects either before filesystem mutation. A repository/delivery edit validates the resulting complete pair and can set both in one guarded write.
+
+`done` records completed implementation; `delivered` records the consumer's verified completion of the plan's delivery. Milestones and criteria retain their three progress values. These observations grant no authority.
 
 A 0.2 plan may also declare these optional fields:
 
@@ -61,6 +66,7 @@ updated_at: 2026-10-21T20:02:00Z
 revision: 1
 status: pending
 protocol: '0.2'
+delivery: {}
 ---
 
 # Search feedback
@@ -173,7 +179,7 @@ A coverage line written directly after the status line stays correctly placed wh
 
 Readers derive each criterion's progress, so every consumer shows the same value:
 
-- Without milestones.md, a criterion's progress is the plan's status.
+- Without milestones.md, a criterion's progress is the plan's status, with `delivered` observed as `done`.
 - With milestones.md, it is `done` when every milestone that covers it is done, `in progress` when at least one of them is in progress or done, and `pending` otherwise.
 - It is unavailable (`null`) when no milestone covers the criterion, or when a status it depends on is not `pending`, `in progress`, or `done`.
 
@@ -192,32 +198,33 @@ Only valid IDs take part in coverage and progress. When an ID is defined more th
 
 ## Error code overlaps
 
-Two distinct active plans overlap when both have status `pending` or `in progress` and claim a shared code in the same repository and exact registry. Compare `String(code)`: numeric `100` and string `"100"` collide, while `"0100"` differs. Duplicate canonical claims within one plan count once. Codes never imply an interval. Each overlap reports `{ repository, registry, code, plans: [{ directory, id }] }`, where code is the canonical string and each directory appears once. Sort by repository, registry, exact lexical code string, then plan directory and ID. Repository output uses lowercase identifiers.
+Two distinct active plans overlap when both have status `pending`, `in progress`, or `done` (every recognized status except `delivered`) and claim a shared code in the same repository and exact registry. Compare `String(code)`: numeric `100` and string `"100"` collide, while `"0100"` differs. Duplicate canonical claims within one plan count once. Codes never imply an interval. Each overlap reports `{ repository, registry, code, plans: [{ directory, id }] }`, where code is the canonical string and each directory appears once. Sort by repository, registry, exact lexical code string, then plan directory and ID. Repository output uses lowercase identifiers.
 
 An overlap is advisory. Choosing other codes, or deciding that plans may share a code, stays with their authors and applications.
 
-`jg-plans overlaps` reads the frontmatter of the plans in the folders of the roots the caller names. Unsupported versions, malformed or legacy range declarations, and unreadable frontmatter make the scan incomplete. At most 1024 folders are selected for document reads, with 64 KiB per document. This caps document reads, not directory entries listed or listing memory: complete root listings are sorted before selection. A truncated result is never reported as free of overlaps.
+`jg-plans overlaps` reads the frontmatter of the plans in the folders of the roots the caller names. Unsupported versions, malformed code declarations, and unreadable frontmatter make the scan incomplete. At most 1024 folders are selected for document reads, with 64 KiB per document. This caps document reads, not directory entries listed or listing memory: complete root listings are sorted before selection. A truncated result is never reported as free of overlaps.
 
 ## Diagnostics
 
 Readers retain metadata/framing, YAML, encoding, milestone structure, and overview diagnostics. The following current-protocol rules also apply, including to unversioned plans. Each is an error. Messages describe the issue without quoting document text.
 
-| Code                      | Document           | Reported when                                                               |
-| ------------------------- | ------------------ | --------------------------------------------------------------------------- |
-| NO_CRITERIA               | plan               | The plan defines no criterion.                                              |
-| INVALID_CRITERION_ID      | plan               | A definition's ID is not valid, such as `AC-1` or `AC-001`.                 |
-| DUPLICATE_CRITERION       | plan               | An ID is defined more than once; reported at each later definition.         |
-| EMPTY_CRITERION           | plan               | A definition has no text.                                                   |
-| INVALID_STATUS            | plan or milestones | The plan status or a milestone status is not pending, in progress, or done. |
-| INVALID_CRITERIA_MARKER   | milestones         | A coverage line is empty, names an invalid ID, or repeats an ID.            |
-| DUPLICATE_CRITERIA_MARKER | milestones         | A milestone has more than one coverage line.                                |
-| MISPLACED_CRITERIA_MARKER | milestones         | A coverage line is not directly after the ID line, or the status line.      |
-| UNKNOWN_CRITERION         | milestones         | A coverage line names an ID the plan doesn't define.                        |
-| UNASSIGNED_CRITERION      | plan               | milestones.md exists and no milestone covers the criterion.                 |
-| INVALID_PRIORITY          | plan               | The `priority` field is not `low`, `medium`, `high`, or `hotfix`.           |
-| INVALID_REPOSITORIES      | plan               | The `repositories` field is not a nonempty list of unique identifiers.      |
-| INVALID_ERROR_CODES       | plan               | The `error_codes` field is not a list of valid entries.                     |
-| UNSUPPORTED_PROTOCOL      | plan               | An explicit string protocol version is unsupported.                         |
+| Code                      | Document           | Reported when                                                                                      |
+| ------------------------- | ------------------ | -------------------------------------------------------------------------------------------------- |
+| NO_CRITERIA               | plan               | The plan defines no criterion.                                                                     |
+| INVALID_CRITERION_ID      | plan               | A definition's ID is not valid, such as `AC-1` or `AC-001`.                                        |
+| DUPLICATE_CRITERION       | plan               | An ID is defined more than once; reported at each later definition.                                |
+| EMPTY_CRITERION           | plan               | A definition has no text.                                                                          |
+| INVALID_STATUS            | plan or milestones | A plan status is outside its four values, or a milestone status outside its three progress values. |
+| INVALID_CRITERIA_MARKER   | milestones         | A coverage line is empty, names an invalid ID, or repeats an ID.                                   |
+| DUPLICATE_CRITERIA_MARKER | milestones         | A milestone has more than one coverage line.                                                       |
+| MISPLACED_CRITERIA_MARKER | milestones         | A coverage line is not directly after the ID line, or the status line.                             |
+| UNKNOWN_CRITERION         | milestones         | A coverage line names an ID the plan doesn't define.                                               |
+| UNASSIGNED_CRITERION      | plan               | milestones.md exists and no milestone covers the criterion.                                        |
+| INVALID_DELIVERY          | plan               | Delivery is malformed or does not match declared repositories.                                     |
+| INVALID_PRIORITY          | plan               | The `priority` field is not `low`, `medium`, `high`, or `hotfix`.                                  |
+| INVALID_REPOSITORIES      | plan               | The `repositories` field is not a nonempty list of unique identifiers.                             |
+| INVALID_ERROR_CODES       | plan               | The `error_codes` field is not a list of valid entries.                                            |
+| UNSUPPORTED_PROTOCOL      | plan               | An explicit string protocol version is unsupported.                                                |
 
 Each diagnostic points at the line it concerns: the definition, the coverage line, the status field or marker, or the value of the optional field. A check of plan.md alone reports the plan rules. The milestone and coverage rules need both documents. An explicit check fails on any of these errors; inspection reports them without failing.
 

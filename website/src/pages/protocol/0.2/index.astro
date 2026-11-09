@@ -51,7 +51,10 @@ const milestone = milestones.slice(0, milestones.indexOf('\n## Milestone 2') + 1
             ],
             ['- AC-01: …', 'One testable requirement with a stable ID'],
             ['**Acceptance criteria:**', 'The criteria a milestone delivers'],
-            ['pending / in progress / done', 'The shared progress vocabulary'],
+            [
+              'pending / in progress / done / delivered',
+              'Plan status; milestones and criteria keep three progress values',
+            ],
           ].map(([name, text]) => (
             <div class="border-t border-border pt-3">
               <dt class="font-mono font-semibold wrap-anywhere">{name}</dt>

@@ -7,6 +7,7 @@ import { planErrors } from '../errors/index.ts';
 import {
   PlanDocumentWriteSchema,
   PlanUpdateSchema,
+  DeliveryMetadataSchema,
   SCOPE_METADATA_KEYS,
   type IDiagnostic,
   type IPlanDocumentWrite,
@@ -60,7 +61,7 @@ const validateSet = (
   const raw = observation.rawMetadata;
   for (const [key, value] of Object.entries(set)) {
     // scope removals and collections are verified against the serialized YAML
-    const isScope = (SCOPE_METADATA_KEYS as readonly string[]).includes(key);
+    const isScope = key === 'delivery' || (SCOPE_METADATA_KEYS as readonly string[]).includes(key);
     const isPresent = raw !== null && typeof raw === 'object' && Object.hasOwn(raw, key);
     const isWritten = isScope
       ? value === null
@@ -72,6 +73,11 @@ const validateSet = (
         data: { reason: 'unsupported-serialized-value', field: key },
       });
   }
+  if (
+    (Object.hasOwn(set, 'delivery') || Object.hasOwn(set, 'repositories')) &&
+    !DeliveryMetadataSchema.safeParse(observation.rawMetadata).success
+  )
+    throw planErrors.create('invalidInput');
 };
 
 /**

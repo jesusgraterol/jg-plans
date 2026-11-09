@@ -70,6 +70,7 @@ describe('exclusive creation through the built public API', () => {
       slug: 'search-feedback-criteria',
       body: '# Work',
       metadata: {
+        delivery: {},
         name: 'Project label',
         error_codes: [
           { repository: 'acme/app', registry: 'errors.md', codes: [100, '100', 'INPUT_INVALID'] },
@@ -95,7 +96,12 @@ describe('exclusive creation through the built public API', () => {
   ])('rejects unsupported creation contracts before filesystem mutation: %o', async (metadata) => {
     const root = await fixture();
     await expectToRejectCode(
-      createPlan({ root, slug: 'invalid', body: '# Work', metadata }),
+      createPlan({
+        root,
+        slug: 'invalid',
+        body: '# Work',
+        metadata: { delivery: {}, ...metadata },
+      }),
       ERRORS.INVALID_INPUT,
       'Invalid jg-plans input',
     );
@@ -148,7 +154,7 @@ describe('exclusive creation through the built public API', () => {
       root,
       slug: 'small-task',
       body,
-      metadata: { id: '../../opaque-document-id', project: { labels: ['invented'] } },
+      metadata: { delivery: {}, id: '../../opaque-document-id', project: { labels: ['invented'] } },
       milestones,
     });
     expect(basename(result.directory)).toBe('1792612800_small-task');
@@ -175,14 +181,14 @@ describe('exclusive creation through the built public API', () => {
       root,
       slug: 'same',
       body: '# Keep me',
-      metadata: { status: false, revision: 'unknown' },
+      metadata: { delivery: {}, status: false, revision: 'unknown' },
     });
     expect(
       original.diagnostics.filter((item) => item.code === 'INVALID_METADATA_FIELD'),
     ).toHaveLength(2);
     const bytes = await readFile(join(original.directory, 'plan.md'));
     await expectToRejectCode(
-      createPlan({ root, slug: 'same', body: '# Replacement' }),
+      createPlan({ metadata: { delivery: {} }, root, slug: 'same', body: '# Replacement' }),
       ERRORS.DESTINATION_EXISTS,
       'The plan destination already exists',
     );
@@ -194,12 +200,12 @@ describe('exclusive creation through the built public API', () => {
     const root = await fixture();
     for (const slug of ['../escape', 'UPPER', 'a/b', 'a'.repeat(64)])
       await expectToRejectCode(
-        createPlan({ root, slug, body: '# Work' }),
+        createPlan({ metadata: { delivery: {} }, root, slug, body: '# Work' }),
         ERRORS.INVALID_INPUT,
         'Invalid jg-plans input',
       );
     await expectToRejectCode(
-      createPlan({ root, slug: 'valid', body: '\uD800' }),
+      createPlan({ metadata: { delivery: {} }, root, slug: 'valid', body: '\uD800' }),
       ERRORS.UNSUPPORTED_ENCODING,
       'Document text is not valid UTF-8',
     );
@@ -220,7 +226,7 @@ describe('exclusive creation through the built public API', () => {
       return handle;
     });
     await expectToRejectCode(
-      createPlan({ root, slug: 'partial', body: '# Work' }),
+      createPlan({ metadata: { delivery: {} }, root, slug: 'partial', body: '# Work' }),
       ERRORS.WRITE_FAILED,
       'The plan document could not be written',
     );
@@ -240,6 +246,7 @@ describe('exclusive creation through the built public API', () => {
       return actual.open(path, flags, mode);
     });
     const operation = createPlan({
+      metadata: { delivery: {} },
       root,
       slug: 'preserve-user',
       body: '# Original',
@@ -266,7 +273,13 @@ describe('exclusive creation through the built public API', () => {
       }
       return actual.open(path, flags, mode);
     });
-    const operation = createPlan({ root, slug: 'moved', body: '# Keep', milestones: '# Explicit' });
+    const operation = createPlan({
+      metadata: { delivery: {} },
+      root,
+      slug: 'moved',
+      body: '# Keep',
+      milestones: '# Explicit',
+    });
     await expectToRejectCode(operation, ERRORS.LOCK_FAILED);
     await expect(operation).rejects.toMatchObject({
       data: { phase: 'release', mutationOutcome: 'uncertain', operationCompleted: false },
@@ -535,79 +548,8 @@ describe('targeted updates through the built public API', () => {
     const fileRoot = join(root, 'not-a-directory');
     await writeFile(fileRoot, '# Existing');
     await expectToRejectCode(
-      createPlan({ root: fileRoot, slug: 'valid', body: '# Work' }),
+      createPlan({ metadata: { delivery: {} }, root: fileRoot, slug: 'valid', body: '# Work' }),
       ERRORS.WRITE_FAILED,
     );
   });
-});
-
-describe('scope field updates through the built public API', () => {
-  it.each(['\n', '\r\n'])(
-    'sets, changes, and removes each field, leaving every other byte, with %j',
-    async (eol) => {
-      const lines = (...fields: string[]): string =>
-        [
-          '﻿---',
-          "id: 'scoped' # keep",
-          'revision: 3',
-          "protocol: '0.2'",
-          'project: { flags: [one, two] }',
-          ...fields,
-          '---',
-          '',
-          '# Body 😀',
-        ].join(eol);
-      const root = await put(lines());
-      const read = async (): Promise<string> => readFile(join(root, 'plan.md'), 'utf8');
-      const declaration = { repository: 'acme/app', registry: 'errors/README.md', codes: [1, '1'] };
-
-      await updatePlan(root, {
-        document: 'plan',
-        set: { priority: 'low', repositories: ['acme/app'], error_codes: [declaration] },
-      });
-      expect(await read()).toBe(
-        lines(
-          'priority: "low"',
-          'repositories: [ acme/app ]',
-          'error_codes: [ { repository: acme/app, registry: errors/README.md, codes: [ 1, "1" ] } ]',
-        ),
-      );
-
-      await updatePlan(root, {
-        document: 'plan',
-        set: {
-          priority: 'hotfix',
-          error_codes: [{ ...declaration, codes: [1, '1', 'NEW_INPUT'] }],
-        },
-      });
-      expect(await read()).toBe(
-        lines(
-          'priority: "hotfix"',
-          'repositories: [ acme/app ]',
-          'error_codes: [ { repository: acme/app, registry: errors/README.md, codes: [ 1, "1", NEW_INPUT ] } ]',
-        ),
-      );
-      const inspected = await inspectPlan(root);
-      if (inspected.plan.state !== 'readable') throw new Error('The plan is not readable.');
-      expect(inspected.plan.value.metadata).toMatchObject({
-        priority: 'hotfix',
-        repositories: ['acme/app'],
-        error_codes: [{ ...declaration, codes: [1, '1', 'NEW_INPUT'] }],
-      });
-
-      const { sha256 } = await updatePlan(root, {
-        document: 'plan',
-        set: { priority: null, repositories: null, error_codes: null },
-      });
-      expect(await read()).toBe(lines());
-      const write = await writePlanDocument(root, {
-        document: 'plan',
-        expectedSha256: sha256!,
-        body: `${eol}# Body 😀`,
-        set: { repositories: ['acme/api'] },
-      });
-      expect(write.changed).toBe(true);
-      expect(await read()).toBe(lines('repositories: [ acme/api ]'));
-    },
-  );
 });

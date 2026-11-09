@@ -1,6 +1,11 @@
 import { z } from 'zod';
 
-import { PRIORITY_VALUES, PROGRESS_VALUES, PROTOCOL_VERSIONS } from './constants.ts';
+import {
+  PLAN_STATUS_VALUES,
+  PRIORITY_VALUES,
+  PROGRESS_VALUES,
+  PROTOCOL_VERSIONS,
+} from './constants.ts';
 
 const NonblankStringSchema = z.string().refine((value) => value.trim().length > 0);
 
@@ -11,6 +16,10 @@ export const CriterionIdSchema = z.string().regex(/^AC-(?:0[1-9]|[1-9]\d+)$/);
 export const ProgressSchema = z.enum(PROGRESS_VALUES);
 
 export type IProgress = z.infer<typeof ProgressSchema>;
+
+export const PlanStatusSchema = z.enum(PLAN_STATUS_VALUES);
+
+export type IPlanStatus = z.infer<typeof PlanStatusSchema>;
 
 // a declarable protocol version; the YAML value must be a string
 export const ProtocolVersionSchema = z.enum(PROTOCOL_VERSIONS);
@@ -35,6 +44,27 @@ export const RepositoriesSchema = z
   .array(RepositoryIdSchema)
   .min(1)
   .refine((ids) => new Set(ids.map((id) => id.toLowerCase())).size === ids.length);
+
+/** Repository-defined delivery stops, with identifiers compared without regard to case. */
+export const DeliverySchema = z
+  .record(RepositoryIdSchema, NonblankStringSchema)
+  .refine((delivery) => {
+    const keys = Object.keys(delivery);
+    return new Set(keys.map((key) => key.toLowerCase())).size === keys.length;
+  });
+
+export type IDelivery = z.infer<typeof DeliverySchema>;
+
+/** The complete repository/delivery pair; a repository-free plan explicitly declares {}. */
+export const DeliveryMetadataSchema = z
+  .object({ repositories: RepositoriesSchema.exactOptional(), delivery: DeliverySchema })
+  .refine(({ repositories = [], delivery }) => {
+    const targets = new Set(Object.keys(delivery).map((key) => key.toLowerCase()));
+    return (
+      repositories.length === targets.size &&
+      repositories.every((id) => targets.has(id.toLowerCase()))
+    );
+  });
 
 // a repository-relative POSIX path: no leading slash, backslash, or empty, '.', or '..' segment
 const RegistryPathSchema = z
@@ -74,14 +104,17 @@ export type IPlanScopeMetadata = {
 };
 
 /** Preferred new-plan metadata. Unknown project fields remain allowed. */
-export const PlanMetadataSchema = z.looseObject({
-  id: NonblankStringSchema,
-  created_at: z.iso.datetime({ offset: true }),
-  updated_at: z.iso.datetime({ offset: true }),
-  revision: z.number().int().positive().max(Number.MAX_SAFE_INTEGER),
-  status: NonblankStringSchema,
-  protocol: ProtocolVersionSchema.exactOptional(),
-});
+export const PlanMetadataSchema = z
+  .looseObject({
+    id: NonblankStringSchema,
+    created_at: z.iso.datetime({ offset: true }),
+    updated_at: z.iso.datetime({ offset: true }),
+    revision: z.number().int().positive().max(Number.MAX_SAFE_INTEGER),
+    status: NonblankStringSchema,
+    delivery: DeliverySchema,
+    protocol: ProtocolVersionSchema.exactOptional(),
+  })
+  .refine((metadata) => DeliveryMetadataSchema.safeParse(metadata).success);
 
 export type IPlanMetadata = z.infer<typeof PlanMetadataSchema>;
 
@@ -147,7 +180,7 @@ export const InspectPlanOptionsSchema = ReadOptionsSchema.extend({
 
 export type IInspectPlanOptions = z.infer<typeof InspectPlanOptionsSchema>;
 
-/** Creation preserves JSON metadata; declared protocols and error codes must be supported. */
+/** Creation requires delivery and preserves JSON metadata; declarations must be supported. */
 export const CreatePlanOptionsSchema = z.strictObject({
   slug: z
     .string()
@@ -163,12 +196,12 @@ export const CreatePlanOptionsSchema = z.strictObject({
     .record(z.string(), z.json())
     .refine(
       (metadata) =>
+        DeliveryMetadataSchema.safeParse(metadata).success &&
         (!Object.hasOwn(metadata, 'protocol') ||
           ProtocolVersionSchema.safeParse(metadata.protocol).success) &&
         (!Object.hasOwn(metadata, 'error_codes') ||
           ErrorCodesSchema.safeParse(metadata.error_codes).success),
-    )
-    .optional(),
+    ),
   milestones: z.string().optional(),
 });
 
@@ -185,6 +218,8 @@ export const PlanSetSchema = z
     updated_at: PlanMetadataSchema.shape.updated_at.exactOptional(),
     revision: PlanMetadataSchema.shape.revision.exactOptional(),
     status: PlanMetadataSchema.shape.status.exactOptional(),
+    delivery: DeliverySchema.exactOptional(),
+    protocol: ProtocolVersionSchema.exactOptional(),
     priority: PrioritySchema.nullable().exactOptional(),
     repositories: RepositoriesSchema.nullable().exactOptional(),
     error_codes: ErrorCodesSchema.nullable().exactOptional(),

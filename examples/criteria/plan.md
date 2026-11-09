@@ -8,6 +8,7 @@ protocol: "0.2"
 priority: medium
 repositories: [example/search]
 error_codes: [{ repository: example/search, registry: docs/errors.md, codes: [4100, "SEARCH_FILTER_INVALID"] }]
+delivery: {"example/search":"development"}
 ---
 
 # Search feedback

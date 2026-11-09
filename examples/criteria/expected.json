@@ -3,6 +3,7 @@
   "protocol": "0.2",
   "name": "search-feedback-criteria",
   "metadata": {
+    "delivery": { "example/search": "development" },
     "priority": "medium",
     "repositories": ["example/search"],
     "error_codes": [

@@ -3,7 +3,7 @@ import { ERRORS, checkPlan, parsePlan } from 'jg-plans';
 import { describe, expect, it } from 'vitest';
 
 const metadata =
-  'id: invented\ncreated_at: 2026-10-21T20:00:00Z\nupdated_at: 2026-10-21T16:00:00-04:00\nrevision: 1\nstatus: waiting-for-feedback';
+  'id: invented\ncreated_at: 2026-10-21T20:00:00Z\nupdated_at: 2026-10-21T16:00:00-04:00\nrevision: 1\nstatus: waiting-for-feedback\ndelivery: {}';
 
 describe('corrected plan contracts', () => {
   it.each([
@@ -91,6 +91,7 @@ describe('built plan parser', () => {
       updated_at: '2026-10-21T16:00:00-04:00',
       revision: 1,
       status: 'waiting-for-feedback',
+      delivery: {},
     });
     expect(result.rawMetadata).toMatchObject({
       project: { label: 'café 😀', flags: [true, null, 3] },
@@ -198,14 +199,14 @@ describe('built plan parser', () => {
 
 describe('0.2 plan scope fields', () => {
   const plan = (fields: string, protocol = "'0.2'"): string =>
-    `---\nid: scoped\ncreated_at: 2026-10-21T20:00:00Z\nupdated_at: 2026-10-21T20:00:00Z\nrevision: 1\nstatus: pending\nprotocol: ${protocol}\n${fields}---\n# Plan\n\n## Acceptance criteria\n\n- AC-01: It works.\n`;
+    `---\nid: scoped\ncreated_at: 2026-10-21T20:00:00Z\nupdated_at: 2026-10-21T20:00:00Z\nrevision: 1\nstatus: pending\nprotocol: ${protocol}\n${fields.includes('delivery:') ? '' : 'delivery: {}\n'}${fields}---\n# Plan\n\n## Acceptance criteria\n\n- AC-01: It works.\n`;
   const codes = (source: string): string[] =>
     parsePlan(source).diagnostics.map((item) => item.code);
 
   it('returns valid priority, repositories, and error codes in metadata', () => {
     const parsed = parsePlan(
       plan(
-        'priority: hotfix\nrepositories:\n  - acme/app\n  - Acme/api.v2\nerror_codes: [{ repository: acme/app, registry: errors/README.md, codes: [100, "100", SEARCH_FAILED] }]\n',
+        'delivery: { acme/app: development, Acme/api.v2: main }\npriority: hotfix\nrepositories:\n  - acme/app\n  - Acme/api.v2\nerror_codes: [{ repository: acme/app, registry: errors/README.md, codes: [100, "100", SEARCH_FAILED] }]\n',
       ),
     );
     expect(parsed.diagnostics).toEqual([]);
@@ -256,7 +257,9 @@ describe('0.2 plan scope fields', () => {
       'INVALID_ERROR_CODES',
     ],
   ])('parsePlan(%j) -> %s', (fields, code) => {
-    expect(codes(plan(fields))).toEqual([code]);
+    expect(codes(plan(fields))).toEqual(
+      code === 'INVALID_REPOSITORIES' ? [code, 'INVALID_DELIVERY'] : [code],
+    );
     expect(parsePlan(plan(fields)).metadata).not.toHaveProperty(fields.split(':')[0]!);
   });
 
@@ -264,8 +267,8 @@ describe('0.2 plan scope fields', () => {
     const source = plan('priority: urgent\nerror_codes: oops\n');
     const diagnostics = parsePlan(source).diagnostics;
     expect(diagnostics.map((item) => [item.code, item.location?.line])).toEqual([
-      ['INVALID_PRIORITY', 8],
-      ['INVALID_ERROR_CODES', 9],
+      ['INVALID_PRIORITY', 9],
+      ['INVALID_ERROR_CODES', 10],
     ]);
     expect(source.slice(diagnostics[0]!.location!.offset).startsWith('urgent')).toBe(true);
     expect(diagnostics.every((item) => item.severity === 'error')).toBe(true);
@@ -300,6 +303,7 @@ describe('0.2 plan scope fields', () => {
         'INVALID_PRIORITY',
         'INVALID_REPOSITORIES',
         'INVALID_ERROR_CODES',
+        'INVALID_DELIVERY',
       ]);
       expect(parsed.metadata).not.toHaveProperty('priority');
       expect(parsed.rawMetadata).toMatchObject({ priority: 'urgent', repositories: [] });

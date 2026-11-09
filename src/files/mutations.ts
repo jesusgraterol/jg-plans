@@ -81,7 +81,8 @@ const cleanupCreation = async (
 
 /**
  * Create one exclusive plan directory. Caller-supplied milestones stay verbatim.
- * Missing metadata defaults use one captured creation time; supplied values are
+ * Delivery is required and validated before filesystem mutation. Generated metadata defaults use
+ * one captured creation time; supplied values are
  * preserved and receive diagnostics when nonconforming. The selected storage root
  * may remain empty after a failed creation; existing destinations are never reused.
  * @throws
