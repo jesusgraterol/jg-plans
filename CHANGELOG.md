@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.6.1 — delivery documentation correction
+
+- Clarify that delivered plans without milestones retain done criterion progress. Align the API fingerprint example with the six-key consumer profile. Runtime behavior and CLI schema 3 are unchanged.
+
 ## 0.6.0 — defined task delivery
 
 - Breaking: required delivery metadata maps exactly the declared repositories to repository-defined stops. Creation requires an explicit mapping; guarded updates validate the complete repository/delivery pair.

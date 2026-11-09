@@ -41,7 +41,7 @@ for (const criterion of observation.criteria)
 
 `observeCriteria(plan, milestones?)` takes parsed documents; omit milestones when milestones.md is absent. It returns `{ protocol, criteria, diagnostics }` (ICriteriaObservation). `criteria` lists each valid ID once, at its first definition and in definition order, as `{ id, text, location, milestones, progress }` (ICriterionCoverage), where `milestones` holds the ordinal and ID of every milestone whose coverage line names it.
 
-Progress follows protocol 0.2's rule for every plan: without milestones it is the plan's status; with milestones it is `done` when every covering milestone is done, `in progress` when at least one is in progress or done, and `pending` otherwise. It is null when no milestone covers the criterion or a status it depends on is not one of those three values. Progress describes the work, not evidence that a criterion is met.
+Progress follows protocol 0.2's rule for every plan: without milestones it is the plan's status, with `delivered` observed as `done`; with milestones it is `done` when every covering milestone is done, `in progress` when at least one is in progress or done, and `pending` otherwise. It is null when no milestone covers the criterion or a status it depends on is not one of those three values. Progress describes the work, not evidence that a criterion is met.
 
 `diagnostics` holds the cross-document rules: INVALID_STATUS for milestones, INVALID_CRITERIA_MARKER, DUPLICATE_CRITERIA_MARKER, MISPLACED_CRITERIA_MARKER, UNKNOWN_CRITERION, and, when milestones are supplied, UNASSIGNED_CRITERION. Invalid consumed identity, status, criterion, marker, or location fields throw JG_PLANS_INVALID_INPUT: Invalid jg-plans input. Actual parser observations of malformed documents remain accepted.
 
@@ -58,7 +58,7 @@ Milestones may begin with an optional frontmatter mapping. `frontmatter`, `rawMe
 ```ts
 import { fingerprintPlan, inspectPlan } from 'jg-plans';
 
-const exclusions = ['created_at', 'updated_at', 'revision', 'status'];
+const exclusions = ['created_at', 'updated_at', 'revision', 'status', 'priority', 'delivery'];
 const fingerprint = fingerprintPlan('# Work', { excludeMetadataKeys: exclusions });
 const inspection = await inspectPlan('./jg-plans/example', {
   fingerprint: { excludeMetadataKeys: exclusions },
@@ -141,7 +141,7 @@ The update reads only the selected document, bounded at 1 MiB by default. A malf
 
 Every byte outside the requested value spans or insertion points is preserved, including BOM, supplementary Unicode, unrelated nested metadata, comments, quotes, whitespace, line endings, and final-newline state. Equal values produce a no-op and skip replacement. Existing single quotes are retained when their style can represent the value; replacements otherwise use quoted YAML scalars. A delivery, priority, repositories, or error_codes edit replaces the field's whole value, whatever its style, block lists included, with one line: a quoted scalar, a YAML flow mapping, or a YAML flow sequence such as `[ acme/app, acme/api ]`. Removal deletes the field's lines. Values compare by deep equality, so an equal collection is a no-op. Setting repositories or delivery validates the resulting pair before persistence; supply both together when changing scope. Delivery is required and cannot be removed. An explicit status and delivery replacement is one guarded write.
 
-Unsupported edits fail without writing. These include malformed/unterminated frontmatter, a flow-style root mapping, complex/anchored/tagged root keys, merge keys, duplicate affected keys, and affected aliases, anchors, tags, block/multiline scalars, or implicit empty nulls. Duplicate/missing milestone selectors, repeated targets, duplicate affected markers, and overlapping spans also fail. Unrelated nonconforming fields are not a conformance gate. error.data.reason identifies the unsupported case, with field when relevant; it contains no source snippet. This narrow operation is a conservative scalar/marker editor; use explicit document writes below for body or milestone-source replacement.
+Unsupported edits fail without writing. These include malformed/unterminated frontmatter, a flow-style root mapping, complex/anchored/tagged root keys, merge keys, duplicate affected keys, and affected aliases, anchors, tags, block/multiline scalars, or implicit empty nulls. Duplicate/missing milestone selectors, repeated targets, duplicate affected markers, and overlapping spans also fail. Unrelated nonconforming fields are not a conformance gate. error.data.reason identifies the unsupported case, with field when relevant; it contains no source snippet. This narrow operation is a conservative metadata/marker editor; use explicit document writes below for body or milestone-source replacement.
 
 Bytes must be valid UTF-8, and replacement strings cannot contain unpaired UTF-16 surrogates. The caller-selected directory and its ancestors are trusted path choices; links below that root are rejected. Replacement preserves file permissions. All filesystem mutations acquire the shared selected-document lock before reading or preparing. The prior-content comparison detects observed intervening changes, but nonparticipating editors retain a comparison-to-rename race. No journal, snapshot service, or automatic retry is provided.
 
