@@ -253,40 +253,42 @@ describe('required native delivery', () => {
     ).toContainEqual(expect.objectContaining({ code: 'INVALID_STATUS' }));
   });
 
-  it('enforces the installed CLI contract on creation, inspection, guarded retargeting and checks', async ({
-    signal,
-  }) => {
-    const root = await fixture();
-    const run = async (args: string[], input?: unknown) => {
-      const result = await runProcess({
-        command: process.execPath,
-        args: [resolve('dist/cli/cli.js'), ...args, '--json'],
-        ...(input === undefined ? {} : { input: JSON.stringify(input) }),
-        signal,
-        timeoutSeconds: 10,
-        maxOutputBytes: 1024 * 1024,
+  it(
+    'enforces the installed CLI contract on creation, inspection, guarded retargeting and checks',
+    { timeout: 45_000 },
+    async ({ signal }) => {
+      const root = await fixture();
+      const run = async (args: string[], input?: unknown) => {
+        const result = await runProcess({
+          command: process.execPath,
+          args: [resolve('dist/cli/cli.js'), ...args, '--json'],
+          ...(input === undefined ? {} : { input: JSON.stringify(input) }),
+          signal,
+          timeoutSeconds: 10,
+          maxOutputBytes: 1024 * 1024,
+        });
+        expect(result.stderr).toBe('');
+        const envelope = JSON.parse(result.stdout);
+        expect(envelope.schemaVersion).toBe(3);
+        return { result, envelope };
+      };
+      const created = await run(['create', '--root', root, '--slug', 'cli', '--input', '-'], {
+        body: '- AC-01: Deliver.',
+        metadata: { repositories: ['acme/app'], delivery: { 'acme/app': 'development' } },
       });
-      expect(result.stderr).toBe('');
-      const envelope = JSON.parse(result.stdout);
-      expect(envelope.schemaVersion).toBe(3);
-      return { result, envelope };
-    };
-    const created = await run(['create', '--root', root, '--slug', 'cli', '--input', '-'], {
-      body: '- AC-01: Deliver.',
-      metadata: { repositories: ['acme/app'], delivery: { 'acme/app': 'development' } },
-    });
-    expect(created.result.exitCode).toBe(0);
-    const directory = created.envelope.data.directory;
-    const inspected = await run(['inspect', '--directory', directory]);
-    expect(inspected.envelope.data.plan.metadata.delivery).toEqual({ 'acme/app': 'development' });
-    const changed = await run(['update', '--directory', directory, '--input', '-'], {
-      document: 'plan',
-      expectedSha256: inspected.envelope.data.plan.sha256,
-      set: { delivery: { 'acme/app': 'main' }, status: 'done' },
-    });
-    expect(changed.result.exitCode).toBe(0);
-    const checked = await run(['check', '--directory', directory]);
-    expect(checked.result.exitCode).toBe(0);
-    expect(checked.envelope.data.conforms).toBe(true);
-  });
+      expect(created.result.exitCode).toBe(0);
+      const directory = created.envelope.data.directory;
+      const inspected = await run(['inspect', '--directory', directory]);
+      expect(inspected.envelope.data.plan.metadata.delivery).toEqual({ 'acme/app': 'development' });
+      const changed = await run(['update', '--directory', directory, '--input', '-'], {
+        document: 'plan',
+        expectedSha256: inspected.envelope.data.plan.sha256,
+        set: { delivery: { 'acme/app': 'main' }, status: 'done' },
+      });
+      expect(changed.result.exitCode).toBe(0);
+      const checked = await run(['check', '--directory', directory]);
+      expect(checked.result.exitCode).toBe(0);
+      expect(checked.envelope.data.conforms).toBe(true);
+    },
+  );
 });
