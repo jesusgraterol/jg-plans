@@ -6,7 +6,7 @@ The root library/CLI is the only published workspace package. The website is pri
 
 Use Node.js 24.15.0 or newer and pnpm 12.14.0. `pnpm release:pack` builds, packs, installs/tests the exact archive, and writes .release/release-manifest.json. The receipt records the version, source commit, dirty-source flag, archive filename, SHA-256, SHA-512 integrity, and every shipped path's content hash. Local dirty receipts are useful during development; CI refuses them for delivery.
 
-The [Check workflow](https://github.com/jesusgraterol/jg-plans/actions/workflows/check.yml) runs on pull requests to main, pushes to main, and manual dispatches. It qualifies one archive on Linux, then transfers that exact artifact to Node 24.15.0 and 24.22.1 consumers on Linux, macOS, and Windows. Runtime checks also exercise the filesystem and compiled package on each host. Website/browser verification runs once on Linux at 24.22.1. Publishing receives the same artifact, verifies its receipt, and never rebuilds it. No package-manager caches or long-lived publish tokens are used.
+The [Check workflow](https://github.com/jesusgraterol/jg-plans/actions/workflows/check.yml) runs on pull requests to main, pushes to main, and manual dispatches. It qualifies one archive on Linux, then transfers that exact artifact to Node 24.15.0 and 24.22.1 consumers on Linux, macOS, and Windows. Runtime checks also exercise the filesystem and compiled package on each host. Publishing depends only on package/runtime qualification, receives that same artifact, verifies its receipt, and never rebuilds it. Website checks, browser setup, and website formatting do not gate publication. The independent Pages workflow checks and deploys the site from main. No package-manager caches or long-lived publish tokens are used.
 
 `pnpm exec node scripts/release/release.ts qualify --from <directory>` checks registry version/content compatibility. `consumer` installs/tests that receipt's archive. `verify` requires matching public contents, latest, source/workflow provenance, and npm signature verification. `verify --bootstrap` checks contents/latest without requiring provenance, only for the first manual release. Run release tooling through the pinned pnpm context so its executable is available to child package operations on every host. These commands never infer publication from a version listing alone.
 
@@ -82,7 +82,7 @@ The bootstrap has no CI provenance. The automated follow-up establishes it. Fina
 
 ## Refreshing website availability
 
-After verifying the package version declared by main, run Check on main with the optional published_version input set to that same version. The website wrapper independently verifies the actual registry contents before rendering release presentation. Local builds and runs without the input remain preview builds. The checked site artifact is deployed unchanged, independently of the npm publish job. See [website delivery](website.md) for ownership and live verification.
+After verifying the package version declared by main, run Pages (`pages.yml`) on main with the optional published_version input set to that same version. The website wrapper independently verifies the actual registry contents before rendering release presentation. Local builds and runs without the input remain preview builds. The checked site artifact is deployed unchanged, independently of the npm publish job. See [website delivery](website.md) for ownership and live verification.
 
 ## Failures and recovery
 
