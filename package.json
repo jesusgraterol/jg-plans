@@ -56,8 +56,8 @@
     "test:integration": "vitest run --project integration",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src scripts vitest.config.ts eslint.config.js",
-    "check:package": "pnpm test && pnpm typecheck && pnpm lint && pnpm exec prettier --check . \"!website/**\"",
-    "check:package:full": "pnpm test:full && pnpm typecheck && pnpm lint && pnpm exec prettier --check . \"!website/**\"",
+    "check:package": "pnpm test && pnpm typecheck && pnpm lint && pnpm exec prettier --check . \"!website/**\" --config scripts/package/prettier.mjs",
+    "check:package:full": "pnpm test:full && pnpm typecheck && pnpm lint && pnpm exec prettier --check . \"!website/**\" --config scripts/package/prettier.mjs",
     "check": "pnpm check:package && pnpm --dir website check && pnpm format:check",
     "check:full": "pnpm check:package:full && pnpm --dir website check:full && pnpm format:check",
     "release:pack": "pnpm build && node scripts/package/pack.ts"
