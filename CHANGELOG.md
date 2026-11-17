@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.6.2 — documentation navigation
+
+- Route the package overview to canonical development, protocol and integration documentation. Keep protocol 0.2 and CLI schema 3 unchanged.
+
 ## 0.6.1 — delivery documentation correction
 
 - Clarify that delivered plans without milestones retain done criterion progress. Align the API fingerprint example with the six-key consumer profile. Runtime behavior and CLI schema 3 are unchanged.

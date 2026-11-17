@@ -80,3 +80,40 @@ Test public built exports and the installed executable. Keep known-field diagnos
 GitHub Pages uses Actions for jg-plans.jesusgraterol.dev. Recheck repository access, Actions permissions, branch policies, domain/certificate readiness, and HTTPS enforcement before delivery.
 
 Release only the qualified main archive through the configured Check workflow. Verify registry contents and provenance independently of website delivery; a successful build alone establishes neither publication nor deployment. The [release runbook](releasing.md) owns these checks and recovery. Its original 0.1.0/0.1.1 owner bootstrap is explicitly historical and is not repeated for later releases. Any manual account setup or recovery uses an isolated temporary npm login without changing another account's configuration.
+
+## Repository map
+
+| Area                                                                                     | Ownership                                                                                                                              |
+| ---------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| protocol/                                                                                | Normative versioned specification and version index.                                                                                   |
+| examples/                                                                                | Invented public documents and independently described expected observations.                                                           |
+| [docs/delivery.md](https://github.com/jesusgraterol/jg-plans/blob/main/docs/delivery.md) | Ordered delivery stops, operators, linked checks and evidence.                                                                         |
+| docs/                                                                                    | Concise durable concepts and operating guides; API and HTTP/error references stay outside docs/.                                       |
+| Root package                                                                             | Public reference library and thin CLI.                                                                                                 |
+| src/                                                                                     | Protocol schemas, tolerant parsers, selected-directory reads, targeted metadata/marker edits, and CLI.                                 |
+| api/, cli/, errors/                                                                      | Canonical public API, automation, and error references.                                                                                |
+| scripts/package/                                                                         | Build, local archive creation, and isolated installed-consumer verification.                                                           |
+| scripts/release/, .github/workflows/                                                     | Source/checksum receipts, registry/provenance verification, and qualified delivery.                                                    |
+| website/                                                                                 | Private Astro/Tailwind workspace for canonical docs, complete API examples, checked sharing assets, and verified release presentation. |
+| .agents/skills/jg-plans-maintenance/                                                     | Shared project maintenance skill; Claude discovers the same source through its repository symlink.                                     |
+
+## Document and consumer boundaries
+
+Users own their documents and can edit or delete them. No history store, metadata field, CLI, or website is required to read Markdown. Optional conformance checks do not authorize execution or become a prerequisite to inspection.
+
+Plans declare required repository delivery targets, their priority, the repositories they change, and the error codes they add, as explicit string/number lists. `jg-plans overlaps` compares String(code) and reports shared codes in active plans. Parsed results also expose a name derived from the plan ID. Approvals, allocation services, locks and reconciliation stay with applications, and each consumer integrates independently.
+
+## Quick verification
+
+Use Node.js 24.15.0 or newer and pnpm 12.14.0.
+
+```sh
+pnpm install --frozen-lockfile
+pnpm format:check
+pnpm check:package
+pnpm check
+```
+
+The [development guide](https://github.com/jesusgraterol/jg-plans/blob/main/docs/development.md) owns checks and package/site boundaries. Root tests build first, exercise public compiled exports, and install the actual tarball in an isolated consumer. Website tests verify production output in both themes and narrow layouts.
+
+The [runnable library example](../examples/library.mjs) creates, inspects, updates, and checks documents in an owned temporary directory. Guarded mutations and pure preparation preserve unaffected bytes and share local document locks; unsupported edits fail without rewriting it. The [API](../api/README.md) describes the exact preservation and concurrency limits.
