@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.6.3 — package qualification tooling
+
+- Use the shared npm archive checker and isolated packed consumer for release verification. Protocol 0.2 and CLI schema 3 remain unchanged.
+
 ## 0.6.2 — documentation navigation
 
 - Route the package overview to canonical development, protocol and integration documentation. Keep protocol 0.2 and CLI schema 3 unchanged.

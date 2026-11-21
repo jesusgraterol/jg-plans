@@ -21,12 +21,12 @@ const block = (path: string, body = 'hello', type: 'File' | 'SymbolicLink' = 'Fi
   ]);
 };
 const archive = (...blocks: Buffer[]): Buffer =>
-  gzipSync(Buffer.concat([...blocks, Buffer.alloc(1024)]));
+  gzipSync(Buffer.concat([block('package/package.json', '{}'), ...blocks, Buffer.alloc(1024)]));
 
 describe('bounded package payload verification', () => {
   it('reads exact names and bytes without extracting files', async () => {
     const result = await inspectPackageArchive(archive(block('package/README.md', 'café 😀')));
-    expect([...result.keys()]).toEqual(['README.md']);
+    expect([...result.keys()]).toEqual(['package.json', 'README.md']);
     expect(result.get('README.md')).toEqual(Buffer.from('café 😀'));
   });
 
@@ -46,9 +46,9 @@ describe('bounded package payload verification', () => {
     ).rejects.toThrow();
     await expect(
       inspectPackageArchive(archive(block('package/a'), block('package/a'))),
-    ).rejects.toThrow('Duplicate');
+    ).rejects.toThrow('Colliding tar path');
     await expect(inspectPackageArchive(gzipSync(archive(block('package/a'))))).rejects.toThrow(
-      'Nested gzip',
+      'The npm tarball is invalid.',
     );
     await expect(
       inspectPackageArchive(gzipSync(block('package/a').subarray(0, 513))),
@@ -59,7 +59,7 @@ describe('bounded package payload verification', () => {
     const valid = new Pax({ path: 'package/café/metadata.md' }).encode()!;
     expect([
       ...(await inspectPackageArchive(archive(valid, block('package/placeholder')))).keys(),
-    ]).toEqual(['café/metadata.md']);
+    ]).toEqual(['package.json', 'café/metadata.md']);
     const invalid = new Pax({ path: 'package/dir\\file' }).encode()!;
     await expect(
       inspectPackageArchive(archive(invalid, block('package/placeholder'))),
@@ -77,7 +77,7 @@ describe('bounded package payload verification', () => {
       inspectPackageArchive(
         archive(block('package/large', 'x'.repeat(ARCHIVE_LIMITS.entryBytes + 1))),
       ),
-    ).rejects.toThrow('entry exceeds');
+    ).rejects.toThrow('Entry byte limit exceeded.');
     await expect(
       inspectPackageArchive(
         archive(
@@ -86,6 +86,6 @@ describe('bounded package payload verification', () => {
           ),
         ),
       ),
-    ).rejects.toThrow('Too many');
+    ).rejects.toThrow('Entry count limit exceeded.');
   });
 });

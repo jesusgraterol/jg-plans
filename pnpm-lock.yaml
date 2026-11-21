@@ -200,6 +200,9 @@ importers:
       jg-fetch:
         specifier: 0.5.1
         version: 0.5.1
+      jg-package-check:
+        specifier: 1.0.0
+        version: 1.0.0
       prettier:
         specifier: 3.8.3
         version: 3.8.3
@@ -1741,6 +1744,14 @@ packages:
     resolution: {integrity: sha512-LEttOq6o3dqpim3v20IPF3bx+gWH7BHGels1hLTugpIghbnjycw+IgMMmSigrmpUVkBxhiwpLLMXsQliVfKfdQ==}
     engines: {node: '>=22.17.0'}
 
+  jg-fs@1.8.0:
+    resolution: {integrity: sha512-7ZrH1XqV2yuhKWBW6dCYMxRuCw9W5ke8x0RkLqbC8LlkP47N9fzql7e7WK3/qPqSbQjh9fGouFbH5MNBw237Tw==}
+    engines: {node: '>=22.17.0'}
+
+  jg-package-check@1.0.0:
+    resolution: {integrity: sha512-mOyrK9rRtc4gSRdVYKbx25bwxmaJw73mjqmIAyCgT6Yxg0Z91ssNnI90r/gtyAO9PvUPV6WKu/KGJSqAXTmngg==}
+    engines: {node: '>=22.17.0'}
+
   jg-personal-astro-ui@0.6.0:
     resolution: {integrity: sha512-WVC8hQ/m40n6O1tzPkrkb2erDfZDslEs0HIu3n+pyjcvQHyFVFiknWau7vKxm/NVY9OxXDYmXPVC/GCtiIjpmg==}
     engines: {node: '>=24'}
@@ -1766,6 +1777,10 @@ packages:
 
   jg-process@1.7.0:
     resolution: {integrity: sha512-U+hM01+3L6nf9EfTz7kp3Qo+5nrRZGXmbYOTE1Iw01Qz4mIFZxjG8+GAnIQnGnKK8bNLSDo38gQoj/vUeS0Q5Q==}
+    engines: {node: '>=22.17.0'}
+
+  jg-process@1.8.0:
+    resolution: {integrity: sha512-tYquy9zGCYq1XGbc5OuJhJVDXR9BlK+wyorTXHdQJlR/7lV61jnApyC5ZXXveH0yCbgcawDA9rYwc5k99cRelw==}
     engines: {node: '>=22.17.0'}
 
   jg-site@0.1.0:
@@ -4210,6 +4225,18 @@ snapshots:
       jg-exception: 1.7.1
       jg-utilities: 1.8.0
 
+  jg-fs@1.8.0:
+    dependencies:
+      jg-exception: 1.7.1
+      jg-utilities: 1.8.0
+
+  jg-package-check@1.0.0:
+    dependencies:
+      jg-exception: 1.7.1
+      jg-fs: 1.8.0
+      jg-process: 1.8.0
+      tar: 7.5.22
+
   jg-personal-astro-ui@0.6.0(astro@7.4.2(@types/node@24.10.1)(jiti@2.7.0)(yaml@2.9.1))(tailwindcss@4.3.3):
     dependencies:
       '@lucide/astro': 1.60.0(astro@7.4.2(@types/node@24.10.1)(jiti@2.7.0)(yaml@2.9.1))
@@ -4236,6 +4263,11 @@ snapshots:
       '@axe-core/playwright': 4.14.0(playwright-core@1.64.1)
 
   jg-process@1.7.0:
+    dependencies:
+      jg-exception: 1.7.1
+      jg-utilities: 1.8.0
+
+  jg-process@1.8.0:
     dependencies:
       jg-exception: 1.7.1
       jg-utilities: 1.8.0
