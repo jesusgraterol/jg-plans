@@ -66,6 +66,35 @@ describe('bounded package payload verification', () => {
     ).rejects.toThrow();
   });
 
+  it.each([
+    ['package/café/bar', 'package/cafe\u0301/foo'],
+    ['package/assets/b', 'package/Assets/a'],
+    ['package/assets/b', 'package/assets'],
+    ['package/assets', 'package/assets/b'],
+    ['package/café/foo', 'package/aux.txt'],
+    ['package/dir/file.', 'package/docs/file'],
+  ])('rejects incompatible paths in PAX archives (%s, %s)', async (path, other) => {
+    const pax = new Pax({ path }).encode()!;
+    const payload = archive(pax, block('package/placeholder'), block(other));
+
+    await expect(inspectPackageArchive(payload)).rejects.toThrow('The npm tarball is invalid.');
+  });
+
+  it.each([
+    ['a missing end block', Buffer.alloc(512)],
+    ['trailing entries', Buffer.concat([Buffer.alloc(1024), block('package/extra')])],
+    [
+      'an embedded end block',
+      Buffer.concat([Buffer.alloc(512), block('package/extra'), Buffer.alloc(1024)]),
+    ],
+  ])('rejects PAX archives with %s', async (_case, ending) => {
+    const pax = new Pax({ path: 'package/café/metadata.md' }).encode()!;
+    const content = [block('package/package.json', '{}'), pax, block('package/placeholder')];
+    const payload = gzipSync(Buffer.concat([...content, ending]));
+
+    await expect(inspectPackageArchive(payload)).rejects.toThrow('The npm tarball is invalid.');
+  });
+
   it('bounds compressed bytes, expanded bytes, each entry, and entry count', async () => {
     await expect(
       inspectPackageArchive(Buffer.alloc(ARCHIVE_LIMITS.compressedBytes + 1)),
